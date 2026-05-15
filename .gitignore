@@ -1,0 +1,36 @@
+# Partner-provided source files — do not commit
+Products/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Node / Next.js
+node_modules/
+.next/
+.open-next/
+.wrangler/
+.dev.vars
+.dev.vars.local
+.env
+.env.local
+.env*.local
+out/
+dist/
+build/
+
+# Python (seed extractors)
+__pycache__/
+*.pyc
+.venv/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Cloudflare
+.mf/
+wrangler.local.toml

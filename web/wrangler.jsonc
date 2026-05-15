@@ -1,0 +1,77 @@
+{
+  // TourTrain — Cloudflare Pages (Next.js via @opennextjs/cloudflare)
+  // Apply with: pnpm dlx wrangler@latest pages deploy
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tourtrain",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // === D1: relational ===
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tourtrain-db",
+      "database_id": "REPLACE_WITH_WRANGLER_OUTPUT",
+      "migrations_dir": "../infra/migrations"
+    }
+  ],
+
+  // === R2: object storage (PDFs, images, badge PNGs) ===
+  "r2_buckets": [
+    {
+      "binding": "ASSETS_BUCKET",
+      "bucket_name": "tourtrain-assets"
+    }
+  ],
+
+  // === Vectorize: RAG index ===
+  "vectorize": [
+    {
+      "binding": "RAG",
+      "index_name": "tourtrain-rag"
+    }
+  ],
+
+  // === Workers AI: embeddings (bge-m3 multilingual) ===
+  "ai": {
+    "binding": "AI"
+  },
+
+  // === Queues: async parsing (stubbed in MVP but wired) ===
+  "queues": {
+    "producers": [
+      { "binding": "PARSE_QUEUE", "queue": "tourtrain-parse" }
+    ],
+    "consumers": [
+      { "queue": "tourtrain-parse", "max_batch_size": 5, "max_batch_timeout": 10 }
+    ]
+  },
+
+  // === Hyperdrive: NOT used in MVP (we're on D1). Keep slot for future Postgres switch. ===
+
+  // === Env vars (non-secret) ===
+  "vars": {
+    "APP_NAME": "TourTrain",
+    "DEFAULT_LOCALE": "en",
+    "SUPPORTED_LOCALES": "en,zh-CN,zh-TW,ja,ko,de,es",
+    "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN",
+    "CLERK_PUBLISHABLE_KEY": "REPLACE_IN_DASHBOARD"
+  },
+
+  // === Secrets (set via `wrangler secret put`) ===
+  // ANTHROPIC_API_KEY
+  // CLERK_SECRET_KEY
+  // RESEND_API_KEY
+  // TAVILY_API_KEY
+  // CF_STREAM_API_TOKEN
+
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

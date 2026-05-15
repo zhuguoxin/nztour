@@ -1,0 +1,184 @@
+{
+  "operator": {
+    "id": "op_nzski",
+    "slug": "nzski",
+    "name": "NZSki",
+    "display_name": "NZSki — Queenstown / Methven",
+    "country": "NZ",
+    "primary_lang": "en",
+    "cover_color": "linear-gradient(135deg,#0e3d4a 0%, #134e5e 50%, #1a6679 100%)",
+    "contact_email": "trade@nzski.com",
+    "status": "active"
+  },
+
+  "courses": [
+    {
+      "id": "c_coronet_peak_2026",
+      "slug": "coronet-peak-2026",
+      "title": "Coronet Peak 2026",
+      "summary": "Queenstown's pioneer ski field — terrain, lessons, snowmaking and the 2026 capital programme. Pitch with confidence to all guest types.",
+      "emoji": "⛷️",
+      "cover_color": "linear-gradient(135deg,#0e3d4a 0%, #134e5e 50%, #1a6679 100%)",
+      "primary_lang": "en",
+      "status": "published",
+      "est_minutes": 25,
+
+      "modules": [
+        {
+          "id": "m_cp_overview",
+          "slug": "mountain-overview",
+          "title": "Mountain overview",
+          "summary": "Where Coronet Peak sits, who it suits, the headline 2026 changes.",
+          "est_minutes": 5,
+          "position": 1,
+          "blocks": [
+            { "kind": "text", "text_md": "**Coronet Peak** is NZSki's pioneer ski field — 25 minutes from Queenstown CBD, suited to all abilities with a strong intermediate and family draw. Open daily winter 2026 from **June 13** through to **early October**.", "lang": "en" },
+            { "kind": "callout", "text_md": "**New for 2026** — A South Island–first **Snow Factory** producing premium snow regardless of temperature, dramatically improving the early-season experience.", "lang": "en" },
+            { "kind": "text", "text_md": "Headline 2026 capital programme: Kidzone carpet upgrade, new Snow Factory, **new Snowsports Heli Premium Private** experience launched alongside existing private-coaching tiers.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_cp_lifts_terrain",
+          "slug": "lifts-terrain",
+          "title": "Lifts & terrain map",
+          "summary": "Lift configuration, terrain mix, what to recommend for beginners vs advanced.",
+          "est_minutes": 8,
+          "position": 2,
+          "blocks": [
+            { "kind": "text", "text_md": "Lift network across Coronet's bowl plus the M1 Express on the back face. Beginner zone fed by Meadows and Kidzone carpets; intermediates spread across Greengates / Rocky Gully; experts head to Back Bowls when conditions allow.", "lang": "en" },
+            { "kind": "image", "caption": "Coronet Peak base lodge — winter 2026", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_cp_lessons",
+          "slug": "lessons-coaching",
+          "title": "Lessons & coaching",
+          "summary": "Three private-coaching tiers — Premium, Performance, Premium Heli. Who they're for and how to position them.",
+          "est_minutes": 6,
+          "position": 3,
+          "blocks": [
+            { "kind": "text", "text_md": "Coronet Peak offers **three tiers of private coaching**, each capped at 4 guests per instructor. Choosing the right tier depends on ability level and what the guest wants to get out of the day.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Premium Privates** — family-friendly, all abilities. **NZ$ from 1,099/day**. Recommend for first-timers through to confident intermediates and mixed-ability groups.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Performance Privates** — technique-focused for advanced skiers/snowboarders. **NZ$ from 1,299/day**. Recommend when the guest's goal is measurable improvement.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Premium Heli Privates** — backcountry heli access for advanced+ guests. **NZ$ from 2,890/day** including 2 drop-offs and full mountain-safety briefing. Subject to weather. Only available at Coronet Peak (not Remarkables or Mt Hutt).", "lang": "en" },
+            { "kind": "video", "video_uid": "STREAM_UID_CORONET_AERIAL", "caption": "Coronet Peak — Aerial 2026 (12:34)", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_cp_pricing",
+          "slug": "pricing-inclusions",
+          "title": "Pricing & inclusions",
+          "summary": "Lift passes, rentals, bundles, and trade rates.",
+          "est_minutes": 6,
+          "position": 4,
+          "blocks": [
+            { "kind": "text", "text_md": "Day lift passes start at **NZ$ 169 adult / 99 child** at gate; **advance purchase** discounts available 14+ days out. 3-mountain pass (Coronet + Remarkables + Mt Hutt) is the best value for guests staying 4+ days in NZ.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_cp_booking",
+          "slug": "booking-faq",
+          "title": "Booking & FAQ",
+          "summary": "How agents book, snow-day policy, transport from Queenstown.",
+          "est_minutes": 7,
+          "position": 5,
+          "blocks": [
+            { "kind": "text", "text_md": "Trade bookings via the NZSki Travel Trade portal. **Snow-day cancellation policy:** if the resort closes for the full day, lift-pass holders receive a credit (not refund) usable within 24 months at any NZSki resort. Lessons and heli are rebooked subject to availability or fully refunded.", "lang": "en" }
+          ]
+        }
+      ],
+
+      "_sources": [
+        "Products/NZSki/2026 Media Kit refresh - Coronet Peak.pdf",
+        "Products/NZSki/Full Day Private Coaching/Premium Privates.pdf",
+        "Products/NZSki/Full Day Private Coaching/Performance Privates.pdf",
+        "Products/NZSki/Full Day Private Coaching/Premium Heli Privates.pdf",
+        "Products/NZSki/Full Day Private Coaching/Premium Family Private.pdf",
+        "Products/NZSki/Full Day Private Coaching/Full Day Private. Coaching.pdf"
+      ]
+    },
+
+    {
+      "id": "c_remarkables_2026",
+      "slug": "remarkables-2026",
+      "title": "The Remarkables 2026",
+      "summary": "Queenstown's family alpine resort. To be expanded from media kit during D5.",
+      "emoji": "🏔️",
+      "cover_color": "linear-gradient(135deg,#1e293b 0%, #334155 100%)",
+      "primary_lang": "en",
+      "status": "published",
+      "est_minutes": 22,
+      "modules": [],
+      "_sources": ["Products/NZSki/2026 Media Kit refresh - The Remarkables.pdf"],
+      "_status_note": "Stub for demo list; full module population on D5."
+    },
+
+    {
+      "id": "c_mt_hutt_2026",
+      "slug": "mt-hutt-2026",
+      "title": "Mt Hutt 2026",
+      "summary": "Methven-based, NZ's longest season. To be expanded from media kit during D5.",
+      "emoji": "🏂",
+      "cover_color": "linear-gradient(135deg,#3d2f1f 0%, #6b4423 60%, #8b5a2b 100%)",
+      "primary_lang": "en",
+      "status": "published",
+      "est_minutes": 20,
+      "modules": [],
+      "_sources": ["Products/NZSki/2026 Media Kit refresh - Mt Hutt.pdf"],
+      "_status_note": "Stub for demo list; full module population on D5."
+    },
+
+    {
+      "id": "c_nzski_private_coaching",
+      "slug": "full-day-private-coaching",
+      "title": "Full Day Private Coaching",
+      "summary": "Cross-resort private coaching offering — auto-drafted from 5 PDFs, pending operator review.",
+      "emoji": "🚁",
+      "cover_color": "linear-gradient(135deg,#1f3a2e 0%, #2d5a3d 50%, #4a7c59 100%)",
+      "primary_lang": "en",
+      "status": "draft",
+      "est_minutes": 0,
+      "modules": [],
+      "_sources": ["Products/NZSki/Full Day Private Coaching/"],
+      "_status_note": "Demonstrates the 'parsed but unpublished' state for operator dashboard."
+    }
+  ],
+
+  "demo_agents": [
+    {
+      "name": "Sarah W.",
+      "agency": "Blue Sky Travel",
+      "country": "AU",
+      "preferred_lang": "en",
+      "progress": { "c_coronet_peak_2026": { "completed_modules": ["m_cp_overview", "m_cp_lifts_terrain"], "in_progress": "m_cp_lessons", "dwell_seconds": 12 } }
+    },
+    {
+      "name": "李哲",
+      "agency": "华人旅行社 Auckland",
+      "country": "NZ",
+      "preferred_lang": "zh-CN",
+      "progress": { "c_mt_hutt_2026": { "completed_modules": [] } }
+    },
+    {
+      "name": "James T.",
+      "agency": "Horizons Agency",
+      "country": "AU",
+      "preferred_lang": "en",
+      "progress": { "c_remarkables_2026": { "completed_modules": [] } }
+    },
+    {
+      "name": "Mia C.",
+      "agency": "Coral Coast Co.",
+      "country": "AU",
+      "preferred_lang": "en",
+      "progress": { "c_coronet_peak_2026": { "completed_modules": ["m_cp_overview"] } }
+    }
+  ],
+
+  "demo_qa_log": [
+    { "q": "客户问 Heli Privates 适合什么水平的滑雪者?", "lang": "zh-CN", "asks": 142, "source": "rag", "answered": true },
+    { "q": "Lift pass + rental combo pricing", "lang": "en", "asks": 98, "source": "rag", "answered": true },
+    { "q": "Bus shuttle from Queenstown CBD", "lang": "en", "asks": 61, "source": "web", "answered": true, "gap_note": "Fell back to web — consider adding to course" },
+    { "q": "Cancellation policy for snow days", "lang": "en", "asks": 47, "source": "no_answer", "answered": false, "gap_note": "Content gap — covered in v0.2 of m_cp_booking" }
+  ]
+}

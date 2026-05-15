@@ -1,0 +1,17 @@
+# Local development secrets — copy to `.dev.vars` (NEVER commit `.dev.vars`)
+# Production secrets are set via `wrangler secret put <NAME>`
+
+# Anthropic Claude API
+ANTHROPIC_API_KEY=
+
+# Clerk auth (get from https://dashboard.clerk.com/)
+CLERK_SECRET_KEY=
+
+# Resend (for magic-link emails — optional in MVP if Clerk handles email)
+RESEND_API_KEY=
+
+# Tavily (web fallback for AI Q&A)
+TAVILY_API_KEY=
+
+# Cloudflare Stream — only needed for direct uploads from server-side
+CF_STREAM_API_TOKEN=
