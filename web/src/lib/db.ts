@@ -14,7 +14,7 @@ export function db() {
   return env.DB;
 }
 
-// =============== Read helpers ===============
+// =============== Types ===============
 
 export interface OperatorRow {
   id: string;
@@ -51,10 +51,25 @@ export interface ModuleRow {
   position: number;
 }
 
+export interface BlockRow {
+  id: string;
+  module_id: string;
+  position: number;
+  kind: "text" | "image" | "video" | "pdf" | "callout";
+  text_md: string | null;
+  image_r2_key: string | null;
+  video_uid: string | null;
+  pdf_r2_key: string | null;
+  caption: string | null;
+  lang: string;
+}
+
 export interface CourseWithOperator extends CourseRow {
   operator_name: string;
   operator_slug: string;
 }
+
+// =============== Reads ===============
 
 export async function listPublishedCourses(): Promise<CourseWithOperator[]> {
   const { results } = await db()
@@ -130,4 +145,15 @@ export async function getCourseBySlug(
     est_minutes: row.est_minutes,
   };
   return { operator, course, modules: modules ?? [] };
+}
+
+export async function getModuleBlocks(moduleId: string): Promise<BlockRow[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key, caption, lang
+       FROM content_blocks WHERE module_id = ? ORDER BY position`,
+    )
+    .bind(moduleId)
+    .all<BlockRow>();
+  return results ?? [];
 }

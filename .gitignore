@@ -15,6 +15,11 @@ node_modules/
 .dev.vars
 .dev.vars.local
 .env
+# Catch-all for any local secret holders the dev may create
+sec.env
+secrets.env
+*.secrets
+.envrc
 .env.local
 .env*.local
 out/
