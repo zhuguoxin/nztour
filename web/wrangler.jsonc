@@ -78,7 +78,13 @@
     "APP_NAME": "TourTrain",
     "DEFAULT_LOCALE": "en",
     "SUPPORTED_LOCALES": "en,zh-CN,zh-TW,ja,ko,de,es",
-    "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN"
+    "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN",
+    // Clerk publishable key is safe to expose (embedded in frontend JS)
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZHluYW1pYy1nbmF0LTU2LmNsZXJrLmFjY291bnRzLmRldiQ",
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/sign-in",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/sign-up",
+    "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL": "/learn",
+    "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL": "/learn"
   },
 
   // === Secrets (set via `wrangler secret put <NAME>`) ===
