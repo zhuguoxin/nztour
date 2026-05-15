@@ -1,22 +1,43 @@
+/**
+ * TourTrain — Next.js 16 on Cloudflare Workers via @opennextjs/cloudflare.
+ * Bindings here are merged from c3 scaffold + our MVP plan.
+ *
+ * Deploy:    pnpm run deploy
+ * Local dev: pnpm run dev   (Next.js dev server; bindings via getCloudflareContext)
+ * Preview:   pnpm run preview  (full OpenNext + workerd locally)
+ */
 {
-  // TourTrain — Cloudflare Pages (Next.js via @opennextjs/cloudflare)
-  // Apply with: pnpm dlx wrangler@latest pages deploy
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tourtrain",
-  "compatibility_date": "2026-05-01",
-  "compatibility_flags": ["nodejs_compat"],
   "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+
   "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
   },
 
-  // === D1: relational ===
+  "images": {
+    "binding": "IMAGES"
+  },
+
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "tourtrain"
+    }
+  ],
+
+  // === D1: relational DB ===
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "tourtrain-db",
-      "database_id": "REPLACE_WITH_WRANGLER_OUTPUT",
+      "database_id": "REPLACE_AFTER_WRANGLER_D1_CREATE",
       "migrations_dir": "../infra/migrations"
     }
   ],
@@ -29,7 +50,7 @@
     }
   ],
 
-  // === Vectorize: RAG index ===
+  // === Vectorize: RAG index (bge-m3 = 1024 dims) ===
   "vectorize": [
     {
       "binding": "RAG",
@@ -37,12 +58,12 @@
     }
   ],
 
-  // === Workers AI: embeddings (bge-m3 multilingual) ===
+  // === Workers AI: multilingual embeddings ===
   "ai": {
     "binding": "AI"
   },
 
-  // === Queues: async parsing (stubbed in MVP but wired) ===
+  // === Queues: async jobs (stubbed in MVP, wired for v0.2) ===
   "queues": {
     "producers": [
       { "binding": "PARSE_QUEUE", "queue": "tourtrain-parse" }
@@ -52,26 +73,24 @@
     ]
   },
 
-  // === Hyperdrive: NOT used in MVP (we're on D1). Keep slot for future Postgres switch. ===
-
-  // === Env vars (non-secret) ===
+  // === Non-secret env vars ===
   "vars": {
     "APP_NAME": "TourTrain",
     "DEFAULT_LOCALE": "en",
     "SUPPORTED_LOCALES": "en,zh-CN,zh-TW,ja,ko,de,es",
-    "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN",
-    "CLERK_PUBLISHABLE_KEY": "REPLACE_IN_DASHBOARD"
+    "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN"
   },
 
-  // === Secrets (set via `wrangler secret put`) ===
-  // ANTHROPIC_API_KEY
-  // CLERK_SECRET_KEY
-  // RESEND_API_KEY
-  // TAVILY_API_KEY
-  // CF_STREAM_API_TOKEN
+  // === Secrets (set via `wrangler secret put <NAME>`) ===
+  //  - ANTHROPIC_API_KEY
+  //  - CLERK_PUBLISHABLE_KEY      (public; can be in vars too, but kept secret for parity)
+  //  - CLERK_SECRET_KEY
+  //  - RESEND_API_KEY
+  //  - TAVILY_API_KEY
+  //  - CF_STREAM_API_TOKEN
 
   "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1
-  }
+    "enabled": true
+  },
+  "upload_source_maps": true
 }
