@@ -71,6 +71,48 @@ export interface CourseWithOperator extends CourseRow {
 
 // =============== Reads ===============
 
+export interface OperatorCard {
+  id: string;
+  slug: string;
+  name: string;
+  course_count: number;
+  module_count: number;
+  est_minutes: number;
+  emoji: string | null;
+  cover_color: string | null;
+  primary_lang: string;
+  status: string;
+  sample_course_title: string | null;
+  sample_course_slug: string | null;
+}
+
+export async function listOperatorsWithCourseCounts(): Promise<OperatorCard[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT
+         o.id, o.slug, o.name, o.primary_lang, o.status,
+         COUNT(DISTINCT c.id) AS course_count,
+         COUNT(DISTINCT m.id) AS module_count,
+         COALESCE(SUM(c.est_minutes), 0) AS est_minutes,
+         (SELECT emoji FROM courses WHERE operator_id = o.id AND status='published'
+           ORDER BY position, created_at LIMIT 1) AS emoji,
+         (SELECT cover_color FROM courses WHERE operator_id = o.id AND status='published'
+           ORDER BY position, created_at LIMIT 1) AS cover_color,
+         (SELECT title FROM courses WHERE operator_id = o.id AND status='published'
+           ORDER BY position, created_at LIMIT 1) AS sample_course_title,
+         (SELECT slug FROM courses WHERE operator_id = o.id AND status='published'
+           ORDER BY position, created_at LIMIT 1) AS sample_course_slug
+       FROM operators o
+       LEFT JOIN courses c ON c.operator_id = o.id AND c.status='published'
+       LEFT JOIN modules m ON m.course_id = c.id
+       WHERE o.status = 'active'
+       GROUP BY o.id
+       ORDER BY (course_count > 0) DESC, o.name`,
+    )
+    .all<OperatorCard>();
+  return results ?? [];
+}
+
 export async function listPublishedCourses(): Promise<CourseWithOperator[]> {
   const { results } = await db()
     .prepare(

@@ -33,6 +33,10 @@
   ],
 
   // === D1: relational DB ===
+  // experimental_remote=true: `next dev` will talk to the real D1 in OC,
+  // so seeded operator/course rows show up locally. Avoids the SQLite-file
+  // duplication and wrangler's "several transactions" parser quirk on seed
+  // files with many INSERTs.
   "d1_databases": [
     {
       "binding": "DB",
