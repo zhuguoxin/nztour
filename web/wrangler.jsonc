@@ -37,7 +37,7 @@
     {
       "binding": "DB",
       "database_name": "tourtrain-db",
-      "database_id": "REPLACE_AFTER_WRANGLER_D1_CREATE",
+      "database_id": "2a356abf-af5e-4374-8f7e-e4ce6d25b4ab",
       "migrations_dir": "../infra/migrations"
     }
   ],
