@@ -1,7 +1,6 @@
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { listOperatorsWithCourseCounts } from "@/lib/db";
-import { MobileMenu } from "./mobile-menu";
 
 export const dynamic = "force-dynamic";
 
@@ -26,13 +25,44 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
-      {/* Top bar — hamburger on mobile, full nav on md+ */}
-      <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/85 backdrop-blur-md px-5 sm:px-8 py-3">
-        {/* === Mobile: single row, hamburger === */}
-        <div className="flex items-center justify-between md:hidden">
-          <Logo />
-          <MobileMenu />
+      {/* Top bar — two rows on mobile (logo+actions / nav), single row on md+ */}
+      <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/85 backdrop-blur-md px-4 sm:px-8 py-3">
+        {/* === Mobile: row 1 — Logo + Lang + Sign in + Get certified === */}
+        <div className="flex items-center justify-between gap-2 md:hidden">
+          <Logo compact />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <LangPicker compact />
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="px-2 py-1.5 rounded-md text-[#d8f0e1] hover:bg-white/[.06] text-[13px]">
+                  Sign in
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]">
+                  Get certified
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <Link
+                href="/learn"
+                className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]"
+              >
+                Learning
+              </Link>
+              <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
+            </Show>
+          </div>
         </div>
+
+        {/* === Mobile: row 2 — nav === */}
+        <nav className="flex md:hidden items-center justify-between gap-1 mt-2.5 -mx-1 text-[14px] text-[#a7d4b6]">
+          <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Explore</a>
+          <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Operators</a>
+          <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Badges</a>
+          <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Pricing</a>
+        </nav>
 
         {/* === Desktop: single row === */}
         <div className="hidden md:flex items-center justify-between">
@@ -267,28 +297,31 @@ function Chip({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Logo() {
+function Logo({ compact = false }: { compact?: boolean }) {
+  const size = compact ? 20 : 24;
   return (
-    <Link href="/" className="flex items-center gap-2.5">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <Link href="/" className="flex items-center gap-2 shrink-0">
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
         <path d="M3 19l9-14 9 14H3z" stroke="#34d399" strokeWidth="2" fill="rgba(52,211,153,.12)" />
         <circle cx="12" cy="14" r="2" fill="#bef264" />
       </svg>
-      <span className="font-semibold text-[17px] text-white">
+      <span className={`font-semibold ${compact ? "text-[15px]" : "text-[17px]"} text-white`}>
         <span className="text-emerald-300">Tour</span>Train
       </span>
     </Link>
   );
 }
 
-function LangPicker() {
+function LangPicker({ compact = false }: { compact?: boolean }) {
   return (
     <button
       type="button"
-      className="px-3 py-2 rounded-md text-[#c4e9d3] hover:bg-white/[.06] text-[13px] inline-flex items-center gap-1.5"
+      className={`rounded-md text-[#c4e9d3] hover:bg-white/[.06] inline-flex items-center gap-1 ${
+        compact ? "px-1.5 py-1.5 text-[12px]" : "px-3 py-2 text-[13px] gap-1.5"
+      }`}
       aria-label="Change language"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <svg width={compact ? 12 : 14} height={compact ? 12 : 14} viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
         <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" stroke="currentColor" strokeWidth="2" />
       </svg>
