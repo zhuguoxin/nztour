@@ -1,6 +1,7 @@
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { listOperatorsWithCourseCounts } from "@/lib/db";
+import { MobileMenu } from "./mobile-menu";
 
 export const dynamic = "force-dynamic";
 
@@ -25,49 +26,12 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
-      {/* Top bar — two rows on mobile (logo+user / nav+actions), single row on md+ */}
+      {/* Top bar — hamburger on mobile, full nav on md+ */}
       <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/85 backdrop-blur-md px-5 sm:px-8 py-3">
-        {/* === Mobile: row 1 (logo + lang + user) === */}
+        {/* === Mobile: single row, hamburger === */}
         <div className="flex items-center justify-between md:hidden">
           <Logo />
-          <div className="flex items-center gap-1">
-            <LangPicker />
-            <Show when="signed-in">
-              <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
-            </Show>
-          </div>
-        </div>
-
-        {/* === Mobile: row 2 (nav links scroll + signed-out CTAs) === */}
-        <div className="flex md:hidden items-center justify-between gap-2 mt-2 -mx-1">
-          <nav className="flex items-center gap-0.5 text-[14px] text-[#a7d4b6] overflow-x-auto scrollbar-none px-1">
-            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Explore</a>
-            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Operators</a>
-            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Badges</a>
-            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Pricing</a>
-          </nav>
-          <Show when="signed-out">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <SignInButton mode="modal">
-                <button className="px-2.5 py-1.5 rounded-md text-[#d8f0e1] hover:bg-white/[.06] text-[13px]">
-                  Sign in
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]">
-                  Get certified
-                </button>
-              </SignUpButton>
-            </div>
-          </Show>
-          <Show when="signed-in">
-            <Link
-              href="/learn"
-              className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px] shrink-0"
-            >
-              Learning →
-            </Link>
-          </Show>
+          <MobileMenu />
         </div>
 
         {/* === Desktop: single row === */}
