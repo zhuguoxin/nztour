@@ -4,51 +4,105 @@ import { listOperatorsWithCourseCounts } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Dark-green tech palette. Tokens:
+ *   --bg          #04241e  (page)
+ *   --bg-soft     #062b22  (sticky header w/ blur)
+ *   --panel       #0a3a2f  (card surface)
+ *   --panel-hover #0e4738
+ *   --line        rgba(255,255,255,.08)
+ *   --line-hover  rgba(52,211,153,.4)
+ *   --ink         #f0fdf4  (high-contrast text)
+ *   --ink-muted   #a7d4b6
+ *   --ink-faint   #6b9981
+ *   --accent      #34d399 (emerald-400)
+ *   --accent-deep #10b981
+ *   --lime        #bef264
+ */
 export default async function Home() {
   const operators = await listOperatorsWithCourseCounts();
   const totalCourses = operators.reduce((s, o) => s + o.course_count, 0);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
-      {/* Top bar */}
-      <header className="border-b border-slate-200/80 px-7 py-3.5 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur z-10">
-        <div className="flex items-center gap-2">
+    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+      {/* Top bar — two rows on mobile (logo+user / nav+actions), single row on md+ */}
+      <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/85 backdrop-blur-md px-5 sm:px-8 py-3">
+        {/* === Mobile: row 1 (logo + lang + user) === */}
+        <div className="flex items-center justify-between md:hidden">
           <Logo />
-          <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] tracking-widest font-mono text-emerald-700 bg-emerald-50 border border-emerald-100">
-            NZ · MVP
-          </span>
+          <div className="flex items-center gap-1">
+            <LangPicker />
+            <Show when="signed-in">
+              <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
+            </Show>
+          </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-1 text-[13px] text-slate-600">
-          <a className="px-3 py-1.5 hover:text-slate-900">Explore</a>
-          <a className="px-3 py-1.5 hover:text-slate-900">Operators</a>
-          <a className="px-3 py-1.5 hover:text-slate-900">Badges</a>
-          <a className="px-3 py-1.5 hover:text-slate-900">Pricing</a>
-        </nav>
-
-        <div className="flex items-center gap-2 text-xs">
-          <LangPicker />
+        {/* === Mobile: row 2 (nav links scroll + signed-out CTAs) === */}
+        <div className="flex md:hidden items-center justify-between gap-2 mt-2 -mx-1">
+          <nav className="flex items-center gap-0.5 text-[14px] text-[#a7d4b6] overflow-x-auto scrollbar-none px-1">
+            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Explore</a>
+            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Operators</a>
+            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Badges</a>
+            <a className="px-2.5 py-1.5 hover:text-white whitespace-nowrap">Pricing</a>
+          </nav>
           <Show when="signed-out">
-            <SignInButton mode="modal">
-              <button className="px-3 py-1.5 rounded-md text-slate-700 hover:bg-slate-100 text-[13px]">
-                Sign in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-[13px]">
-                Get certified
-              </button>
-            </SignUpButton>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <SignInButton mode="modal">
+                <button className="px-2.5 py-1.5 rounded-md text-[#d8f0e1] hover:bg-white/[.06] text-[13px]">
+                  Sign in
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]">
+                  Get certified
+                </button>
+              </SignUpButton>
+            </div>
           </Show>
           <Show when="signed-in">
             <Link
               href="/learn"
-              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-[13px]"
+              className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px] shrink-0"
             >
-              Go to learning →
+              Learning →
             </Link>
-            <UserButton appearance={{ variables: { colorPrimary: "#059669" } }} />
           </Show>
+        </div>
+
+        {/* === Desktop: single row === */}
+        <div className="hidden md:flex items-center justify-between">
+          <Logo />
+          <nav className="flex items-center gap-1 text-[15px] text-[#a7d4b6]">
+            <a className="px-3.5 py-2 hover:text-white">Explore</a>
+            <a className="px-3.5 py-2 hover:text-white">Operators</a>
+            <a className="px-3.5 py-2 hover:text-white">Badges</a>
+            <a className="px-3.5 py-2 hover:text-white">Pricing</a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <LangPicker />
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="px-3.5 py-2 rounded-md text-[#d8f0e1] hover:bg-white/[.06] text-[14px]">
+                  Sign in
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[14px]">
+                  Get certified
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <Link
+                href="/learn"
+                className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[14px]"
+              >
+                Go to learning →
+              </Link>
+              <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
+            </Show>
+          </div>
         </div>
       </header>
 
@@ -59,47 +113,47 @@ export default async function Home() {
           className="absolute inset-0 -z-0"
           style={{
             background:
-              "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(16,185,129,0.08) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 100% 50%, rgba(132,204,22,0.05) 0%, transparent 60%)",
+              "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(52,211,153,0.12) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 100% 30%, rgba(190,242,100,0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 0% 80%, rgba(20,184,166,0.08) 0%, transparent 60%)",
           }}
         />
-        <div className="relative px-6 pt-20 pb-12 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 mb-5">
-            <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium">
+        <div className="relative px-5 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center max-w-4xl mx-auto">
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-6 sm:mb-7">
+            <span className="px-3 py-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/30 text-emerald-300 text-[12px] sm:text-[13px] font-medium">
               ● Live · {operators.length} operators · {totalCourses} courses
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-medium">
+            <span className="px-3 py-1.5 rounded-full bg-white/[.04] border border-white/[.08] text-[#c4e9d3] text-[12px] sm:text-[13px] font-medium">
               🌐 7 languages · AI answers in 30+
             </span>
           </div>
-          <h1 className="text-[44px] leading-[1.1] font-semibold tracking-tight text-slate-900">
+          <h1 className="text-[36px] sm:text-[48px] md:text-[64px] leading-[1.1] sm:leading-[1.05] font-semibold tracking-tight text-white">
             Sell New Zealand with{" "}
-            <span className="bg-gradient-to-br from-emerald-500 to-lime-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-br from-emerald-300 via-emerald-400 to-lime-300 bg-clip-text text-transparent">
               confidence.
             </span>
           </h1>
-          <p className="mt-4 text-[15px] text-slate-600 max-w-2xl mx-auto">
+          <p className="mt-5 sm:mt-6 text-[15px] sm:text-[17px] md:text-[19px] text-[#a7d4b6] max-w-2xl mx-auto leading-relaxed">
             The B2B training & certification platform for the NZ tourism industry. Learn directly
             from operators. Earn verifiable digital badges. Ask AI anything — in any language.
           </p>
 
           {/* AI ask bar */}
-          <div className="mt-9 max-w-2xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.06)] p-3">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 shrink-0 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+          <div className="mt-9 sm:mt-12 max-w-2xl mx-auto rounded-2xl border border-white/[.08] bg-[#0a3a2f]/80 backdrop-blur shadow-[0_4px_24px_rgba(0,0,0,.25),0_1px_0_rgba(255,255,255,.04)_inset] p-3 sm:p-4">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center">
                 <SparkleIcon />
               </div>
-              <div className="flex-1 text-left">
-                <div className="text-[12px] text-slate-500 mb-0.5">Ask the agent assistant</div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="text-[12px] sm:text-[13px] text-[#86b69a] mb-1">Ask the agent assistant</div>
                 <input
-                  className="w-full bg-transparent text-[14px] outline-none placeholder:text-slate-400"
-                  placeholder="e.g. What's the difference between Coronet Peak and The Remarkables?"
+                  className="w-full bg-transparent text-[14px] sm:text-[16px] text-white outline-none placeholder:text-[#5d9279]"
+                  placeholder="What's the difference between Coronet Peak and The Remarkables?"
                 />
               </div>
-              <button className="self-stretch px-3.5 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-[13px]">
+              <button className="self-stretch px-3 sm:px-5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px] sm:text-[14px]">
                 Ask
               </button>
             </div>
-            <div className="flex flex-wrap gap-1.5 mt-3 pl-12">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3 sm:mt-4 sm:pl-[60px]">
               <Chip>Try: 客户问 Heli Privates 适合什么水平?</Chip>
               <Chip>Mt Cook hotel room with Mt Cook view?</Chip>
               <Chip>Milford Sound vs Doubtful Sound</Chip>
@@ -109,47 +163,47 @@ export default async function Home() {
       </section>
 
       {/* Operator marketplace */}
-      <section className="px-6 pb-16 max-w-6xl mx-auto">
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Featured operators</h2>
-            <p className="text-[13px] text-slate-500 mt-0.5">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-6xl mx-auto">
+        <div className="flex items-end justify-between mb-5 sm:mb-7 gap-3">
+          <div className="min-w-0">
+            <h2 className="text-[20px] sm:text-[24px] font-semibold text-white">Featured operators</h2>
+            <p className="text-[13px] sm:text-[15px] text-[#a7d4b6] mt-1 sm:mt-1.5">
               Each operator brings their own course curriculum. One agent account, every NZ
               operator.
             </p>
           </div>
-          <a className="text-[13px] text-emerald-700 hover:text-emerald-800 font-medium">
+          <a className="text-[13px] sm:text-[15px] text-emerald-300 hover:text-emerald-200 font-medium whitespace-nowrap shrink-0">
             View all {operators.length} →
           </a>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {operators.map((op) => (
             <OperatorCard key={op.id} op={op} />
           ))}
         </div>
 
         {/* Value props strip */}
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
           <ValueProp
             badge="For agents"
-            badgeClass="bg-emerald-50 text-emerald-700 border-emerald-200"
+            badgeClass="bg-emerald-400/10 text-emerald-300 border-emerald-400/30"
             text="One account, every NZ operator. Earn verifiable badges to share on LinkedIn and email signatures."
           />
           <ValueProp
             badge="For operators"
-            badgeClass="bg-lime-50 text-lime-700 border-lime-200"
+            badgeClass="bg-lime-400/10 text-lime-300 border-lime-400/30"
             text="Upload your existing PDFs and decks — we extract, structure, and turn them into trainable courses."
           />
           <ValueProp
             badge="AI-native"
-            badgeClass="bg-slate-50 text-slate-700 border-slate-200"
+            badgeClass="bg-white/[.04] text-[#c4e9d3] border-white/[.10]"
             text="Agents can ask product questions in plain English or Chinese. Answers cite the operator source."
           />
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 px-6 py-6 text-center text-[11px] font-mono text-slate-400">
+      <footer className="border-t border-white/[.06] px-8 py-7 text-center text-[12px] font-mono text-[#5d9279]">
         TourTrain · d4 build · {operators.length} operators / {totalCourses} courses live
       </footer>
     </div>
@@ -166,43 +220,42 @@ function OperatorCard({
   op: Awaited<ReturnType<typeof listOperatorsWithCourseCounts>>[number];
 }) {
   const hasCourses = op.course_count > 0;
-  const cover =
-    op.cover_color ?? "linear-gradient(135deg,#475569 0%,#64748b 100%)";
+  const cover = op.cover_color ?? "linear-gradient(135deg,#475569 0%,#64748b 100%)";
 
   const inner = (
-    <article className="rounded-xl overflow-hidden bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)] transition cursor-pointer h-full">
-      <div className="h-28 relative" style={{ background: cover }}>
-        <div className="absolute top-3 left-3">
+    <article className="rounded-2xl overflow-hidden bg-[#0a3a2f] border border-white/[.08] hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(52,211,153,0.10)] transition cursor-pointer h-full">
+      <div className="h-32 relative" style={{ background: cover }}>
+        <div className="absolute top-3.5 left-3.5">
           {hasCourses ? (
-            <span className="px-2 py-0.5 rounded-full bg-white/85 backdrop-blur text-[10px] font-medium text-emerald-700 border border-white/50">
+            <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-emerald-200 border border-white/15">
               ● Live
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded-full bg-white/85 backdrop-blur text-[10px] font-medium text-slate-600 border border-white/50">
+            <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-white/80 border border-white/15">
               Coming soon
             </span>
           )}
         </div>
-        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between text-white/90">
-          <div className="text-3xl drop-shadow-sm">{op.emoji ?? "📚"}</div>
+        <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between">
+          <div className="text-[36px] leading-none drop-shadow">{op.emoji ?? "📚"}</div>
         </div>
       </div>
-      <div className="p-4">
-        <div className="text-[12px] text-slate-500 mb-0.5">{op.name}</div>
-        <div className="font-semibold text-[15px] text-slate-900 leading-snug line-clamp-2">
+      <div className="p-5">
+        <div className="text-[13px] text-[#86b69a] mb-1">{op.name}</div>
+        <div className="font-semibold text-[17px] text-white leading-snug line-clamp-2">
           {op.sample_course_title ?? "Course curriculum coming soon"}
         </div>
-        <div className="flex items-center gap-2 mt-3 text-[12px] text-slate-500">
+        <div className="flex items-center gap-2.5 mt-3.5 text-[13px] text-[#86b69a]">
           <span>🎓 {op.course_count} course{op.course_count === 1 ? "" : "s"}</span>
           {op.module_count > 0 ? (
             <>
-              <span className="text-slate-300">·</span>
+              <span className="text-white/20">·</span>
               <span>{op.module_count} modules</span>
             </>
           ) : null}
           {op.est_minutes > 0 ? (
             <>
-              <span className="text-slate-300">·</span>
+              <span className="text-white/20">·</span>
               <span>~{op.est_minutes} min</span>
             </>
           ) : null}
@@ -218,7 +271,7 @@ function OperatorCard({
       </Link>
     );
   }
-  return <div className="opacity-90">{inner}</div>;
+  return <div>{inner}</div>;
 }
 
 function ValueProp({
@@ -233,18 +286,18 @@ function ValueProp({
   return (
     <div>
       <span
-        className={`inline-block px-2 py-0.5 rounded-full border text-[11px] font-medium mb-2 ${badgeClass}`}
+        className={`inline-block px-2.5 py-1 rounded-full border text-[12px] font-medium mb-3 ${badgeClass}`}
       >
         {badge}
       </span>
-      <p className="text-[13px] text-slate-600 leading-relaxed">{text}</p>
+      <p className="text-[15px] text-[#c4e9d3] leading-relaxed">{text}</p>
     </div>
   );
 }
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[11px]">
+    <span className="px-2.5 py-1 rounded-full bg-white/[.04] border border-white/[.08] text-[#c4e9d3] text-[12px]">
       {children}
     </span>
   );
@@ -252,13 +305,13 @@ function Chip({ children }: { children: React.ReactNode }) {
 
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M3 19l9-14 9 14H3z" stroke="#059669" strokeWidth="2" fill="rgba(16,185,129,.08)" />
-        <circle cx="12" cy="14" r="2" fill="#84cc16" />
+    <Link href="/" className="flex items-center gap-2.5">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M3 19l9-14 9 14H3z" stroke="#34d399" strokeWidth="2" fill="rgba(52,211,153,.12)" />
+        <circle cx="12" cy="14" r="2" fill="#bef264" />
       </svg>
-      <span className="font-semibold text-[15px] text-slate-900">
-        <span className="text-emerald-700">Tour</span>Train
+      <span className="font-semibold text-[17px] text-white">
+        <span className="text-emerald-300">Tour</span>Train
       </span>
     </Link>
   );
@@ -268,10 +321,10 @@ function LangPicker() {
   return (
     <button
       type="button"
-      className="px-2.5 py-1.5 rounded-md text-slate-600 hover:bg-slate-100 text-[12px] inline-flex items-center gap-1"
+      className="px-3 py-2 rounded-md text-[#c4e9d3] hover:bg-white/[.06] text-[13px] inline-flex items-center gap-1.5"
       aria-label="Change language"
     >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
         <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" stroke="currentColor" strokeWidth="2" />
       </svg>
@@ -282,11 +335,11 @@ function LangPicker() {
 
 function SparkleIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path
         d="M12 3l1.8 4.7L18 9.5l-4.2 1.8L12 16l-1.8-4.7L6 9.5l4.2-1.8L12 3z"
-        fill="#10b981"
-        stroke="#059669"
+        fill="#34d399"
+        stroke="#10b981"
         strokeWidth="0.5"
         strokeLinejoin="round"
       />

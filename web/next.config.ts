@@ -9,12 +9,10 @@ export default nextConfig;
 // Enable calling `getCloudflareContext()` in `next dev`.
 // See https://opennext.js.org/cloudflare/bindings#local-access-to-bindings.
 //
-// experimental.remoteBindings=true makes `next dev` talk to our REAL Cloudflare
-// resources (D1 in OC, R2, Vectorize, Workers AI). Avoids the overhead of
-// keeping a separate local SQLite in sync — and Vectorize has no local mode
-// anyway. The OpenNext docs flag this as experimental; revisit if dev becomes
-// flaky.
+// Note: `remoteBindings` defaults to true at the wrangler level, so resources
+// without a local mode (Vectorize, Workers AI) are automatically proxied to
+// real CF resources. D1 / R2 still use local mode by default — we apply the
+// same schema + seed to both via `wrangler d1 execute --local` (see
+// infra/seed.sql, generated in batched form so wrangler accepts it).
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
-initOpenNextCloudflareForDev({
-  experimental: { remoteBindings: true },
-});
+initOpenNextCloudflareForDev();
