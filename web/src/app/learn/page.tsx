@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { listPublishedCourses } from "@/lib/db";
 import { TopBar } from "../_components/top-bar";

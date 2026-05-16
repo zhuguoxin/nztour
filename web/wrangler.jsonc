@@ -67,13 +67,10 @@
     "binding": "AI"
   },
 
-  // === Queues: async jobs (stubbed in MVP, wired for v0.2) ===
+  // === Queues: async jobs (producer only in MVP; consumer worker lands in v0.2) ===
   "queues": {
     "producers": [
       { "binding": "PARSE_QUEUE", "queue": "tourtrain-parse" }
-    ],
-    "consumers": [
-      { "queue": "tourtrain-parse", "max_batch_size": 5, "max_batch_timeout": 10 }
     ]
   },
 

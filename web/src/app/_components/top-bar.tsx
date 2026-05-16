@@ -18,16 +18,12 @@ export function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
         <div className="flex items-center gap-1.5 shrink-0">
           <LangPicker compact />
           <Show when="signed-out">
-            <SignInButton mode="modal">
-              <button className="px-2 py-1.5 rounded-md text-[#d8f0e1] hover:bg-white/[.06] text-[13px]">
-                Sign in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]">
-                Get certified
-              </button>
-            </SignUpButton>
+            <span className="[&>button]:px-2 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-[13px]">
+              <SignInButton mode="modal" />
+            </span>
+            <span className="[&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-[13px]">
+              <SignUpButton mode="modal">Get certified</SignUpButton>
+            </span>
           </Show>
           <Show when="signed-in">
             <Link
@@ -71,16 +67,12 @@ export function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
         <div className="flex items-center gap-2 shrink-0">
           <LangPicker />
           <Show when="signed-out">
-            <SignInButton mode="modal">
-              <button className="px-3.5 py-2 rounded-md text-[#d8f0e1] hover:bg-white/[.06] text-[14px]">
-                Sign in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[14px]">
-                Get certified
-              </button>
-            </SignUpButton>
+            <span className="[&>button]:px-3.5 [&>button]:py-2 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-[14px]">
+              <SignInButton mode="modal" />
+            </span>
+            <span className="[&>button]:px-4 [&>button]:py-2 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-[14px]">
+              <SignUpButton mode="modal">Get certified</SignUpButton>
+            </span>
           </Show>
           <Show when="signed-in">
             <Link

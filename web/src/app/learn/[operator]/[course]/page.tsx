@@ -10,6 +10,7 @@ import {
 import { ModuleReader } from "./module-reader";
 import { completeModuleAction } from "./actions";
 import { TopBar } from "../../../_components/top-bar";
+import { AskAI } from "../../../_components/ask-ai";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +77,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr]">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_360px]">
         {/* Module list */}
         <aside className="border-b lg:border-b-0 lg:border-r border-white/[.06] p-5 lg:min-h-[calc(100vh-65px)] bg-[#062b22]/50">
           <div className="text-[11px] font-mono text-emerald-300/70 mb-2">COURSE</div>
@@ -115,6 +116,20 @@ export default async function CoursePage({ params, searchParams }: Props) {
           isCompleted={!!progressMap.get(active.id)?.completed_at}
           onComplete={onComplete}
         />
+
+        {/* AI sidebar — scoped to this course */}
+        <aside className="border-t lg:border-t-0 lg:border-l border-white/[.06] lg:min-h-[calc(100vh-65px)] lg:max-h-[calc(100vh-65px)]">
+          <AskAI
+            variant="sidebar"
+            scope={{ operator_id: operator.id, course_id: course.id }}
+            placeholder={`Ask about ${course.title}…`}
+            examples={[
+              "Heli weather policy?",
+              "Lift pass + rental combo?",
+              "Snow-day cancellation policy",
+            ]}
+          />
+        </aside>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listOperatorsWithCourseCounts } from "@/lib/db";
 import { TopBar } from "./_components/top-bar";
+import { AskAI } from "./_components/ask-ai";
 
 export const dynamic = "force-dynamic";
 
@@ -58,27 +59,16 @@ export default async function Home() {
           </p>
 
           {/* AI ask bar */}
-          <div className="mt-9 sm:mt-12 max-w-2xl mx-auto rounded-2xl border border-white/[.08] bg-[#0a3a2f]/80 backdrop-blur shadow-[0_4px_24px_rgba(0,0,0,.25),0_1px_0_rgba(255,255,255,.04)_inset] p-3 sm:p-4">
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center">
-                <SparkleIcon />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <div className="text-[12px] sm:text-[13px] text-[#86b69a] mb-1">Ask the agent assistant</div>
-                <input
-                  className="w-full bg-transparent text-[14px] sm:text-[16px] text-white outline-none placeholder:text-[#5d9279]"
-                  placeholder="What's the difference between Coronet Peak and The Remarkables?"
-                />
-              </div>
-              <button className="self-stretch px-3 sm:px-5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px] sm:text-[14px]">
-                Ask
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3 sm:mt-4 sm:pl-[60px]">
-              <Chip>Try: 客户问 Heli Privates 适合什么水平?</Chip>
-              <Chip>Mt Cook hotel room with Mt Cook view?</Chip>
-              <Chip>Milford Sound vs Doubtful Sound</Chip>
-            </div>
+          <div className="mt-9 sm:mt-12">
+            <AskAI
+              variant="hero"
+              placeholder="What's the difference between Coronet Peak and The Remarkables?"
+              examples={[
+                "客户问 Heli Privates 适合什么水平?",
+                "Mt Hutt vs Coronet Peak for first-timers in June?",
+                "Snow-day cancellation policy",
+              ]}
+            />
           </div>
         </div>
       </section>
@@ -216,24 +206,3 @@ function ValueProp({
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="px-2.5 py-1 rounded-full bg-white/[.04] border border-white/[.08] text-[#c4e9d3] text-[12px]">
-      {children}
-    </span>
-  );
-}
-
-function SparkleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M12 3l1.8 4.7L18 9.5l-4.2 1.8L12 16l-1.8-4.7L6 9.5l4.2-1.8L12 3z"
-        fill="#34d399"
-        stroke="#10b981"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
