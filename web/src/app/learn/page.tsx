@@ -1,11 +1,14 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { listPublishedCourses } from "@/lib/db";
 import { TopBar } from "../_components/top-bar";
+import { bootstrapAdminFromEmailList } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function LearnHome() {
+  // First-touch: promote allow-listed emails to platform admin.
+  await bootstrapAdminFromEmailList();
   const [user, courses] = await Promise.all([currentUser(), listPublishedCourses()]);
   const firstName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "there";
 

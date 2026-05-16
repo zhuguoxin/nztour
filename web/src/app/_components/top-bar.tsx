@@ -1,5 +1,6 @@
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { getCurrentRole } from "@/lib/roles";
 
 /**
  * Shared dark-green topbar.
@@ -8,8 +9,13 @@ import Link from "next/link";
  *
  * `breadcrumb` is rendered in the desktop row in place of the nav links
  * (used on /learn/* pages to show "TourTrain / NZSki / Coronet Peak 2026").
+ *
+ * Role-aware: operators see an "Operator console" pill linking to
+ * /operator/<first-slug>; platform admins see "Admin" linking to /admin.
  */
-export function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
+export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
+  const role = await getCurrentRole();
+  const firstOpSlug = role.operators[0]?.operator_slug;
   return (
     <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/85 backdrop-blur-md px-4 sm:px-8 py-3">
       {/* === Mobile row 1: Logo + Lang + Sign in + Get certified === */}
@@ -26,6 +32,23 @@ export function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             </span>
           </Show>
           <Show when="signed-in">
+            {firstOpSlug ? (
+              <Link
+                href={`/operator/${firstOpSlug}`}
+                className="px-2 py-1.5 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[12px]"
+                title="Operator console"
+              >
+                Operator
+              </Link>
+            ) : null}
+            {role.isAdmin ? (
+              <Link
+                href="/admin"
+                className="px-2 py-1.5 rounded-md border border-lime-300/30 text-lime-300 hover:bg-lime-300/10 text-[12px]"
+              >
+                Admin
+              </Link>
+            ) : null}
             <Link
               href="/learn"
               className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]"
@@ -75,11 +98,27 @@ export function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             </span>
           </Show>
           <Show when="signed-in">
+            {firstOpSlug ? (
+              <Link
+                href={`/operator/${firstOpSlug}`}
+                className="px-3 py-2 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[13px]"
+              >
+                Operator console
+              </Link>
+            ) : null}
+            {role.isAdmin ? (
+              <Link
+                href="/admin"
+                className="px-3 py-2 rounded-md border border-lime-300/30 text-lime-300 hover:bg-lime-300/10 text-[13px]"
+              >
+                Admin
+              </Link>
+            ) : null}
             <Link
               href="/learn"
               className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[14px]"
             >
-              Go to learning →
+              Learning →
             </Link>
             <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
           </Show>

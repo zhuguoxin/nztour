@@ -80,6 +80,9 @@
     "DEFAULT_LOCALE": "en",
     "SUPPORTED_LOCALES": "en,zh-CN,zh-TW,ja,ko,de,es",
     "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN",
+    // Comma-separated list of emails auto-promoted to platform_admin on
+    // first sign-in. Replace before any real launch; MVP-only convenience.
+    "ADMIN_EMAILS": "zhuguoxin@gmail.com",
     // Clerk publishable key is safe to expose (embedded in frontend JS)
     "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZHluYW1pYy1nbmF0LTU2LmNsZXJrLmFjY291bnRzLmRldiQ",
     "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/sign-in",
