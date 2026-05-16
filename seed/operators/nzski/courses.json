@@ -102,30 +102,159 @@
       "id": "c_remarkables_2026",
       "slug": "remarkables-2026",
       "title": "The Remarkables 2026",
-      "summary": "Queenstown's family alpine resort. To be expanded from media kit during D5.",
+      "summary": "Queenstown's family-favourite alpine resort, ringed by the iconic Remarkables range. 30% beginner, 40% intermediate terrain — pitch with confidence to families and intermediate-led groups.",
       "emoji": "🏔️",
       "cover_color": "linear-gradient(135deg,#1e293b 0%, #334155 100%)",
       "primary_lang": "en",
       "status": "published",
       "est_minutes": 22,
-      "modules": [],
-      "_sources": ["Products/NZSki/2026 Media Kit refresh - The Remarkables.pdf"],
-      "_status_note": "Stub for demo list; full module population on D5."
+
+      "modules": [
+        {
+          "id": "m_tr_overview",
+          "slug": "mountain-overview",
+          "title": "Mountain overview",
+          "summary": "Where The Remarkables sits, who it suits, the headline 2026 changes.",
+          "est_minutes": 4,
+          "position": 1,
+          "blocks": [
+            { "kind": "text", "text_md": "**The Remarkables** sits 24 km (45 min) from central Queenstown via 9 km sealed + 4 km unsealed access road. Targeted opening **13 June 2026**. Peak elevation **1,943 m**, vertical drop **468 m**, average snowfall **3.67 m per annum** (excl. snowmaking).", "lang": "en" },
+            { "kind": "callout", "text_md": "**New for 2026** — expanded café with 200+ additional seats, café-deck fire pits with BBQ + music, increased Ski Bus capacity (3 new MAN 4WD coaches + a 4th mid-season), and additional snow machines.", "lang": "en" },
+            { "kind": "text", "text_md": "The Remarkables ski area is part of family-owned NZSki, alongside Coronet Peak (Queenstown) and Mt Hutt (Methven). Strong family draw plus enough advanced terrain (Alta Chutes / Homeward Bound) to satisfy expert guests on the same day.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_tr_terrain",
+          "slug": "terrain-mix",
+          "title": "Terrain mix & lifts",
+          "summary": "30/40/30 beginner-intermediate-advanced split. Lift network, named runs, where to send each guest type.",
+          "est_minutes": 6,
+          "position": 2,
+          "blocks": [
+            { "kind": "text", "text_md": "Terrain split: **30% beginner, 40% intermediate, 30% advanced**. Lifts: **three high-speed six-seater chairs**, one quad chair, and **four surface conveyors** (three with covered galleries).", "lang": "en" },
+            { "kind": "callout", "text_md": "**Iconic named runs**: City, Curvey, Cross Fall, Serpentine, Turquoise, Waterfall, Calypso, Mid Steeps — plus dedicated terrain parks.", "lang": "en" },
+            { "kind": "text", "text_md": "**Where to send guests**: First-timers → Meadows / surface conveyors. Confident intermediates → Sugar Bowl + Shadow Basin. Advanced → Alta Chutes, Homeward Bound, and back-bowl access via Curvey traverses.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_tr_lessons_family",
+          "slug": "lessons-family",
+          "title": "Lessons, kids programmes & non-skiers",
+          "summary": "Kids programmes, private + group coaching, adaptive snowsports, and what non-skier guests can do.",
+          "est_minutes": 5,
+          "position": 3,
+          "blocks": [
+            { "kind": "text", "text_md": "Private and group coaching, kids programmes from age 3, high-performance camps, and adaptive snowsports. Capped class sizes mean confident progression for first-timers in a single day.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Non-skier guests**: scenic chair rides on First Chair, lunch at the Aperol Ice Bar or main restaurant, sledding zone, and beginner snow-experience packages.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_tr_food_facilities",
+          "slug": "food-facilities",
+          "title": "Food, beverage & facilities",
+          "summary": "Restaurant, café, Aperol Ice Bar, Barista Bar — plus the 2026 deck expansion.",
+          "est_minutes": 3,
+          "position": 4,
+          "blocks": [
+            { "kind": "text", "text_md": "F&B lineup: full-service restaurant + bar, café, **Aperol Ice Bar**, and Barista Bar. The 2026 café expansion adds 200+ seats and a deck with fire pits, BBQ and a custom park sound system.", "lang": "en" },
+            { "kind": "text", "text_md": "**Sustainability**: in 2024 NZSki introduced Sorting Stations across all outlets — reduced waste to landfill by 42% through composting. Carbon credits purchased via Climate Action. Ongoing planting, revegetation and pest control on the mountain.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_tr_booking_transport",
+          "slug": "booking-transport",
+          "title": "Booking, transport & FAQ",
+          "summary": "Ski Bus, trade portal, snow-day policy, multi-mountain pass economics.",
+          "est_minutes": 4,
+          "position": 5,
+          "blocks": [
+            { "kind": "text", "text_md": "**Ski Bus**: dedicated scheduled service from central Queenstown before 9 am and Frankton after 9.30 am. 2026 fleet expansion adds 3 new MAN 4WD coaches (+ 1 mid-season) — capacity issues common in 2024/25 are addressed.", "lang": "en" },
+            { "kind": "text", "text_md": "**Snow-day policy** (NZSki-wide): if the resort closes for the full day, lift-pass holders receive a **credit** (not refund) usable within 24 months at any NZSki resort. Lessons/heli rebooked subject to availability or fully refunded.", "lang": "en" },
+            { "kind": "callout", "text_md": "**3-Mountain pass** (Coronet + Remarkables + Mt Hutt) is best value for guests staying **4+ days** in NZ. Strongly recommend for South Island multi-stop itineraries.", "lang": "en" }
+          ]
+        }
+      ],
+
+      "_sources": ["Products/NZSki/2026 Media Kit refresh - The Remarkables.pdf"]
     },
 
     {
       "id": "c_mt_hutt_2026",
       "slug": "mt-hutt-2026",
       "title": "Mt Hutt 2026",
-      "summary": "Methven-based, NZ's longest season. To be expanded from media kit during D5.",
+      "summary": "South Island's highest commercial ski area and NZ's longest season. Methven-based, accessible from Christchurch — great for shoulder-season pitches and guests prioritising snow reliability.",
       "emoji": "🏂",
       "cover_color": "linear-gradient(135deg,#3d2f1f 0%, #6b4423 60%, #8b5a2b 100%)",
       "primary_lang": "en",
       "status": "published",
-      "est_minutes": 20,
-      "modules": [],
-      "_sources": ["Products/NZSki/2026 Media Kit refresh - Mt Hutt.pdf"],
-      "_status_note": "Stub for demo list; full module population on D5."
+      "est_minutes": 24,
+
+      "modules": [
+        {
+          "id": "m_mh_overview",
+          "slug": "mountain-overview",
+          "title": "Mountain overview",
+          "summary": "Why Mt Hutt wins on snow reliability and shoulder season.",
+          "est_minutes": 5,
+          "position": 1,
+          "blocks": [
+            { "kind": "text", "text_md": "**Mt Hutt** is NZ's longest ski season — targeted opening **12 June 2026**, often running into mid-October. Peak elevation **2,086 m** (the highest commercial ski area in the South Island), vertical drop **683 m**. 1 hr 30 min drive from Christchurch International Airport via Methven.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Positioning tip**: Mt Hutt is the answer when a guest wants to ski in **June** (Queenstown fields often patchy in early June) or in **October** when other fields have closed.", "lang": "en" },
+            { "kind": "text", "text_md": "Sister to Coronet Peak and The Remarkables — same NZSki ownership, same lift-pass and booking systems. 3-Mountain pass holders enjoy all three on one ticket.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_mh_terrain",
+          "slug": "terrain-lifts",
+          "title": "Terrain, lifts & runs",
+          "summary": "Skiable area, lift configuration, the named runs and back-bowl access.",
+          "est_minutes": 6,
+          "position": 2,
+          "blocks": [
+            { "kind": "text", "text_md": "Mt Hutt offers wide-open faces, well-suited to intermediates building confidence. The high altitude means lighter, drier snow than Queenstown fields on most days.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Lift network**: high-speed six-pack chair (Heritage Chair) + Summit Six + Triple chair + magic-carpet learner zone. The Six-Star Express opens up the South Face and back bowls in good weather.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_mh_lessons",
+          "slug": "lessons-coaching",
+          "title": "Lessons & coaching",
+          "summary": "Two private-coaching tiers (Premium, Performance). No heli at Mt Hutt — that's Coronet only.",
+          "est_minutes": 5,
+          "position": 3,
+          "blocks": [
+            { "kind": "text", "text_md": "Mt Hutt offers **two tiers of private coaching**: Premium Privates (family-friendly, all abilities, **NZ$ from 1,099/day**) and Performance Privates (advanced, technique-focused, **NZ$ from 1,299/day**). Each session is capped at 4 guests per instructor.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Important**: Premium Heli Privates are **Coronet Peak only**. Don't promise heli access to guests buying a Mt Hutt-only itinerary — direct them to Coronet for the day if it's the differentiator.", "lang": "en" },
+            { "kind": "text", "text_md": "Kids programmes from age 3, high-performance camps, and adaptive snowsports — same structure as the other two NZSki resorts.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_mh_events_2026",
+          "slug": "events-2026",
+          "title": "Events & what's new for 2026",
+          "summary": "Chillfest, Moon Ski, and the high-altitude festival programme.",
+          "est_minutes": 4,
+          "position": 4,
+          "blocks": [
+            { "kind": "text", "text_md": "**Chillfest** (19 Sep) — Mt Hutt's biggest party of the season, on-mountain music + après. **Moon Ski** (26 Sep) — limited-capacity night-skiing event under a full moon. Use these as 'reason to stay extra nights in Methven' when pitching trips.", "lang": "en" },
+            { "kind": "text", "text_md": "Mid-week junior race series runs **27–28 Jun, 27–28 Jul, 28 Aug** — useful for parents wanting structured kid programming.", "lang": "en" }
+          ]
+        },
+        {
+          "id": "m_mh_access_booking",
+          "slug": "access-booking",
+          "title": "Access, accommodation & booking",
+          "summary": "Methven base, Christchurch arrival logistics, where guests stay.",
+          "est_minutes": 4,
+          "position": 5,
+          "blocks": [
+            { "kind": "text", "text_md": "**Base town**: Methven (population ~1,800) — the entire town is geared around the ski season. Most guests stay 2–4 nights. Christchurch (1 hr 30 min drive) is the alternative for guests who want city amenities + day-trip skiing.", "lang": "en" },
+            { "kind": "callout", "text_md": "**Trade booking**: NZSki Travel Trade portal handles all three resorts in one PNR. Snow-day credit policy is identical to the other resorts (credit, not refund, valid 24 months at any NZSki resort).", "lang": "en" }
+          ]
+        }
+      ],
+
+      "_sources": ["Products/NZSki/2026 Media Kit refresh - Mt Hutt.pdf"]
     },
 
     {
