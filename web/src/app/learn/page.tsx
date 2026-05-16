@@ -1,74 +1,76 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { listPublishedCourses } from "@/lib/db";
+import { TopBar } from "../_components/top-bar";
 
-// Force dynamic — we hit D1 on every request. Caching layer added in D7.
 export const dynamic = "force-dynamic";
 
 export default async function LearnHome() {
   const [user, courses] = await Promise.all([currentUser(), listPublishedCourses()]);
+  const firstName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "there";
 
   return (
-    <div className="min-h-screen bg-[#0b1117] text-[#e6edf3] font-sans">
-      {/* Header */}
-      <header className="border-b border-[#1f2a35] px-7 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M3 19l9-14 9 14H3z" stroke="#22d3ee" strokeWidth="2" fill="rgba(34,211,238,.1)" />
-              <circle cx="12" cy="14" r="2" fill="#a3e635" />
-            </svg>
-            <span className="font-semibold text-[15px]">
-              <span className="text-[#22d3ee]">Tour</span>Train
-            </span>
-          </Link>
-          <span className="ml-2 text-[11px] tracking-widest text-[#5b6b7d] font-mono">/LEARN</span>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-[#9aa7b8]">
-          <span>{user?.fullName ?? user?.emailAddresses?.[0]?.emailAddress}</span>
-          <UserButton appearance={{ variables: { colorPrimary: "#22d3ee" } }} />
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+      <TopBar
+        breadcrumb={
+          <span className="flex items-center gap-2">
+            <Link href="/" className="hover:text-white">Home</Link>
+            <span className="text-white/20">/</span>
+            <span className="text-white">My learning</span>
+          </span>
+        }
+      />
 
-      <main className="px-10 py-10 max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold">Explore courses</h1>
-          <p className="text-[14px] text-[#9aa7b8] mt-1">
-            Learn directly from NZ tourism operators. {courses.length} course
-            {courses.length === 1 ? "" : "s"} available.
+      <main className="px-5 sm:px-8 py-10 sm:py-12 max-w-6xl mx-auto">
+        <div className="mb-7 sm:mb-10">
+          <div className="text-[11px] tracking-widest font-mono text-emerald-300/70 mb-1">/LEARN</div>
+          <h1 className="text-[28px] sm:text-[34px] font-semibold tracking-tight text-white">
+            Welcome, {firstName}.
+          </h1>
+          <p className="text-[14px] sm:text-[15px] text-[#a7d4b6] mt-1.5">
+            {courses.length} published course{courses.length === 1 ? "" : "s"} available across {new Set(courses.map((c) => c.operator_slug)).size} operator
+            {new Set(courses.map((c) => c.operator_slug)).size === 1 ? "" : "s"}.
           </p>
         </div>
 
         {courses.length === 0 ? (
-          <div className="rounded-xl border border-[#1f2a35] bg-[#11181f] p-8 text-center text-[#9aa7b8]">
-            No published courses yet. Run the seed script to load NZSki content.
+          <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-8 text-center text-[#a7d4b6]">
+            No published courses yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {courses.map((c) => (
               <Link
                 key={c.id}
                 href={`/learn/${c.operator_slug}/${c.slug}`}
-                className="rounded-xl border border-[#1f2a35] bg-[#11181f] overflow-hidden hover:border-[#22d3ee]/40 transition cursor-pointer block"
+                className="rounded-2xl overflow-hidden bg-[#0a3a2f] border border-white/[.08] hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(52,211,153,0.10)] transition cursor-pointer block"
               >
                 <div
-                  className="h-28 relative"
-                  style={{ background: c.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)" }}
+                  className="h-32 relative"
+                  style={{
+                    background: c.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)",
+                  }}
                 >
-                  <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-                    <div className="text-2xl">{c.emoji ?? "📚"}</div>
-                    <span className="px-2 py-0.5 rounded-full bg-[#1a2530]/70 backdrop-blur border border-[#243140] text-[11px]">
+                  <div className="absolute top-3.5 left-3.5">
+                    <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-emerald-200 border border-white/15">
+                      ● Live
+                    </span>
+                  </div>
+                  <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between">
+                    <div className="text-[36px] leading-none drop-shadow">{c.emoji ?? "📚"}</div>
+                    <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] text-white/80 border border-white/15">
                       {c.operator_name}
                     </span>
                   </div>
                 </div>
-                <div className="p-4">
-                  <div className="font-semibold text-[15px]">{c.title}</div>
-                  <p className="text-[12px] text-[#9aa7b8] mt-1 line-clamp-2">{c.summary}</p>
-                  <div className="flex items-center gap-3 mt-3 text-xs text-[#9aa7b8]">
+                <div className="p-5">
+                  <div className="font-semibold text-[17px] text-white leading-snug line-clamp-2">
+                    {c.title}
+                  </div>
+                  <p className="text-[13px] text-[#a7d4b6] mt-1.5 line-clamp-2">{c.summary}</p>
+                  <div className="flex items-center gap-2.5 mt-3.5 text-[13px] text-[#86b69a]">
                     {c.est_minutes ? <span>⏱ ~{c.est_minutes} min</span> : null}
-                    <span className="text-[#5b6b7d]">·</span>
+                    <span className="text-white/20">·</span>
                     <span>{c.primary_lang.toUpperCase()}</span>
                   </div>
                 </div>
@@ -77,9 +79,8 @@ export default async function LearnHome() {
           </div>
         )}
 
-        <div className="mt-12 text-[11px] text-[#5b6b7d] font-mono">
-          d3 · d1 wired · {courses.length} course
-          {courses.length === 1 ? "" : "s"} from seed · user {user?.id?.slice(0, 12)}…
+        <div className="mt-12 text-[11px] font-mono text-[#5d9279]">
+          d3 · d1 wired · {courses.length} course{courses.length === 1 ? "" : "s"} from seed · user {user?.id?.slice(0, 12)}…
         </div>
       </main>
     </div>

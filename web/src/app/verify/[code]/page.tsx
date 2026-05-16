@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { Logo } from "../../_components/top-bar";
 
 export const dynamic = "force-dynamic";
 
@@ -44,75 +45,72 @@ export default async function VerifyPage({
   const learnerLabel = row.learner_name ?? maskEmail(row.learner_email);
 
   return (
-    <div className="min-h-screen bg-[#0b1117] text-[#e6edf3] font-sans flex flex-col">
-      <header className="border-b border-[#1f2a35] px-7 py-4">
-        <Link href="/" className="flex items-center gap-2 w-fit">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M3 19l9-14 9 14H3z" stroke="#22d3ee" strokeWidth="2" fill="rgba(34,211,238,.1)" />
-            <circle cx="12" cy="14" r="2" fill="#a3e635" />
-          </svg>
-          <span className="font-semibold text-[15px]">
-            <span className="text-[#22d3ee]">Tour</span>Train
-          </span>
-        </Link>
+    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px] flex flex-col">
+      <header className="border-b border-white/[.06] px-5 sm:px-8 py-3.5">
+        <Logo />
       </header>
 
-      <main className="flex-1 px-6 py-16 max-w-2xl mx-auto w-full">
-        <div className="text-[11px] tracking-widest font-mono text-[#5b6b7d] mb-2">
+      <main className="flex-1 px-5 sm:px-8 py-12 sm:py-16 max-w-2xl mx-auto w-full">
+        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70 mb-2">
           VERIFIED BADGE
         </div>
-        <h1 className="text-3xl font-semibold">
-          <span className="text-[#bef264]">✓</span> Authentic
+        <h1 className="text-[32px] sm:text-[36px] font-semibold tracking-tight text-white">
+          <span className="text-lime-300">✓</span> Authentic
         </h1>
-        <p className="text-[14px] text-[#9aa7b8] mt-1">
+        <p className="text-[14px] sm:text-[15px] text-[#a7d4b6] mt-1.5">
           This badge was issued by TourTrain on behalf of the operator listed below.
         </p>
 
-        <div className="mt-8 rounded-2xl overflow-hidden border border-[#1f2a35] bg-[#11181f]">
+        <div className="mt-8 rounded-2xl overflow-hidden border border-white/[.08] bg-[#0a3a2f]">
           <div
-            className="h-36 flex items-center justify-center"
+            className="h-40 flex items-center justify-center"
             style={{
               background: row.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)",
             }}
           >
-            <div className="text-6xl">{row.emoji ?? "🏅"}</div>
+            <div className="text-[72px] drop-shadow">{row.emoji ?? "🏅"}</div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-5">
             <div>
-              <div className="text-[11px] font-mono text-[#5b6b7d]">COURSE</div>
-              <div className="text-lg font-semibold">{row.course_title}</div>
+              <div className="text-[11px] font-mono text-emerald-300/70">COURSE</div>
+              <div className="text-[20px] font-semibold text-white mt-0.5">{row.course_title}</div>
               {row.course_summary ? (
-                <div className="text-[13px] text-[#9aa7b8] mt-1">{row.course_summary}</div>
+                <div className="text-[14px] text-[#a7d4b6] mt-1.5 leading-relaxed">
+                  {row.course_summary}
+                </div>
               ) : null}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <div className="text-[11px] font-mono text-[#5b6b7d]">OPERATOR</div>
-                <div className="text-[14px]">{row.operator_name}</div>
-                <div className="text-[11px] text-[#5b6b7d]">{row.operator_country}</div>
+                <div className="text-[11px] font-mono text-emerald-300/70">OPERATOR</div>
+                <div className="text-[14px] text-white mt-0.5">{row.operator_name}</div>
+                <div className="text-[11px] text-[#86b69a]">{row.operator_country}</div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-[#5b6b7d]">LEARNER</div>
-                <div className="text-[14px]">{learnerLabel}</div>
+                <div className="text-[11px] font-mono text-emerald-300/70">LEARNER</div>
+                <div className="text-[14px] text-white mt-0.5">{learnerLabel}</div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-[#5b6b7d]">AWARDED</div>
-                <div className="text-[14px]">
+                <div className="text-[11px] font-mono text-emerald-300/70">AWARDED</div>
+                <div className="text-[14px] text-white mt-0.5">
                   {awarded.toISOString().slice(0, 10)}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-[#5b6b7d]">VERIFY CODE</div>
-                <div className="font-mono text-[14px] text-[#67e8f9]">{row.verify_code}</div>
+                <div className="text-[11px] font-mono text-emerald-300/70">VERIFY CODE</div>
+                <div className="font-mono text-[14px] text-emerald-300 mt-0.5">{row.verify_code}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 text-center text-[12px] text-[#5b6b7d]">
-          Anyone with this URL can verify authenticity. Share on LinkedIn or in your email signature:
-          <div className="font-mono text-[11px] mt-1">tourtrain.pages.dev/verify/{row.verify_code}</div>
+        <div className="mt-8 text-center text-[12px] text-[#86b69a]">
+          Anyone with this URL can verify authenticity. Share on LinkedIn or in your email
+          signature:
+          <div className="font-mono text-[11px] text-[#5d9279] mt-1">
+            tourtrain.pages.dev/verify/{row.verify_code}
+          </div>
         </div>
       </main>
     </div>

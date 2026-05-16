@@ -1,16 +1,15 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getCourseBySlug, getModuleBlocks, type ModuleRow } from "@/lib/db";
 import {
   ensureUser,
   ensureEnrollment,
   getModuleProgress,
-  maybeAwardBadge,
 } from "@/lib/progress";
 import { ModuleReader } from "./module-reader";
 import { completeModuleAction } from "./actions";
+import { TopBar } from "../../../_components/top-bar";
 
 export const dynamic = "force-dynamic";
 
@@ -26,14 +25,14 @@ export default async function CoursePage({ params, searchParams }: Props) {
   const data = await getCourseBySlug(operatorSlug, courseSlug);
   if (!data) notFound();
   const { operator, course, modules } = data;
+
   if (modules.length === 0) {
     return <EmptyCourse operator={operator.name} title={course.title} />;
   }
 
   const { userId } = await auth();
-  if (!userId) notFound(); // middleware should have redirected, defensive
+  if (!userId) notFound();
 
-  // Ensure D1 mirror of user + enrollment
   const user = await currentUser();
   await ensureUser({
     id: userId,
@@ -45,7 +44,6 @@ export default async function CoursePage({ params, searchParams }: Props) {
 
   const progressMap = await getModuleProgress(userId, course.id);
 
-  // Resolve active module
   const active =
     modules.find((m) => m.slug === moduleSlug) ??
     modules.find((m) => !progressMap.get(m.id)?.completed_at) ??
@@ -55,7 +53,6 @@ export default async function CoursePage({ params, searchParams }: Props) {
   const completedCount = modules.filter((m) => progressMap.get(m.id)?.completed_at).length;
   const progressPct = Math.round((completedCount / modules.length) * 100);
 
-  // Bind module/course ids into the server action via closures.
   async function onComplete(dwellSeconds: number): Promise<{ verifyCode?: string }> {
     "use server";
     return completeModuleAction({
@@ -66,51 +63,46 @@ export default async function CoursePage({ params, searchParams }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1117] text-[#e6edf3] font-sans">
-      {/* Header */}
-      <header className="border-b border-[#1f2a35] px-7 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3 text-xs text-[#9aa7b8]">
-          <Link href="/learn" className="flex items-center gap-2 text-[#e6edf3]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M3 19l9-14 9 14H3z" stroke="#22d3ee" strokeWidth="2" fill="rgba(34,211,238,.1)" />
-              <circle cx="12" cy="14" r="2" fill="#a3e635" />
-            </svg>
-            <span className="font-semibold text-[15px]">
-              <span className="text-[#22d3ee]">Tour</span>Train
-            </span>
-          </Link>
-          <span className="text-[#5b6b7d]">/</span>
-          <Link href={`/learn`} className="hover:text-white">
-            {operator.name}
-          </Link>
-          <span className="text-[#5b6b7d]">/</span>
-          <span className="text-[#e6edf3]">{course.title}</span>
-        </div>
-        <UserButton appearance={{ variables: { colorPrimary: "#22d3ee" } }} />
-      </header>
+    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+      <TopBar
+        breadcrumb={
+          <span className="flex items-center gap-2 min-w-0">
+            <Link href="/learn" className="hover:text-white shrink-0">My learning</Link>
+            <span className="text-white/20 shrink-0">/</span>
+            <span className="shrink-0">{operator.name}</span>
+            <span className="text-white/20 shrink-0">/</span>
+            <span className="text-white truncate">{course.title}</span>
+          </span>
+        }
+      />
 
-      <div className="grid grid-cols-[280px_1fr]">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr]">
         {/* Module list */}
-        <aside className="border-r border-[#1f2a35] p-5 min-h-[calc(100vh-65px)]">
-          <div className="text-[11px] font-mono text-[#5b6b7d] mb-2">COURSE</div>
-          <div className="text-[14px] font-semibold mb-1">{course.title}</div>
-          <div className="text-xs text-[#9aa7b8] mb-4">{operator.name}</div>
+        <aside className="border-b lg:border-b-0 lg:border-r border-white/[.06] p-5 lg:min-h-[calc(100vh-65px)] bg-[#062b22]/50">
+          <div className="text-[11px] font-mono text-emerald-300/70 mb-2">COURSE</div>
+          <div className="text-[15px] font-semibold mb-1 text-white">{course.title}</div>
+          <div className="text-[13px] text-[#a7d4b6] mb-4">{operator.name}</div>
 
-          <div className="h-1.5 bg-[#1a2530] rounded-full overflow-hidden mb-2">
+          <div className="h-1.5 bg-black/30 rounded-full overflow-hidden mb-2">
             <div
-              className="h-full bg-gradient-to-r from-[#22d3ee] to-[#a3e635] transition-all"
+              className="h-full bg-gradient-to-r from-emerald-400 to-lime-300 transition-all"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <div className="flex items-center justify-between text-xs text-[#9aa7b8] mb-5">
+          <div className="flex items-center justify-between text-[13px] text-[#a7d4b6] mb-5">
             <span>
               {completedCount} of {modules.length} modules
             </span>
-            <span className="text-[#bef264] font-medium">{progressPct}%</span>
+            <span className="text-lime-300 font-medium">{progressPct}%</span>
           </div>
 
-          <div className="text-[11px] font-mono text-[#5b6b7d] mb-2">MODULES</div>
-          <ModuleList modules={modules} active={active} progressMap={progressMap} basePath={`/learn/${operatorSlug}/${courseSlug}`} />
+          <div className="text-[11px] font-mono text-emerald-300/70 mb-2">MODULES</div>
+          <ModuleList
+            modules={modules}
+            active={active}
+            progressMap={progressMap}
+            basePath={`/learn/${operatorSlug}/${courseSlug}`}
+          />
         </aside>
 
         {/* Reader */}
@@ -139,27 +131,32 @@ function ModuleList({
   progressMap: Map<string, { completed_at: number | null }>;
   basePath: string;
 }) {
-  // Pre-await badge check via maybeAwardBadge isn't here; that's done in the
-  // server action after a successful completion (see actions.ts).
-  void maybeAwardBadge;
   return (
     <div className="space-y-1">
       {modules.map((m) => {
         const done = !!progressMap.get(m.id)?.completed_at;
         const isActive = m.id === active.id;
-        const dot = done ? "bg-[#a3e635]" : isActive ? "bg-[#22d3ee]" : "bg-[#374151]";
+        const dot = done
+          ? "bg-emerald-300"
+          : isActive
+            ? "bg-emerald-400"
+            : "bg-white/15";
         return (
           <Link
             key={m.id}
             href={`${basePath}?m=${m.slug}`}
             className={`flex items-start gap-3 px-3 py-2.5 rounded-lg ${
-              isActive ? "bg-[#1a2530] border border-[#22d3ee]/30" : "hover:bg-[#161e27]"
+              isActive
+                ? "bg-emerald-400/10 border border-emerald-400/30"
+                : "border border-transparent hover:bg-white/[.04]"
             }`}
           >
-            <div className={`w-2 h-2 rounded-full mt-1.5 ${dot}`} />
+            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot}`} />
             <div className="flex-1 min-w-0">
-              <div className={`text-[13px] ${isActive ? "font-medium" : ""}`}>{m.title}</div>
-              <div className="text-[11px] text-[#5b6b7d]">
+              <div className={`text-[14px] ${isActive ? "font-medium text-white" : "text-[#d8f0e1]"}`}>
+                {m.title}
+              </div>
+              <div className="text-[11px] text-[#86b69a]">
                 {m.est_minutes ? `${m.est_minutes} min` : ""}
                 {done ? " · ✓ completed" : isActive ? " · in progress" : ""}
               </div>
@@ -173,18 +170,18 @@ function ModuleList({
 
 function EmptyCourse({ operator, title }: { operator: string; title: string }) {
   return (
-    <div className="min-h-screen bg-[#0b1117] text-[#e6edf3] flex items-center justify-center font-sans">
-      <div className="text-center">
-        <div className="text-[11px] font-mono text-[#5b6b7d] mb-3">DRAFT</div>
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        <p className="text-[#9aa7b8] mt-1">{operator}</p>
-        <p className="mt-6 text-[14px] text-[#9aa7b8] max-w-md">
-          This course is auto-drafted from source files and pending operator review. Modules will appear
-          once the operator publishes the parsed content.
+    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased flex items-center justify-center">
+      <div className="text-center max-w-md px-6">
+        <div className="text-[11px] font-mono text-emerald-300/70 mb-3 tracking-widest">DRAFT</div>
+        <h1 className="text-[26px] font-semibold text-white">{title}</h1>
+        <p className="text-[#a7d4b6] mt-1.5">{operator}</p>
+        <p className="mt-6 text-[14px] text-[#a7d4b6] leading-relaxed">
+          This course is auto-drafted from source files and pending operator review. Modules will
+          appear once the operator publishes the parsed content.
         </p>
         <Link
           href="/learn"
-          className="mt-6 inline-block px-4 py-2 rounded-md border border-[#243140] text-sm hover:bg-[#161e27]"
+          className="mt-7 inline-block px-4 py-2 rounded-md border border-white/[.10] text-[14px] text-[#d8f0e1] hover:bg-white/[.06]"
         >
           ← Back to courses
         </Link>

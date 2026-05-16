@@ -32,13 +32,11 @@ export function ModuleReader({
   const [awardedCode, setAwardedCode] = useState<string | null>(null);
   const startRef = useRef<number>(Date.now());
 
-  // Reset timer when module changes (using module.id as key in parent would also work).
   useEffect(() => {
     setDwell(0);
     setAwardedCode(null);
     startRef.current = Date.now();
     const i = setInterval(() => {
-      // Only tick when tab is visible — avoids "leave tab open" anti-cheat bypass.
       if (document.visibilityState === "visible") {
         setDwell((d) => Math.min(d + 1, 3600));
       }
@@ -67,25 +65,27 @@ export function ModuleReader({
   }
 
   return (
-    <main className="p-7 max-w-4xl">
-      <div className="flex items-center gap-2 text-xs text-[#9aa7b8] mb-2">
+    <main className="p-5 sm:p-8 max-w-4xl">
+      <div className="flex items-center gap-2 text-[13px] text-[#a7d4b6] mb-2 flex-wrap">
         <span>Module {module.position}</span>
-        <span>·</span>
+        <span className="text-white/20">·</span>
         <span>{module.title}</span>
         {isCompleted ? (
-          <span className="ml-2 chip-lime">
-            <Chip variant="lime">✓ Completed</Chip>
+          <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-lime-400/30 bg-lime-400/10 text-lime-300 text-[11px] font-medium">
+            ✓ Completed
           </span>
         ) : null}
       </div>
-      <h2 className="text-2xl font-semibold mb-2">{module.title}</h2>
+      <h2 className="text-[26px] sm:text-[30px] font-semibold tracking-tight text-white mb-2">
+        {module.title}
+      </h2>
       {module.summary ? (
-        <p className="text-[14px] text-[#9aa7b8] mb-5">{module.summary}</p>
+        <p className="text-[15px] text-[#a7d4b6] mb-6 leading-relaxed">{module.summary}</p>
       ) : null}
 
       <article className="space-y-4">
         {blocks.length === 0 ? (
-          <div className="rounded-xl border border-[#1f2a35] bg-[#11181f] p-6 text-[#9aa7b8] text-sm">
+          <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-[#a7d4b6] text-sm">
             No content blocks yet for this module.
           </div>
         ) : (
@@ -93,13 +93,12 @@ export function ModuleReader({
         )}
       </article>
 
-      {/* Awarded toast */}
       {awardedCode ? (
-        <div className="mt-8 rounded-xl border border-[#a3e635]/30 bg-[rgba(163,230,53,.08)] p-5 flex items-center gap-4">
-          <div className="text-3xl">🏅</div>
+        <div className="mt-8 rounded-2xl border border-lime-400/30 bg-lime-400/10 p-5 flex items-center gap-4">
+          <div className="text-[42px]">🏅</div>
           <div className="flex-1">
-            <div className="font-semibold">Badge earned!</div>
-            <div className="text-[13px] text-[#bef264]">
+            <div className="font-semibold text-white text-[17px]">Badge earned!</div>
+            <div className="text-[14px] text-lime-300">
               Verify code{" "}
               <Link
                 href={`/verify/${awardedCode}`}
@@ -111,40 +110,39 @@ export function ModuleReader({
           </div>
           <Link
             href="/learn"
-            className="px-4 py-2 rounded-md bg-[#a3e635] text-[#0b1117] font-semibold text-sm"
+            className="px-4 py-2 rounded-md bg-lime-300 text-[#04241e] font-semibold text-sm"
           >
             Back to courses
           </Link>
         </div>
       ) : null}
 
-      {/* Nav bar */}
-      <div className="mt-10 flex items-center justify-between">
+      <div className="mt-10 flex items-center justify-between gap-3 flex-wrap">
         <button
           disabled={!prev}
           onClick={() => prev && router.push(`/learn/${operatorSlug}/${courseSlug}?m=${prev.slug}`)}
-          className="px-4 py-2 rounded-md border border-[#243140] text-xs hover:bg-[#161e27] disabled:opacity-30 disabled:cursor-not-allowed"
+          className="px-3.5 py-2 rounded-md border border-white/[.10] text-[13px] text-[#d8f0e1] hover:bg-white/[.06] disabled:opacity-30 disabled:cursor-not-allowed"
         >
           ← {prev ? prev.title : "Start"}
         </button>
 
-        <div className="text-[11px] text-[#5b6b7d] text-center">
+        <div className="text-[12px] text-[#86b69a] text-center order-3 sm:order-2 w-full sm:w-auto">
           {isCompleted ? (
-            <span className="text-[#bef264]">Already completed — feel free to review</span>
+            <span className="text-lime-300">Already completed — feel free to review</span>
           ) : remaining > 0 ? (
             <>
-              Stay on this page <span className="font-mono text-[#67e8f9]">{remaining}s</span>{" "}
-              to mark complete
+              Stay on this page <span className="font-mono text-emerald-300">{remaining}s</span> to
+              mark complete
             </>
           ) : (
-            <span className="text-[#bef264]">Ready to mark complete</span>
+            <span className="text-lime-300">Ready to mark complete</span>
           )}
         </div>
 
         <button
           onClick={complete}
           disabled={!canComplete || isPending}
-          className="px-4 py-2 rounded-md text-xs font-semibold bg-[#22d3ee] text-[#04141a] hover:bg-[#67e8f9] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-4 py-2 rounded-md text-[13px] font-semibold bg-emerald-400 text-[#04241e] hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed order-2 sm:order-3"
         >
           {isPending
             ? "Saving…"
@@ -164,28 +162,28 @@ function BlockView({ block }: { block: BlockRow }) {
     case "text":
       return (
         <div
-          className="prose prose-invert max-w-none text-[14.5px] text-[#cbd5e1] leading-relaxed"
+          className="max-w-none text-[15px] text-[#d8f0e1] leading-relaxed [&>p]:my-3 [&_strong]:text-white [&_strong]:font-semibold"
           dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
         />
       );
     case "callout":
       return (
-        <div className="rounded-lg border border-[#22d3ee]/20 bg-[rgba(34,211,238,.05)] p-4">
+        <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[.06] p-4">
           <div
-            className="text-[14px] text-[#e6edf3] leading-relaxed"
+            className="text-[14.5px] text-white leading-relaxed [&>p]:my-2 [&_strong]:text-white"
             dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
           />
         </div>
       );
     case "video":
       return (
-        <div className="rounded-xl overflow-hidden aspect-video bg-gradient-to-br from-[#0b3344] via-[#114858] to-[#0c2536] flex items-center justify-center relative">
-          <div className="absolute top-3 left-3 text-[11px] px-2 py-1 rounded-full bg-black/40 backdrop-blur">
+        <div className="rounded-2xl overflow-hidden aspect-video bg-gradient-to-br from-emerald-900 via-[#0a3a2f] to-[#04241e] flex items-center justify-center relative border border-white/[.06]">
+          <div className="absolute top-3.5 left-3.5 text-[11px] px-2.5 py-1 rounded-full bg-black/40 backdrop-blur text-white/85 border border-white/15">
             📹 {block.caption ?? "Video"}
           </div>
-          <div className="text-center text-white/70 text-sm">
-            <div className="text-4xl mb-2">▶</div>
-            <div className="text-[12px] font-mono">
+          <div className="text-center text-white/75">
+            <div className="text-[48px] mb-2 leading-none">▶</div>
+            <div className="text-[12px] font-mono text-emerald-300/80">
               video_uid: {block.video_uid ?? "<not yet uploaded>"}
             </div>
             <div className="text-[11px] text-white/40 mt-1">
@@ -196,17 +194,17 @@ function BlockView({ block }: { block: BlockRow }) {
       );
     case "image":
       return (
-        <div className="rounded-lg overflow-hidden border border-[#1f2a35] bg-[#11181f] p-6 text-center text-[#9aa7b8] text-sm">
+        <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-center text-[#a7d4b6] text-sm">
           🖼️ {block.caption ?? "Image"}
-          <div className="text-[11px] text-[#5b6b7d] mt-1 font-mono">
+          <div className="text-[11px] text-[#5d9279] mt-1 font-mono">
             r2_key: {block.image_r2_key ?? "<not uploaded>"}
           </div>
         </div>
       );
     case "pdf":
       return (
-        <div className="rounded-lg border border-[#1f2a35] bg-[#11181f] p-4 text-sm text-[#9aa7b8] flex items-center gap-3">
-          <span className="text-2xl">📄</span>
+        <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-4 text-sm text-[#a7d4b6] flex items-center gap-3">
+          <span className="text-[24px]">📄</span>
           <span>{block.caption ?? "Attached PDF"}</span>
         </div>
       );
@@ -215,26 +213,9 @@ function BlockView({ block }: { block: BlockRow }) {
   }
 }
 
-function Chip({ variant, children }: { variant: "lime"; children: React.ReactNode }) {
-  const cls =
-    variant === "lime"
-      ? "bg-[rgba(163,230,53,.12)] text-[#bef264] border-[rgba(163,230,53,.3)]"
-      : "";
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-medium ${cls}`}
-    >
-      {children}
-    </span>
-  );
-}
-
 /**
- * Minimal markdown -> HTML for the demo. Supports bold (**), italic (*), and
- * paragraph breaks (\n\n). Anything else passes through escaped.
- *
- * We deliberately stay tiny to avoid pulling a markdown lib into the client
- * bundle. A proper renderer (marked / remark) lands in D11 alongside i18n.
+ * Minimal markdown -> HTML (bold/italic/paragraphs). Inlined to avoid pulling
+ * a markdown lib into the client bundle for now. Full renderer lands in D11.
  */
 function mdToHtml(md: string): string {
   const escaped = md
