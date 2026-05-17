@@ -1,6 +1,8 @@
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { getCurrentRole } from "@/lib/roles";
+import { getLocale, t } from "@/lib/i18n";
+import { LocaleSwitcher } from "./locale-switcher";
 
 /**
  * Shared dark-green topbar.
@@ -14,7 +16,7 @@ import { getCurrentRole } from "@/lib/roles";
  * /operator/<first-slug>; platform admins see "Admin" linking to /admin.
  */
 export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
-  const role = await getCurrentRole();
+  const [role, locale, tr] = await Promise.all([getCurrentRole(), getLocale(), t()]);
   const firstOpSlug = role.operators[0]?.operator_slug;
   return (
     <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/85 backdrop-blur-md px-4 sm:px-8 py-3">
@@ -22,13 +24,13 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
       <div className="flex items-center justify-between gap-2 md:hidden">
         <Logo compact />
         <div className="flex items-center gap-1.5 shrink-0">
-          <LangPicker compact />
+          <LocaleSwitcher current={locale} compact label={tr.language_label} />
           <Show when="signed-out">
             <span className="[&>button]:px-2 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-[13px]">
-              <SignInButton mode="modal" />
+              <SignInButton mode="modal">{tr.sign_in}</SignInButton>
             </span>
             <span className="[&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-[13px]">
-              <SignUpButton mode="modal">Get certified</SignUpButton>
+              <SignUpButton mode="modal">{tr.get_certified}</SignUpButton>
             </span>
           </Show>
           <Show when="signed-in">
@@ -36,9 +38,9 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
               <Link
                 href={`/operator/${firstOpSlug}`}
                 className="px-2 py-1.5 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[12px]"
-                title="Operator console"
+                title={tr.nav_operator_console}
               >
-                Operator
+                {tr.nav_operator_short}
               </Link>
             ) : null}
             {role.isAdmin ? (
@@ -46,14 +48,14 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
                 href="/admin"
                 className="px-2 py-1.5 rounded-md border border-lime-300/30 text-lime-300 hover:bg-lime-300/10 text-[12px]"
               >
-                Admin
+                {tr.nav_admin}
               </Link>
             ) : null}
             <Link
               href="/learn"
               className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]"
             >
-              Learning
+              {tr.nav_learning_short}
             </Link>
             <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
           </Show>
@@ -66,10 +68,10 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
           <div className="px-1 text-[13px] text-[#a7d4b6] truncate">{breadcrumb}</div>
         ) : (
           <nav className="flex items-center justify-between gap-1 text-[14px] text-[#a7d4b6]">
-            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Explore</a>
-            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Operators</a>
-            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Badges</a>
-            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">Pricing</a>
+            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_explore}</a>
+            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_operators}</a>
+            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_badges}</a>
+            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_pricing}</a>
           </nav>
         )}
       </div>
@@ -81,20 +83,20 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
           <div className="flex-1 min-w-0 text-[14px] text-[#a7d4b6] truncate">{breadcrumb}</div>
         ) : (
           <nav className="flex items-center gap-1 text-[15px] text-[#a7d4b6]">
-            <a className="px-3.5 py-2 hover:text-white">Explore</a>
-            <a className="px-3.5 py-2 hover:text-white">Operators</a>
-            <a className="px-3.5 py-2 hover:text-white">Badges</a>
-            <a className="px-3.5 py-2 hover:text-white">Pricing</a>
+            <a className="px-3.5 py-2 hover:text-white">{tr.nav_explore}</a>
+            <a className="px-3.5 py-2 hover:text-white">{tr.nav_operators}</a>
+            <a className="px-3.5 py-2 hover:text-white">{tr.nav_badges}</a>
+            <a className="px-3.5 py-2 hover:text-white">{tr.nav_pricing}</a>
           </nav>
         )}
         <div className="flex items-center gap-2 shrink-0">
-          <LangPicker />
+          <LocaleSwitcher current={locale} label={tr.language_label} />
           <Show when="signed-out">
             <span className="[&>button]:px-3.5 [&>button]:py-2 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-[14px]">
-              <SignInButton mode="modal" />
+              <SignInButton mode="modal">{tr.sign_in}</SignInButton>
             </span>
             <span className="[&>button]:px-4 [&>button]:py-2 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-[14px]">
-              <SignUpButton mode="modal">Get certified</SignUpButton>
+              <SignUpButton mode="modal">{tr.get_certified}</SignUpButton>
             </span>
           </Show>
           <Show when="signed-in">
@@ -103,7 +105,7 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
                 href={`/operator/${firstOpSlug}`}
                 className="px-3 py-2 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[13px]"
               >
-                Operator console
+                {tr.nav_operator_console}
               </Link>
             ) : null}
             {role.isAdmin ? (
@@ -111,14 +113,14 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
                 href="/admin"
                 className="px-3 py-2 rounded-md border border-lime-300/30 text-lime-300 hover:bg-lime-300/10 text-[13px]"
               >
-                Admin
+                {tr.nav_admin}
               </Link>
             ) : null}
             <Link
               href="/learn"
               className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[14px]"
             >
-              Learning →
+              {tr.nav_learning_button}
             </Link>
             <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
           </Show>
@@ -140,23 +142,5 @@ export function Logo({ compact = false }: { compact?: boolean }) {
         <span className="text-emerald-300">Tour</span>Train
       </span>
     </Link>
-  );
-}
-
-export function LangPicker({ compact = false }: { compact?: boolean }) {
-  return (
-    <button
-      type="button"
-      className={`rounded-md text-[#c4e9d3] hover:bg-white/[.06] inline-flex items-center ${
-        compact ? "px-1.5 py-1.5 text-[12px] gap-1" : "px-3 py-2 text-[13px] gap-1.5"
-      }`}
-      aria-label="Change language"
-    >
-      <svg width={compact ? 12 : 14} height={compact ? 12 : 14} viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-        <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" stroke="currentColor" strokeWidth="2" />
-      </svg>
-      EN
-    </button>
   );
 }

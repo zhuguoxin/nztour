@@ -7,6 +7,25 @@ import type { ModuleRow, BlockRow } from "@/lib/db";
 
 const DWELL_REQUIRED_SECONDS = 30;
 
+export interface ModuleReaderStrings {
+  module_position: string;
+  completed_chip: string;
+  no_blocks: string;
+  badge_earned: string;
+  verify_code_prefix: string;
+  back_to_courses: string;
+  start_module: string;
+  stay_to_complete_a: string;
+  stay_to_complete_b: string;
+  already_completed: string;
+  ready_to_complete: string;
+  saving: string;
+  done: string;
+  mark_complete: string;
+  mark_complete_and_continue: string;
+  continue_to: string; // contains {title}
+}
+
 interface Props {
   module: ModuleRow;
   blocks: BlockRow[];
@@ -15,6 +34,7 @@ interface Props {
   courseSlug: string;
   isCompleted: boolean;
   onComplete: (dwellSeconds: number) => Promise<{ verifyCode?: string }>;
+  tr: ModuleReaderStrings;
 }
 
 export function ModuleReader({
@@ -25,6 +45,7 @@ export function ModuleReader({
   courseSlug,
   isCompleted,
   onComplete,
+  tr,
 }: Props) {
   const router = useRouter();
   const [dwell, setDwell] = useState(0);
@@ -67,12 +88,12 @@ export function ModuleReader({
   return (
     <main className="p-5 sm:p-8 max-w-4xl">
       <div className="flex items-center gap-2 text-[13px] text-[#a7d4b6] mb-2 flex-wrap">
-        <span>Module {module.position}</span>
+        <span>{tr.module_position.replace("{n}", String(module.position))}</span>
         <span className="text-white/20">·</span>
         <span>{module.title}</span>
         {isCompleted ? (
           <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-lime-400/30 bg-lime-400/10 text-lime-300 text-[11px] font-medium">
-            ✓ Completed
+            {tr.completed_chip}
           </span>
         ) : null}
       </div>
@@ -86,7 +107,7 @@ export function ModuleReader({
       <article className="space-y-4">
         {blocks.length === 0 ? (
           <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-[#a7d4b6] text-sm">
-            No content blocks yet for this module.
+            {tr.no_blocks}
           </div>
         ) : (
           blocks.map((b) => <BlockView key={b.id} block={b} />)
@@ -97,9 +118,9 @@ export function ModuleReader({
         <div className="mt-8 rounded-2xl border border-lime-400/30 bg-lime-400/10 p-5 flex items-center gap-4">
           <div className="text-[42px]">🏅</div>
           <div className="flex-1">
-            <div className="font-semibold text-white text-[17px]">Badge earned!</div>
+            <div className="font-semibold text-white text-[17px]">{tr.badge_earned}</div>
             <div className="text-[14px] text-lime-300">
-              Verify code{" "}
+              {tr.verify_code_prefix}{" "}
               <Link
                 href={`/verify/${awardedCode}`}
                 className="font-mono underline hover:text-white"
@@ -112,7 +133,7 @@ export function ModuleReader({
             href="/learn"
             className="px-4 py-2 rounded-md bg-lime-300 text-[#04241e] font-semibold text-sm"
           >
-            Back to courses
+            {tr.back_to_courses}
           </Link>
         </div>
       ) : null}
@@ -123,19 +144,20 @@ export function ModuleReader({
           onClick={() => prev && router.push(`/learn/${operatorSlug}/${courseSlug}?m=${prev.slug}`)}
           className="px-3.5 py-2 rounded-md border border-white/[.10] text-[13px] text-[#d8f0e1] hover:bg-white/[.06] disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          ← {prev ? prev.title : "Start"}
+          ← {prev ? prev.title : tr.start_module}
         </button>
 
         <div className="text-[12px] text-[#86b69a] text-center order-3 sm:order-2 w-full sm:w-auto">
           {isCompleted ? (
-            <span className="text-lime-300">Already completed — feel free to review</span>
+            <span className="text-lime-300">{tr.already_completed}</span>
           ) : remaining > 0 ? (
             <>
-              Stay on this page <span className="font-mono text-emerald-300">{remaining}s</span> to
-              mark complete
+              {tr.stay_to_complete_a}{" "}
+              <span className="font-mono text-emerald-300">{remaining}s</span>{" "}
+              {tr.stay_to_complete_b}
             </>
           ) : (
-            <span className="text-lime-300">Ready to mark complete</span>
+            <span className="text-lime-300">{tr.ready_to_complete}</span>
           )}
         </div>
 
@@ -145,12 +167,14 @@ export function ModuleReader({
           className="px-4 py-2 rounded-md text-[13px] font-semibold bg-emerald-400 text-[#04241e] hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed order-2 sm:order-3"
         >
           {isPending
-            ? "Saving…"
+            ? tr.saving
             : isCompleted
               ? next
-                ? `Continue to ${next.title} →`
-                : "Done"
-              : `Mark complete${next ? " & continue" : ""} →`}
+                ? tr.continue_to.replace("{title}", next.title)
+                : tr.done
+              : next
+                ? tr.mark_complete_and_continue
+                : tr.mark_complete}
         </button>
       </div>
     </main>
@@ -176,22 +200,7 @@ function BlockView({ block }: { block: BlockRow }) {
         </div>
       );
     case "video":
-      return (
-        <div className="rounded-2xl overflow-hidden aspect-video bg-gradient-to-br from-emerald-900 via-[#0a3a2f] to-[#04241e] flex items-center justify-center relative border border-white/[.06]">
-          <div className="absolute top-3.5 left-3.5 text-[11px] px-2.5 py-1 rounded-full bg-black/40 backdrop-blur text-white/85 border border-white/15">
-            📹 {block.caption ?? "Video"}
-          </div>
-          <div className="text-center text-white/75">
-            <div className="text-[48px] mb-2 leading-none">▶</div>
-            <div className="text-[12px] font-mono text-emerald-300/80">
-              video_uid: {block.video_uid ?? "<not yet uploaded>"}
-            </div>
-            <div className="text-[11px] text-white/40 mt-1">
-              Cloudflare Stream embed wires up in D5
-            </div>
-          </div>
-        </div>
-      );
+      return <VideoBlock block={block} />;
     case "image":
       return (
         <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-center text-[#a7d4b6] text-sm">
@@ -229,4 +238,87 @@ function mdToHtml(md: string): string {
     .split(/\n{2,}/)
     .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
     .join("");
+}
+
+/**
+ * Renders the video for a content block.
+ *
+ * Resolution order for `video_uid`:
+ *   1. starts with "yt:<id>"  → YouTube embed (no Stream required; demo-friendly)
+ *   2. 32-char hex            → Cloudflare Stream iframe at
+ *      https://customer-<SUBDOMAIN>.cloudflarestream.com/<uid>/iframe
+ *      (requires NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN to be set)
+ *   3. anything else / null   → styled placeholder
+ *
+ * The Stream subdomain is exposed as NEXT_PUBLIC_* so this component (which
+ * stays "use client" alongside the rest of the reader) can read it from
+ * build-time inlined env without an extra server prop.
+ */
+function VideoBlock({ block }: { block: BlockRow }) {
+  const uid = block.video_uid?.trim() ?? "";
+  const caption = block.caption ?? "Video";
+
+  // YouTube fallback — accept "yt:<id>" so we can demo without Stream account.
+  if (uid.startsWith("yt:")) {
+    const ytId = uid.slice(3);
+    return (
+      <figure>
+        <div className="rounded-2xl overflow-hidden aspect-video bg-black border border-white/[.06] relative">
+          <div className="absolute top-3.5 left-3.5 z-10 text-[11px] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white/85 border border-white/15">
+            📹 {caption}
+          </div>
+          <iframe
+            src={`https://www.youtube.com/embed/${encodeURIComponent(ytId)}?rel=0&modestbranding=1`}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+            title={caption}
+          />
+        </div>
+      </figure>
+    );
+  }
+
+  // Real Cloudflare Stream UID (32 hex chars).
+  const subdomain = process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN;
+  const isStreamUid = /^[a-f0-9]{32}$/i.test(uid);
+  if (isStreamUid && subdomain && subdomain !== "REPLACE_WITH_CF_STREAM_SUBDOMAIN") {
+    const src = `https://customer-${subdomain}.cloudflarestream.com/${uid}/iframe`;
+    return (
+      <figure>
+        <div className="rounded-2xl overflow-hidden aspect-video bg-black border border-white/[.06] relative">
+          <div className="absolute top-3.5 left-3.5 z-10 text-[11px] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white/85 border border-white/15">
+            📹 {caption}
+          </div>
+          <iframe
+            src={src}
+            className="w-full h-full"
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+            allowFullScreen
+            loading="lazy"
+            title={caption}
+          />
+        </div>
+      </figure>
+    );
+  }
+
+  // Placeholder
+  return (
+    <div className="rounded-2xl overflow-hidden aspect-video bg-gradient-to-br from-emerald-900 via-[#0a3a2f] to-[#04241e] flex items-center justify-center relative border border-white/[.06]">
+      <div className="absolute top-3.5 left-3.5 text-[11px] px-2.5 py-1 rounded-full bg-black/40 backdrop-blur text-white/85 border border-white/15">
+        📹 {caption}
+      </div>
+      <div className="text-center text-white/75">
+        <div className="text-[48px] mb-2 leading-none">▶</div>
+        <div className="text-[12px] font-mono text-emerald-300/80">
+          {uid ? `video_uid: ${uid}` : "video not yet uploaded"}
+        </div>
+        <div className="text-[11px] text-white/40 mt-1">
+          Set NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN and a real Stream UID to embed
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listOperatorsWithCourseCounts } from "@/lib/db";
 import { TopBar } from "./_components/top-bar";
 import { AskAI } from "./_components/ask-ai";
+import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export const dynamic = "force-dynamic";
  *   --lime        #bef264
  */
 export default async function Home() {
-  const operators = await listOperatorsWithCourseCounts();
+  const [operators, tr] = await Promise.all([listOperatorsWithCourseCounts(), t()]);
   const totalCourses = operators.reduce((s, o) => s + o.course_count, 0);
 
   return (
@@ -41,33 +42,28 @@ export default async function Home() {
         <div className="relative px-5 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center max-w-4xl mx-auto">
           <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-6 sm:mb-7">
             <span className="px-3 py-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/30 text-emerald-300 text-[12px] sm:text-[13px] font-medium">
-              ● Live · {operators.length} operators · {totalCourses} courses
+              {fmt(tr.hero_live_chip, { operators: operators.length, courses: totalCourses })}
             </span>
             <span className="px-3 py-1.5 rounded-full bg-white/[.04] border border-white/[.08] text-[#c4e9d3] text-[12px] sm:text-[13px] font-medium">
-              🌐 7 languages · AI answers in 30+
+              {tr.hero_lang_chip}
             </span>
           </div>
           <h1 className="text-[36px] sm:text-[48px] md:text-[64px] leading-[1.1] sm:leading-[1.05] font-semibold tracking-tight text-white">
-            Sell New Zealand with{" "}
+            {tr.hero_title_a}{" "}
             <span className="bg-gradient-to-br from-emerald-300 via-emerald-400 to-lime-300 bg-clip-text text-transparent">
-              confidence.
+              {tr.hero_title_b}
             </span>
           </h1>
           <p className="mt-5 sm:mt-6 text-[15px] sm:text-[17px] md:text-[19px] text-[#a7d4b6] max-w-2xl mx-auto leading-relaxed">
-            The B2B training & certification platform for the NZ tourism industry. Learn directly
-            from operators. Earn verifiable digital badges. Ask AI anything — in any language.
+            {tr.hero_subtitle}
           </p>
 
           {/* AI ask bar */}
           <div className="mt-9 sm:mt-12">
             <AskAI
               variant="hero"
-              placeholder="What's the difference between Coronet Peak and The Remarkables?"
-              examples={[
-                "客户问 Heli Privates 适合什么水平?",
-                "Mt Hutt vs Coronet Peak for first-timers in June?",
-                "Snow-day cancellation policy",
-              ]}
+              placeholder={tr.hero_ask_placeholder}
+              examples={[tr.hero_example_1, tr.hero_example_2, tr.hero_example_3]}
             />
           </div>
         </div>
@@ -77,45 +73,46 @@ export default async function Home() {
       <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-6xl mx-auto">
         <div className="flex items-end justify-between mb-5 sm:mb-7 gap-3">
           <div className="min-w-0">
-            <h2 className="text-[20px] sm:text-[24px] font-semibold text-white">Featured operators</h2>
+            <h2 className="text-[20px] sm:text-[24px] font-semibold text-white">
+              {tr.featured_operators}
+            </h2>
             <p className="text-[13px] sm:text-[15px] text-[#a7d4b6] mt-1 sm:mt-1.5">
-              Each operator brings their own course curriculum. One agent account, every NZ
-              operator.
+              {tr.featured_operators_subtitle}
             </p>
           </div>
           <a className="text-[13px] sm:text-[15px] text-emerald-300 hover:text-emerald-200 font-medium whitespace-nowrap shrink-0">
-            View all {operators.length} →
+            {fmt(tr.view_all_count, { n: operators.length })}
           </a>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {operators.map((op) => (
-            <OperatorCard key={op.id} op={op} />
+            <OperatorCard key={op.id} op={op} tr={tr} />
           ))}
         </div>
 
         {/* Value props strip */}
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
           <ValueProp
-            badge="For agents"
+            badge={tr.value_for_agents_badge}
             badgeClass="bg-emerald-400/10 text-emerald-300 border-emerald-400/30"
-            text="One account, every NZ operator. Earn verifiable badges to share on LinkedIn and email signatures."
+            text={tr.value_for_agents}
           />
           <ValueProp
-            badge="For operators"
+            badge={tr.value_for_operators_badge}
             badgeClass="bg-lime-400/10 text-lime-300 border-lime-400/30"
-            text="Upload your existing PDFs and decks — we extract, structure, and turn them into trainable courses."
+            text={tr.value_for_operators}
           />
           <ValueProp
-            badge="AI-native"
+            badge={tr.value_ai_badge}
             badgeClass="bg-white/[.04] text-[#c4e9d3] border-white/[.10]"
-            text="Agents can ask product questions in plain English or Chinese. Answers cite the operator source."
+            text={tr.value_ai}
           />
         </div>
       </section>
 
       <footer className="border-t border-white/[.06] px-8 py-7 text-center text-[12px] font-mono text-[#5d9279]">
-        TourTrain · d4 build · {operators.length} operators / {totalCourses} courses live
+        {fmt(tr.footer_build, { operators: operators.length, courses: totalCourses })}
       </footer>
     </div>
   );
@@ -127,11 +124,17 @@ export default async function Home() {
 
 function OperatorCard({
   op,
+  tr,
 }: {
   op: Awaited<ReturnType<typeof listOperatorsWithCourseCounts>>[number];
+  tr: Awaited<ReturnType<typeof t>>;
 }) {
   const hasCourses = op.course_count > 0;
   const cover = op.cover_color ?? "linear-gradient(135deg,#475569 0%,#64748b 100%)";
+  const coursesLabel =
+    op.course_count === 1
+      ? fmt(tr.card_courses_count, { n: op.course_count })
+      : fmt(tr.card_courses_count_plural, { n: op.course_count });
 
   const inner = (
     <article className="rounded-2xl overflow-hidden bg-[#0a3a2f] border border-white/[.08] hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(52,211,153,0.10)] transition cursor-pointer h-full">
@@ -139,11 +142,11 @@ function OperatorCard({
         <div className="absolute top-3.5 left-3.5">
           {hasCourses ? (
             <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-emerald-200 border border-white/15">
-              ● Live
+              {tr.card_live}
             </span>
           ) : (
             <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-white/80 border border-white/15">
-              Coming soon
+              {tr.card_coming_soon}
             </span>
           )}
         </div>
@@ -154,20 +157,20 @@ function OperatorCard({
       <div className="p-5">
         <div className="text-[13px] text-[#86b69a] mb-1">{op.name}</div>
         <div className="font-semibold text-[17px] text-white leading-snug line-clamp-2">
-          {op.sample_course_title ?? "Course curriculum coming soon"}
+          {op.sample_course_title ?? tr.card_curriculum_coming_soon}
         </div>
         <div className="flex items-center gap-2.5 mt-3.5 text-[13px] text-[#86b69a]">
-          <span>🎓 {op.course_count} course{op.course_count === 1 ? "" : "s"}</span>
+          <span>{coursesLabel}</span>
           {op.module_count > 0 ? (
             <>
               <span className="text-white/20">·</span>
-              <span>{op.module_count} modules</span>
+              <span>{fmt(tr.card_modules_count, { n: op.module_count })}</span>
             </>
           ) : null}
           {op.est_minutes > 0 ? (
             <>
               <span className="text-white/20">·</span>
-              <span>~{op.est_minutes} min</span>
+              <span>{fmt(tr.card_minutes, { n: op.est_minutes })}</span>
             </>
           ) : null}
         </div>

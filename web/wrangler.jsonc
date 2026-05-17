@@ -80,6 +80,10 @@
     "DEFAULT_LOCALE": "en",
     "SUPPORTED_LOCALES": "en,zh-CN,zh-TW,ja,ko,de,es",
     "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN",
+    // Same value as STREAM_CUSTOMER_SUBDOMAIN but NEXT_PUBLIC_ prefix so the
+    // value is inlined into client bundles and accessible to the video block
+    // renderer in module-reader.tsx without an extra server roundtrip.
+    "NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN",
     // Comma-separated list of emails auto-promoted to platform_admin on
     // first sign-in. Replace before any real launch; MVP-only convenience.
     "ADMIN_EMAILS": "zhuguoxin@gmail.com",

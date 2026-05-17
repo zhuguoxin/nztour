@@ -42,11 +42,21 @@ export function AskAI({
   scope,
   placeholder = "Ask anything about the operators…",
   examples = [],
+  sidebarTitle = "Ask about this course",
+  sidebarSubtitle = "Grounded in operator content · EN / 中",
+  emptyState = "Try asking about this course. Examples below.",
+  thinkingText = "Thinking…",
+  noAnswerWarning = "⚠ Not found in operator content. Answer is from general knowledge.",
 }: {
   variant?: "hero" | "sidebar";
   scope?: AskAIScope;
   placeholder?: string;
   examples?: string[];
+  sidebarTitle?: string;
+  sidebarSubtitle?: string;
+  emptyState?: string;
+  thinkingText?: string;
+  noAnswerWarning?: string;
 }) {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<AskAIResult[]>([]);
@@ -135,8 +145,8 @@ export function AskAI({
             <Sparkle />
           </div>
           <div className="flex-1">
-            <div className="text-[14px] font-semibold text-white">Ask about this course</div>
-            <div className="text-[11px] text-[#86b69a]">Grounded in operator content · EN / 中</div>
+            <div className="text-[14px] font-semibold text-white">{sidebarTitle}</div>
+            <div className="text-[11px] text-[#86b69a]">{sidebarSubtitle}</div>
           </div>
         </div>
 
@@ -152,9 +162,7 @@ export function AskAI({
           ) : null}
           <div ref={bottomRef} />
           {history.length === 0 && !current && !pending ? (
-            <div className="text-[13px] text-[#86b69a] text-center pt-8">
-              Try asking about this course. Examples below.
-            </div>
+            <div className="text-[13px] text-[#86b69a] text-center pt-8">{emptyState}</div>
           ) : null}
         </div>
 
