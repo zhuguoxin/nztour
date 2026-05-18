@@ -22,6 +22,12 @@
       "primary_lang": "en",
       "status": "published",
       "est_minutes": 25,
+      "ai_examples": [
+        "Heli Privates 适合什么水平?",
+        "Snow-day cancellation policy",
+        "Lift pass + rental combo pricing",
+        "Bus shuttle from Queenstown CBD"
+      ],
 
       "modules": [
         {
@@ -108,6 +114,12 @@
       "primary_lang": "en",
       "status": "published",
       "est_minutes": 22,
+      "ai_examples": [
+        "30/40/30 terrain split — where to send beginners?",
+        "What's new at The Remarkables for 2026?",
+        "Ski bus schedule from Frankton",
+        "Non-skier guest options"
+      ],
 
       "modules": [
         {
@@ -188,6 +200,12 @@
       "primary_lang": "en",
       "status": "published",
       "est_minutes": 24,
+      "ai_examples": [
+        "Mt Hutt 比 Coronet Peak 6 月雪况更好吗?",
+        "Chillfest 是什么时候?",
+        "Methven 住宿推荐",
+        "为什么 Mt Hutt 没有 Heli Privates?"
+      ],
 
       "modules": [
         {

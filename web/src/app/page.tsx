@@ -3,6 +3,7 @@ import { listOperatorsWithCourseCounts } from "@/lib/db";
 import { TopBar } from "./_components/top-bar";
 import { AskAI } from "./_components/ask-ai";
 import { t, fmt } from "@/lib/i18n";
+import { getCurrentRole } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +23,18 @@ export const dynamic = "force-dynamic";
  *   --lime        #bef264
  */
 export default async function Home() {
-  const [operators, tr] = await Promise.all([listOperatorsWithCourseCounts(), t()]);
+  const [operators, tr, role] = await Promise.all([
+    listOperatorsWithCourseCounts(),
+    t(),
+    getCurrentRole(),
+  ]);
   const totalCourses = operators.reduce((s, o) => s + o.course_count, 0);
+  // Set of operator slugs the current user can manage (admins can manage any).
+  const manageableSlugs = new Set(
+    role.isAdmin
+      ? operators.map((o) => o.slug)
+      : role.operators.map((o) => o.operator_slug),
+  );
 
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
@@ -87,7 +98,12 @@ export default async function Home() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {operators.map((op) => (
-            <OperatorCard key={op.id} op={op} tr={tr} />
+            <OperatorCard
+              key={op.id}
+              op={op}
+              tr={tr}
+              canManage={manageableSlugs.has(op.slug)}
+            />
           ))}
         </div>
 
@@ -125,9 +141,11 @@ export default async function Home() {
 function OperatorCard({
   op,
   tr,
+  canManage,
 }: {
   op: Awaited<ReturnType<typeof listOperatorsWithCourseCounts>>[number];
   tr: Awaited<ReturnType<typeof t>>;
+  canManage: boolean;
 }) {
   const hasCourses = op.course_count > 0;
   const cover = op.cover_color ?? "linear-gradient(135deg,#475569 0%,#64748b 100%)";
@@ -136,10 +154,15 @@ function OperatorCard({
       ? fmt(tr.card_courses_count, { n: op.course_count })
       : fmt(tr.card_courses_count_plural, { n: op.course_count });
 
-  const inner = (
-    <article className="rounded-2xl overflow-hidden bg-[#0a3a2f] border border-white/[.08] hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(52,211,153,0.10)] transition cursor-pointer h-full">
+  const targetHref =
+    hasCourses && op.sample_course_slug
+      ? `/learn/${op.slug}/${op.sample_course_slug}`
+      : null;
+
+  return (
+    <article className="rounded-2xl overflow-hidden bg-[#0a3a2f] border border-white/[.08] hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(52,211,153,0.10)] transition h-full relative">
       <div className="h-32 relative" style={{ background: cover }}>
-        <div className="absolute top-3.5 left-3.5">
+        <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5">
           {hasCourses ? (
             <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-emerald-200 border border-white/15">
               {tr.card_live}
@@ -150,6 +173,14 @@ function OperatorCard({
             </span>
           )}
         </div>
+        {canManage ? (
+          <Link
+            href={`/operator/${op.slug}`}
+            className="absolute top-3.5 right-3.5 z-10 px-2.5 py-1 rounded-full bg-emerald-400 text-[#04241e] text-[11px] font-semibold hover:bg-emerald-300 shadow"
+          >
+            ⚙ Manage
+          </Link>
+        ) : null}
         <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between">
           <div className="text-[36px] leading-none drop-shadow">{op.emoji ?? "📚"}</div>
         </div>
@@ -175,17 +206,18 @@ function OperatorCard({
           ) : null}
         </div>
       </div>
+      {/* Whole-card hit area: anchor positioned absolutely under the Manage
+          pill so the pill stays clickable. Card uses z-stacking so the
+          Manage button (z-10) sits above the link surface (z-0). */}
+      {targetHref ? (
+        <Link
+          href={targetHref}
+          aria-label={op.sample_course_title ?? op.name}
+          className="absolute inset-0 z-0 cursor-pointer"
+        />
+      ) : null}
     </article>
   );
-
-  if (hasCourses && op.sample_course_slug) {
-    return (
-      <Link href={`/learn/${op.slug}/${op.sample_course_slug}`} className="block h-full">
-        {inner}
-      </Link>
-    );
-  }
-  return <div>{inner}</div>;
 }
 
 function ValueProp({

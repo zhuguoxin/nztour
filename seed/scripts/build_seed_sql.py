@@ -73,6 +73,8 @@ def collect() -> str:
         )
 
         for course in data.get("courses", []):
+            ai_examples = course.get("ai_examples")
+            ai_examples_json = json.dumps(ai_examples, ensure_ascii=False) if ai_examples else None
             courses_rows.append(
                 (
                     course["id"],
@@ -85,6 +87,7 @@ def collect() -> str:
                     course.get("primary_lang", "en"),
                     course.get("status", "draft"),
                     course.get("est_minutes"),
+                    ai_examples_json,
                 )
             )
 
@@ -148,7 +151,7 @@ def collect() -> str:
         batched_insert(
             "courses",
             ["id", "operator_id", "slug", "title", "summary", "cover_color",
-             "emoji", "primary_lang", "status", "est_minutes"],
+             "emoji", "primary_lang", "status", "est_minutes", "ai_examples_json"],
             courses_rows,
         ),
         batched_insert(

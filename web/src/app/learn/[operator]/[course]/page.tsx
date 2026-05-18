@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getCourseBySlug, getModuleBlocks, type ModuleRow } from "@/lib/db";
+import { getCourseBySlug, getModuleBlocks, parseAiExamples, type ModuleRow } from "@/lib/db";
 import {
   ensureUser,
   ensureEnrollment,
@@ -79,6 +79,15 @@ export default async function CoursePage({ params, searchParams }: Props) {
         }
       />
 
+      {/* Mobile-only: floating "Ask AI" pill that scrolls the sidebar into view. */}
+      <a
+        href="#course-ai"
+        className="lg:hidden fixed right-4 bottom-4 z-20 px-3.5 py-2.5 rounded-full bg-emerald-400 text-[#04241e] font-semibold text-[13px] shadow-[0_8px_24px_rgba(0,0,0,.4)] flex items-center gap-1.5"
+      >
+        <span>💬</span>
+        <span>Ask AI</span>
+      </a>
+
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_360px]">
         {/* Module list */}
         <aside className="border-b lg:border-b-0 lg:border-r border-white/[.06] p-5 lg:min-h-[calc(100vh-65px)] bg-[#062b22]/50">
@@ -139,7 +148,10 @@ export default async function CoursePage({ params, searchParams }: Props) {
         />
 
         {/* AI sidebar — scoped to this course */}
-        <aside className="border-t lg:border-t-0 lg:border-l border-white/[.06] lg:min-h-[calc(100vh-65px)] lg:max-h-[calc(100vh-65px)]">
+        <aside
+          id="course-ai"
+          className="border-t lg:border-t-0 lg:border-l border-white/[.06] lg:min-h-[calc(100vh-65px)] lg:max-h-[calc(100vh-65px)] scroll-mt-16"
+        >
           <AskAI
             variant="sidebar"
             scope={{ operator_id: operator.id, course_id: course.id }}
@@ -149,7 +161,11 @@ export default async function CoursePage({ params, searchParams }: Props) {
             thinkingText={tr.ai_thinking}
             noAnswerWarning={tr.ai_no_answer}
             placeholder={fmt(tr.ai_sidebar_placeholder, { title: course.title })}
-            examples={[tr.hero_example_1, tr.hero_example_3, tr.hero_example_2]}
+            examples={
+              parseAiExamples(course.ai_examples_json).slice(0, 4).length > 0
+                ? parseAiExamples(course.ai_examples_json).slice(0, 4)
+                : [tr.hero_example_1, tr.hero_example_3, tr.hero_example_2]
+            }
           />
         </aside>
       </div>

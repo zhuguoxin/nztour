@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS courses (
   status          TEXT NOT NULL DEFAULT 'draft',   -- 'draft' | 'published'
   est_minutes     INTEGER,
   position        INTEGER NOT NULL DEFAULT 0,
+  ai_examples_json TEXT,                            -- JSON-encoded string[] of suggested prompts
   created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at      INTEGER NOT NULL DEFAULT (unixepoch()),
   UNIQUE (operator_id, slug)

@@ -39,6 +39,18 @@ export interface CourseRow {
   primary_lang: string;
   status: string;
   est_minutes: number | null;
+  ai_examples_json: string | null;
+}
+
+/** Parse the JSON-encoded string[] in courses.ai_examples_json safely. */
+export function parseAiExamples(json: string | null | undefined): string[] {
+  if (!json) return [];
+  try {
+    const v = JSON.parse(json);
+    return Array.isArray(v) ? v.filter((s) => typeof s === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 export interface ModuleRow {
@@ -185,6 +197,7 @@ export async function getCourseBySlug(
     primary_lang: row.primary_lang,
     status: row.status,
     est_minutes: row.est_minutes,
+    ai_examples_json: row.ai_examples_json ?? null,
   };
   return { operator, course, modules: modules ?? [] };
 }

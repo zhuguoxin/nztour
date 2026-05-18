@@ -85,6 +85,9 @@ export default async function LearnHome() {
                     {c.est_minutes ? <span>⏱ {fmt(tr.card_minutes, { n: c.est_minutes })}</span> : null}
                     <span className="text-white/20">·</span>
                     <span>{c.primary_lang.toUpperCase()}</span>
+                    <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/30 text-emerald-300 text-[11px] font-medium">
+                      💬 AI
+                    </span>
                   </div>
                 </div>
               </Link>

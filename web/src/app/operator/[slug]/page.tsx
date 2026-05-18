@@ -142,11 +142,20 @@ export default async function OperatorDashboard({ params }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-[14px] text-white truncate">{c.title}</div>
                       <div className="text-[12px] text-[#86b69a]">
-                        {c.modules} module{c.modules === 1 ? "" : "s"} · {c.learners} learner
-                        {c.learners === 1 ? "" : "s"} · updated{" "}
+                        {c.modules} module{c.modules === 1 ? "" : "s"} · updated{" "}
                         {fmtRelative(c.updated_at)}
                       </div>
                     </div>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium tabular-nums shrink-0 ${
+                        c.learners > 0
+                          ? "bg-emerald-400/10 border border-emerald-400/30 text-emerald-200"
+                          : "bg-white/[.04] border border-white/[.08] text-[#86b69a]"
+                      }`}
+                      title={`${c.learners} learner${c.learners === 1 ? "" : "s"} have started this course`}
+                    >
+                      👁 {c.learners}
+                    </span>
                     <StatusPill status={c.status} />
                     <button
                       disabled
