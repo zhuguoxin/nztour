@@ -17,7 +17,16 @@ import { LocaleSwitcher } from "./locale-switcher";
  */
 export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   const [role, locale, tr] = await Promise.all([getCurrentRole(), getLocale(), t()]);
-  const firstOpSlug = role.operators[0]?.operator_slug;
+  // Operator console destination:
+  //  - admins, or users with >1 operator memberships → /operator picker
+  //  - exactly 1 membership → that operator's dashboard directly
+  //  - 0 memberships and not admin → hide the pill
+  const operatorHref =
+    role.isAdmin || role.operators.length > 1
+      ? "/operator"
+      : role.operators.length === 1
+        ? `/operator/${role.operators[0].operator_slug}`
+        : null;
   return (
     <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/85 backdrop-blur-md px-4 sm:px-8 py-3">
       {/* === Mobile row 1: Logo + Lang + Sign in + Get certified === */}
@@ -34,9 +43,9 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             </span>
           </Show>
           <Show when="signed-in">
-            {firstOpSlug ? (
+            {operatorHref ? (
               <Link
-                href={`/operator/${firstOpSlug}`}
+                href={operatorHref}
                 className="px-2 py-1.5 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[12px]"
                 title={tr.nav_operator_console}
               >
@@ -100,9 +109,9 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             </span>
           </Show>
           <Show when="signed-in">
-            {firstOpSlug ? (
+            {operatorHref ? (
               <Link
-                href={`/operator/${firstOpSlug}`}
+                href={operatorHref}
                 className="px-3 py-2 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[13px]"
               >
                 {tr.nav_operator_console}

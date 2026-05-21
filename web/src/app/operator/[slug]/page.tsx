@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { TopBar } from "../../_components/top-bar";
-import { requireOperatorMembership } from "@/lib/roles";
+import { getCurrentRole, requireOperatorMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import {
   getOperatorKPIs,
@@ -10,6 +10,7 @@ import {
   listTopQuestions,
 } from "@/lib/operator-stats";
 import { UploadStub } from "./upload-stub";
+import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +40,33 @@ export default async function OperatorDashboard({ params }: Props) {
     .first<{ id: string; slug: string; name: string; display_name: string | null; country: string }>();
   if (!operator) notFound();
 
-  const [kpis, courses, learners, topQs] = await Promise.all([
+  const [kpis, courses, learners, topQs, role] = await Promise.all([
     getOperatorKPIs(operator.id),
     listOperatorCourses(operator.id),
     listRecentLearners(operator.id, 10),
     listTopQuestions(operator.id, 6),
+    getCurrentRole(),
   ]);
+
+  // Build the list of operators this user can switch to. Admins see all
+  // active operators; non-admins see only their explicit memberships.
+  let switcherOps: SwitcherOperator[] = [];
+  if (role.isAdmin) {
+    const { results } = await db()
+      .prepare(`SELECT slug, name FROM operators WHERE status='active' ORDER BY name`)
+      .all<{ slug: string; name: string }>();
+    switcherOps = (results ?? []).map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      role: "platform-admin",
+    }));
+  } else {
+    switcherOps = role.operators.map((o) => ({
+      slug: o.operator_slug,
+      name: o.operator_name,
+      role: o.role,
+    }));
+  }
 
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
@@ -66,11 +88,18 @@ export default async function OperatorDashboard({ params }: Props) {
       <main className="px-5 sm:px-8 py-8 sm:py-10 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-7 sm:mb-9 flex-wrap">
-          <div>
+          <div className="min-w-0">
             <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">/OPERATOR</div>
-            <h1 className="text-[26px] sm:text-[32px] font-semibold tracking-tight text-white mt-1">
-              {operator.display_name ?? operator.name}
-            </h1>
+            <div className="flex items-center flex-wrap gap-2 mt-1">
+              <h1 className="text-[26px] sm:text-[32px] font-semibold tracking-tight text-white">
+                {operator.display_name ?? operator.name}
+              </h1>
+              <OperatorSwitcher
+                currentSlug={operator.slug}
+                currentName={operator.name}
+                operators={switcherOps}
+              />
+            </div>
             <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">
               Manage your courses, watch what agents are learning, and see the questions they're
               asking — all in one place.
