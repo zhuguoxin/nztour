@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { Logo } from "../../_components/top-bar";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function VerifyPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
+  const tr = await t();
   const row = await db()
     .prepare(
       `SELECT b.verify_code, b.awarded_at,
@@ -52,13 +54,13 @@ export default async function VerifyPage({
 
       <main className="flex-1 px-5 sm:px-8 py-12 sm:py-16 max-w-2xl mx-auto w-full">
         <div className="text-[11px] tracking-widest font-mono text-emerald-300/70 mb-2">
-          VERIFIED BADGE
+          {tr.verify_chrome_label}
         </div>
         <h1 className="text-[32px] sm:text-[36px] font-semibold tracking-tight text-white">
-          <span className="text-lime-300">✓</span> Authentic
+          <span className="text-lime-300">✓</span> {tr.verify_chrome_title}
         </h1>
         <p className="text-[14px] sm:text-[15px] text-[#a7d4b6] mt-1.5">
-          This badge was issued by TourTrain on behalf of the operator listed below.
+          {tr.verify_chrome_subtitle}
         </p>
 
         <div className="mt-8 rounded-2xl overflow-hidden border border-white/[.08] bg-[#0a3a2f]">
@@ -72,7 +74,7 @@ export default async function VerifyPage({
           </div>
           <div className="p-6 space-y-5">
             <div>
-              <div className="text-[11px] font-mono text-emerald-300/70">COURSE</div>
+              <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_course}</div>
               <div className="text-[20px] font-semibold text-white mt-0.5">{row.course_title}</div>
               {row.course_summary ? (
                 <div className="text-[14px] text-[#a7d4b6] mt-1.5 leading-relaxed">
@@ -83,22 +85,22 @@ export default async function VerifyPage({
 
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">OPERATOR</div>
+                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_operator}</div>
                 <div className="text-[14px] text-white mt-0.5">{row.operator_name}</div>
                 <div className="text-[11px] text-[#86b69a]">{row.operator_country}</div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">LEARNER</div>
+                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_learner}</div>
                 <div className="text-[14px] text-white mt-0.5">{learnerLabel}</div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">AWARDED</div>
+                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_awarded}</div>
                 <div className="text-[14px] text-white mt-0.5">
                   {awarded.toISOString().slice(0, 10)}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">VERIFY CODE</div>
+                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_code}</div>
                 <div className="font-mono text-[14px] text-emerald-300 mt-0.5">{row.verify_code}</div>
               </div>
             </div>
@@ -106,10 +108,9 @@ export default async function VerifyPage({
         </div>
 
         <div className="mt-8 text-center text-[12px] text-[#86b69a]">
-          Anyone with this URL can verify authenticity. Share on LinkedIn or in your email
-          signature:
+          {tr.verify_share_lead}
           <div className="font-mono text-[11px] text-[#5d9279] mt-1">
-            tourtrain.pages.dev/verify/{row.verify_code}
+            tourtrain.zhuguoxin.workers.dev/verify/{row.verify_code}
           </div>
         </div>
       </main>

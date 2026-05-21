@@ -2,37 +2,46 @@
 
 import { useState, useEffect } from "react";
 
+export interface UploadStubLabels {
+  title: string;
+  sub: string;
+  dropzone_a: string;
+  dropzone_b: string;
+  dropzone_blurb: string;
+  alert: string;
+  state_pdf_done: string;
+  state_pptx_done: string;
+  state_video_done: string;
+  state_pptx_progress: string; // {n}
+  state_video_progress: string; // {t}
+  state_pdf_progress: string;
+  done_chip: string;
+}
+
 /**
- * Upload-content panel — STUBBED for MVP.
- *
- * Real PDF/PPTX parsing requires Node libraries that don't run in Workers V8.
- * Per SETUP.md §2, this UI fakes the parsing progress so a demo viewer sees
- * the intended workflow. Real parsing wires up in v0.2 via Cloudflare
- * Containers or a Fly.io worker consuming PARSE_QUEUE.
+ * Upload-content panel — STUBBED for MVP. See SETUP.md §2.
  */
-export function UploadStub() {
+export function UploadStub({ labels }: { labels: UploadStubLabels }) {
   return (
     <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
       <header className="px-5 py-4 border-b border-white/[.06]">
-        <div className="font-semibold text-[14px] text-white">Upload content</div>
-        <div className="text-[12px] text-[#86b69a] mt-0.5">
-          PDF · PPTX · DOCX · MP4 · Images — auto-extracted into modules
-        </div>
+        <div className="font-semibold text-[14px] text-white">{labels.title}</div>
+        <div className="text-[12px] text-[#86b69a] mt-0.5">{labels.sub}</div>
       </header>
       <div className="p-5 space-y-4">
-        <FakeDropZone />
-        <UploadFeed />
+        <FakeDropZone labels={labels} />
+        <UploadFeed labels={labels} />
       </div>
     </section>
   );
 }
 
-function FakeDropZone() {
+function FakeDropZone({ labels }: { labels: UploadStubLabels }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button
       type="button"
-      onClick={() => alert("Self-serve parsing wires up in v0.2 (Cloudflare Containers).\n\nFor the MVP demo, content is pre-extracted offline — see seed/scripts/extract_pdf.py.")}
+      onClick={() => alert(labels.alert)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={`block w-full border-2 border-dashed rounded-xl p-7 text-center transition cursor-pointer ${
@@ -41,12 +50,10 @@ function FakeDropZone() {
     >
       <div className="text-[36px] leading-none mb-2">📤</div>
       <div className="text-[13.5px] text-white">
-        Drop files here or{" "}
-        <span className="text-emerald-300 underline underline-offset-2">browse</span>
+        {labels.dropzone_a}{" "}
+        <span className="text-emerald-300 underline underline-offset-2">{labels.dropzone_b}</span>
       </div>
-      <div className="text-[11.5px] text-[#86b69a] mt-1">
-        We'll auto-extract text, images & structure into modules
-      </div>
+      <div className="text-[11.5px] text-[#86b69a] mt-1">{labels.dropzone_blurb}</div>
     </button>
   );
 }
@@ -56,7 +63,7 @@ interface FakeUpload {
   filename: string;
   kind: "pdf" | "pptx" | "video";
   totalSecs: number;
-  progress: number; // 0..1
+  progress: number;
   done: boolean;
 }
 
@@ -66,10 +73,9 @@ const SEED: FakeUpload[] = [
   { id: "u3", filename: "Coronet-aerial-2026.mp4", kind: "video", totalSecs: 12, progress: 0.4, done: false },
 ];
 
-function UploadFeed() {
+function UploadFeed({ labels }: { labels: UploadStubLabels }) {
   const [items, setItems] = useState<FakeUpload[]>(SEED);
 
-  // Slowly advance the in-progress fakes so the dashboard feels alive on the demo.
   useEffect(() => {
     const i = setInterval(() => {
       setItems((curr) =>
@@ -83,7 +89,6 @@ function UploadFeed() {
     return () => clearInterval(i);
   }, []);
 
-  // Reset cycle every 60s so the demo loops.
   useEffect(() => {
     const i = setInterval(() => setItems(SEED), 60000);
     return () => clearInterval(i);
@@ -100,17 +105,17 @@ function UploadFeed() {
             <div className="truncate text-white">{it.filename}</div>
             <div className={`text-[11px] ${it.done ? "text-lime-300" : "text-emerald-300/80"}`}>
               {it.done
-                ? subdescDone(it.kind)
+                ? subdescDone(it.kind, labels)
                 : it.kind === "pptx"
-                  ? `⚙ Parsing slides… ${Math.round(it.progress * 22)}/22`
+                  ? labels.state_pptx_progress.replace("{n}", String(Math.round(it.progress * 22)))
                   : it.kind === "video"
-                    ? `Encoding via Stream · ${fmtSecs(it.progress * 210)} / 3:30`
-                    : `Parsing…`}
+                    ? labels.state_video_progress.replace("{t}", fmtSecs(it.progress * 210))
+                    : labels.state_pdf_progress}
             </div>
           </div>
           {it.done ? (
             <span className="px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[10px] font-medium shrink-0">
-              Done
+              {labels.done_chip}
             </span>
           ) : (
             <div className="w-20 h-1.5 bg-black/30 rounded-full overflow-hidden shrink-0">
@@ -126,14 +131,14 @@ function UploadFeed() {
   );
 }
 
-function subdescDone(kind: FakeUpload["kind"]) {
+function subdescDone(kind: FakeUpload["kind"], labels: UploadStubLabels) {
   switch (kind) {
     case "pdf":
-      return "✓ Parsed · 12 sections · 8 images";
+      return labels.state_pdf_done;
     case "pptx":
-      return "✓ Parsed · 22 slides · ready to review";
+      return labels.state_pptx_done;
     case "video":
-      return "✓ Encoded · 3:30";
+      return labels.state_video_done;
   }
 }
 

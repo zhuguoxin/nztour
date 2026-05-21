@@ -75,6 +75,9 @@ export default async function Home() {
               variant="hero"
               placeholder={tr.hero_ask_placeholder}
               examples={[tr.hero_example_1, tr.hero_example_2, tr.hero_example_3]}
+              askLabel={tr.hero_ask_button}
+              thinkingText={tr.ai_thinking_inline}
+              noAnswerWarning={tr.ai_no_answer_inline}
             />
           </div>
         </div>

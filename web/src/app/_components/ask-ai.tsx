@@ -47,6 +47,7 @@ export function AskAI({
   emptyState = "Try asking about this course. Examples below.",
   thinkingText = "Thinking…",
   noAnswerWarning = "⚠ Not found in operator content. Answer is from general knowledge.",
+  askLabel = "Ask",
 }: {
   variant?: "hero" | "sidebar";
   scope?: AskAIScope;
@@ -57,6 +58,7 @@ export function AskAI({
   emptyState?: string;
   thinkingText?: string;
   noAnswerWarning?: string;
+  askLabel?: string;
 }) {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<AskAIResult[]>([]);
@@ -152,9 +154,21 @@ export function AskAI({
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           {history.map((h, i) => (
-            <ConversationTurn key={i} item={h} />
+            <ConversationTurn
+              key={i}
+              item={h}
+              thinkingText={thinkingText}
+              noAnswerWarning={noAnswerWarning}
+            />
           ))}
-          {current ? <ConversationTurn item={current} streaming={pending} /> : null}
+          {current ? (
+            <ConversationTurn
+              item={current}
+              streaming={pending}
+              thinkingText={thinkingText}
+              noAnswerWarning={noAnswerWarning}
+            />
+          ) : null}
           {error ? (
             <div className="text-[12px] text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-md px-3 py-2">
               {error}
@@ -217,7 +231,7 @@ export function AskAI({
             disabled={pending || !input.trim()}
             className="self-stretch px-3 sm:px-5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed text-[13px] sm:text-[14px]"
           >
-            {pending ? "…" : "Ask"}
+            {pending ? "…" : askLabel}
           </button>
         </div>
         {examples.length > 0 && !current ? (
@@ -243,14 +257,29 @@ export function AskAI({
 
       {current ? (
         <div className="mt-4 rounded-2xl border border-white/[.08] bg-[#0a3a2f]/60 p-4 text-left">
-          <ConversationTurn item={current} streaming={pending} />
+          <ConversationTurn
+            item={current}
+            streaming={pending}
+            thinkingText={thinkingText}
+            noAnswerWarning={noAnswerWarning}
+          />
         </div>
       ) : null}
     </div>
   );
 }
 
-function ConversationTurn({ item, streaming = false }: { item: AskAIResult; streaming?: boolean }) {
+function ConversationTurn({
+  item,
+  streaming = false,
+  thinkingText = "Thinking…",
+  noAnswerWarning = "⚠ Not found in operator content. Answer is from general knowledge.",
+}: {
+  item: AskAIResult;
+  streaming?: boolean;
+  thinkingText?: string;
+  noAnswerWarning?: string;
+}) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
@@ -261,7 +290,7 @@ function ConversationTurn({ item, streaming = false }: { item: AskAIResult; stre
       {item.answer || streaming ? (
         <div className="bg-[#0d4538] border border-white/[.06] rounded-lg rounded-tl-sm px-3.5 py-2.5 max-w-[92%] text-[13.5px] text-[#e6f5ec] leading-relaxed whitespace-pre-wrap">
           {renderAnswerWithCitations(item.answer, item.citations)}
-          {streaming && !item.answer ? <span className="opacity-60">Thinking…</span> : null}
+          {streaming && !item.answer ? <span className="opacity-60">{thinkingText}</span> : null}
           {streaming && item.answer ? <span className="inline-block w-1.5 h-3 bg-emerald-300 align-middle ml-0.5 animate-pulse" /> : null}
         </div>
       ) : null}
@@ -280,9 +309,7 @@ function ConversationTurn({ item, streaming = false }: { item: AskAIResult; stre
           ))}
         </div>
       ) : item.source_kind === "no_answer" ? (
-        <div className="text-[11px] text-amber-300/80">
-          ⚠ Not found in operator content. Answer is from general knowledge.
-        </div>
+        <div className="text-[11px] text-amber-300/80">{noAnswerWarning}</div>
       ) : null}
     </div>
   );

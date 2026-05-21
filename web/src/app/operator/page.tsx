@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TopBar } from "../_components/top-bar";
 import { getCurrentRole } from "@/lib/roles";
 import { db } from "@/lib/db";
+import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ interface OpRow {
  *   - 0 memberships, non-admin  → "no access" panel
  */
 export default async function OperatorIndex() {
-  const role = await getCurrentRole();
+  const [role, tr] = await Promise.all([getCurrentRole(), t()]);
   if (!role.userId) redirect("/sign-in");
 
   if (role.operators.length === 1 && !role.isAdmin) {
@@ -72,25 +73,27 @@ export default async function OperatorIndex() {
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
       <TopBar />
       <main className="px-5 sm:px-8 py-10 max-w-5xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">/OPERATOR</div>
+        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">
+          {tr.op_picker_label}
+        </div>
         <h1 className="text-[26px] sm:text-[30px] font-semibold text-white mt-1">
-          {role.isAdmin ? "All operators" : "Your operators"}
+          {role.isAdmin ? tr.op_picker_title_admin : tr.op_picker_title_user}
         </h1>
         <p className="text-[13.5px] text-[#a7d4b6] mt-1.5">
           {cards.length === 0
-            ? "Nothing to manage yet."
+            ? tr.op_picker_empty_blurb
             : role.isAdmin
-              ? `You can manage any of these ${cards.length} as platform admin.`
-              : `You have ${cards.length} operator membership${cards.length === 1 ? "" : "s"}. Pick one to open the console.`}
+              ? fmt(tr.op_picker_admin_blurb, { n: cards.length })
+              : fmt(
+                  cards.length === 1 ? tr.op_picker_user_blurb_one : tr.op_picker_user_blurb_many,
+                  { n: cards.length },
+                )}
         </p>
 
         {cards.length === 0 ? (
           <div className="mt-6 rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6">
-            <div className="text-[14px] text-white font-semibold">No operator memberships</div>
-            <p className="mt-2 text-[13.5px] text-[#a7d4b6]">
-              You're signed in as a learner. To manage an operator's content, ask the platform
-              admin to add you to <code className="font-mono text-emerald-300">operator_memberships</code>.
-            </p>
+            <div className="text-[14px] text-white font-semibold">{tr.op_picker_none_title}</div>
+            <p className="mt-2 text-[13.5px] text-[#a7d4b6]">{tr.op_picker_none_body}</p>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -109,11 +112,11 @@ export default async function OperatorIndex() {
                 <div className="p-4">
                   <div className="font-semibold text-[15px] text-white">{o.display_name ?? o.name}</div>
                   <div className="flex items-center gap-2 mt-1.5 text-[12px] text-[#86b69a]">
-                    <span>{o.course_count} published</span>
+                    <span>{fmt(tr.op_picker_card_published, { n: o.course_count })}</span>
                     <span className="text-white/20">·</span>
                     <span className="font-mono uppercase text-[10px]">{o.role}</span>
                   </div>
-                  <div className="text-[12px] text-emerald-300 mt-3">Open console →</div>
+                  <div className="text-[12px] text-emerald-300 mt-3">{tr.op_picker_card_cta}</div>
                 </div>
               </Link>
             ))}

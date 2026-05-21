@@ -85,7 +85,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
         className="lg:hidden fixed right-4 bottom-4 z-20 px-3.5 py-2.5 rounded-full bg-emerald-400 text-[#04241e] font-semibold text-[13px] shadow-[0_8px_24px_rgba(0,0,0,.4)] flex items-center gap-1.5"
       >
         <span>💬</span>
-        <span>Ask AI</span>
+        <span>{tr.mobile_ask_ai}</span>
       </a>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_360px]">
@@ -144,6 +144,9 @@ export default async function CoursePage({ params, searchParams }: Props) {
             mark_complete: tr.mark_complete,
             mark_complete_and_continue: tr.mark_complete_and_continue,
             continue_to: tr.continue_to,
+            video_caption_default: tr.video_caption_default,
+            video_not_uploaded: tr.video_not_uploaded,
+            video_setup_hint: tr.video_setup_hint,
           }}
         />
 
@@ -160,6 +163,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
             emptyState={tr.ai_empty_state}
             thinkingText={tr.ai_thinking}
             noAnswerWarning={tr.ai_no_answer}
+            askLabel={tr.ai_ask_button_inline}
             placeholder={fmt(tr.ai_sidebar_placeholder, { title: course.title })}
             examples={
               parseAiExamples(course.ai_examples_json).slice(0, 4).length > 0

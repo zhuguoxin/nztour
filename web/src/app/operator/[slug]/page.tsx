@@ -11,6 +11,7 @@ import {
 } from "@/lib/operator-stats";
 import { UploadStub } from "./upload-stub";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
+import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +41,13 @@ export default async function OperatorDashboard({ params }: Props) {
     .first<{ id: string; slug: string; name: string; display_name: string | null; country: string }>();
   if (!operator) notFound();
 
-  const [kpis, courses, learners, topQs, role] = await Promise.all([
+  const [kpis, courses, learners, topQs, role, tr] = await Promise.all([
     getOperatorKPIs(operator.id),
     listOperatorCourses(operator.id),
     listRecentLearners(operator.id, 10),
     listTopQuestions(operator.id, 6),
     getCurrentRole(),
+    t(),
   ]);
 
   // Build the list of operators this user can switch to. Admins see all
@@ -78,7 +80,7 @@ export default async function OperatorDashboard({ params }: Props) {
             <span className="text-white">Operator · {operator.name}</span>
             {access.isAdmin ? (
               <span className="ml-2 px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
-                viewing as admin
+                {tr.op_d_view_as_admin}
               </span>
             ) : null}
           </span>
@@ -89,7 +91,9 @@ export default async function OperatorDashboard({ params }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-7 sm:mb-9 flex-wrap">
           <div className="min-w-0">
-            <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">/OPERATOR</div>
+            <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">
+              {tr.op_d_chrome_label}
+            </div>
             <div className="flex items-center flex-wrap gap-2 mt-1">
               <h1 className="text-[26px] sm:text-[32px] font-semibold tracking-tight text-white">
                 {operator.display_name ?? operator.name}
@@ -98,46 +102,52 @@ export default async function OperatorDashboard({ params }: Props) {
                 currentSlug={operator.slug}
                 currentName={operator.name}
                 operators={switcherOps}
+                labels={{
+                  switch: tr.op_d_switch,
+                  panel_title: tr.op_d_switch_panel_title,
+                  view_all: tr.op_d_switch_view_all,
+                }}
               />
             </div>
-            <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">
-              Manage your courses, watch what agents are learning, and see the questions they're
-              asking — all in one place.
-            </p>
+            <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">{tr.op_d_blurb}</p>
           </div>
           <button
             disabled
-            title="Course CRUD lands in v0.2"
+            title={tr.op_d_new_course_disabled}
             className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300 disabled:opacity-60"
           >
-            + New course
+            {tr.op_d_new_course}
           </button>
         </div>
 
         {/* KPI cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <KpiCard
-            label="Total learners"
+            label={tr.op_d_kpi_total_learners}
             value={kpis.total_learners.toLocaleString()}
-            sub={`+${kpis.learners_this_week} this week`}
+            sub={fmt(tr.op_d_kpi_this_week, { n: kpis.learners_this_week })}
             tone="emerald"
           />
           <KpiCard
-            label="Courses published"
+            label={tr.op_d_kpi_courses_published}
             value={kpis.courses_published.toString()}
-            sub={kpis.courses_draft ? `${kpis.courses_draft} draft` : "all live"}
+            sub={
+              kpis.courses_draft
+                ? fmt(tr.op_d_kpi_drafts, { n: kpis.courses_draft })
+                : tr.op_d_kpi_all_live
+            }
             tone="default"
           />
           <KpiCard
-            label="Badges awarded"
+            label={tr.op_d_kpi_badges_awarded}
             value={kpis.badges_awarded.toLocaleString()}
-            sub={`${kpis.completion_rate_pct}% completion`}
+            sub={fmt(tr.op_d_kpi_completion, { pct: kpis.completion_rate_pct })}
             tone="lime"
           />
           <KpiCard
-            label="AI questions"
+            label={tr.op_d_kpi_ai_questions}
             value={kpis.ai_questions_total.toLocaleString()}
-            sub={`${kpis.ai_questions_30d} in last 30d`}
+            sub={fmt(tr.op_d_kpi_30d, { n: kpis.ai_questions_30d })}
             tone="emerald"
           />
         </div>
@@ -146,15 +156,15 @@ export default async function OperatorDashboard({ params }: Props) {
           {/* My courses */}
           <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
             <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between">
-              <div className="font-semibold text-[14px] text-white">My courses</div>
+              <div className="font-semibold text-[14px] text-white">{tr.op_d_my_courses}</div>
               <span className="text-[12px] text-[#86b69a]">
-                {kpis.courses_published + kpis.courses_draft} total
+                {fmt(tr.op_d_total_count, { n: kpis.courses_published + kpis.courses_draft })}
               </span>
             </header>
             <div>
               {courses.length === 0 ? (
                 <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">
-                  No courses yet.
+                  {tr.op_d_no_courses}
                 </div>
               ) : (
                 courses.map((c) => (
@@ -171,8 +181,12 @@ export default async function OperatorDashboard({ params }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-[14px] text-white truncate">{c.title}</div>
                       <div className="text-[12px] text-[#86b69a]">
-                        {c.modules} module{c.modules === 1 ? "" : "s"} · updated{" "}
-                        {fmtRelative(c.updated_at)}
+                        {fmt(
+                          c.modules === 1 ? tr.op_d_course_modules : tr.op_d_course_modules_plural,
+                          { n: c.modules },
+                        )}{" "}
+                        ·{" "}
+                        {fmt(tr.op_d_course_updated, { rel: fmtRelative(c.updated_at) })}
                       </div>
                     </div>
                     <span
@@ -181,24 +195,29 @@ export default async function OperatorDashboard({ params }: Props) {
                           ? "bg-emerald-400/10 border border-emerald-400/30 text-emerald-200"
                           : "bg-white/[.04] border border-white/[.08] text-[#86b69a]"
                       }`}
-                      title={`${c.learners} learner${c.learners === 1 ? "" : "s"} have started this course`}
+                      title={fmt(
+                        c.learners === 1
+                          ? tr.op_d_course_learners_tooltip
+                          : tr.op_d_course_learners_tooltip_plural,
+                        { n: c.learners },
+                      )}
                     >
                       👁 {c.learners}
                     </span>
-                    <StatusPill status={c.status} />
+                    <StatusPill status={c.status} labels={{ published: tr.op_d_status_published, draft: tr.op_d_status_draft }} />
                     <button
                       disabled
                       className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06] disabled:opacity-50"
-                      title="Course editor lands in v0.2"
+                      title={tr.op_d_new_course_disabled}
                     >
-                      Edit
+                      {tr.op_d_action_edit}
                     </button>
                     {c.status === "published" ? (
                       <Link
                         href={`/learn/${operator.slug}/${c.slug}`}
                         className="px-3 py-1.5 rounded-md bg-white/[.04] border border-white/[.08] text-emerald-300 text-[12px] hover:bg-white/[.08]"
                       >
-                        View
+                        {tr.op_d_action_view}
                       </Link>
                     ) : null}
                   </div>
@@ -208,35 +227,51 @@ export default async function OperatorDashboard({ params }: Props) {
           </section>
 
           {/* Upload zone */}
-          <UploadStub />
+          <UploadStub
+            labels={{
+              title: tr.op_d_upload_title,
+              sub: tr.op_d_upload_sub,
+              dropzone_a: tr.op_d_upload_dropzone_a,
+              dropzone_b: tr.op_d_upload_dropzone_b,
+              dropzone_blurb: tr.op_d_upload_dropzone_blurb,
+              alert: tr.op_d_upload_alert,
+              state_pdf_done: tr.op_d_upload_state_pdf_done,
+              state_pptx_done: tr.op_d_upload_state_pptx_done,
+              state_video_done: tr.op_d_upload_state_video_done,
+              state_pptx_progress: tr.op_d_upload_state_pptx_progress,
+              state_video_progress: tr.op_d_upload_state_video_progress,
+              state_pdf_progress: tr.op_d_upload_state_pdf_progress,
+              done_chip: tr.op_d_upload_state_done_chip,
+            }}
+          />
         </div>
 
         {/* Learners + Top questions */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5">
           <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
             <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between">
-              <div className="font-semibold text-[14px] text-white">Recent learner progress</div>
+              <div className="font-semibold text-[14px] text-white">{tr.op_d_learners_title}</div>
               <button
                 disabled
-                title="CSV export lands in v0.2"
+                title={tr.op_d_learners_export_tooltip}
                 className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06] disabled:opacity-50"
               >
-                Export CSV
+                {tr.op_d_learners_export}
               </button>
             </header>
             {learners.length === 0 ? (
               <div className="px-5 py-10 text-center text-[13px] text-[#86b69a]">
-                No learners yet — share your course link with agents to get the first enrollments.
+                {tr.op_d_learners_empty}
               </div>
             ) : (
               <table className="w-full">
                 <thead>
                   <tr className="text-left">
-                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">Learner</th>
-                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a] hidden md:table-cell">Agency</th>
-                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a] hidden md:table-cell">Course</th>
-                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">Progress</th>
-                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">Badge</th>
+                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">{tr.op_d_learners_th_learner}</th>
+                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a] hidden md:table-cell">{tr.op_d_learners_th_agency}</th>
+                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a] hidden md:table-cell">{tr.op_d_learners_th_course}</th>
+                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">{tr.op_d_learners_th_progress}</th>
+                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">{tr.op_d_learners_th_badge}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -263,7 +298,14 @@ export default async function OperatorDashboard({ params }: Props) {
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <BadgePill status={l.badge_status} />
+                        <BadgePill
+                          status={l.badge_status}
+                          labels={{
+                            issued: tr.op_d_badge_issued,
+                            pending: tr.op_d_badge_pending,
+                            not_yet: tr.op_d_badge_not_yet,
+                          }}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -275,15 +317,15 @@ export default async function OperatorDashboard({ params }: Props) {
           {/* Top questions */}
           <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
             <header className="px-5 py-4 border-b border-white/[.06]">
-              <div className="font-semibold text-[14px] text-white">Top questions agents ask</div>
+              <div className="font-semibold text-[14px] text-white">{tr.op_d_topqs_title}</div>
               <div className="text-[12px] text-[#86b69a] mt-0.5">
-                Last 30 days · {kpis.ai_questions_30d} queries
+                {fmt(tr.op_d_topqs_sub, { n: kpis.ai_questions_30d })}
               </div>
             </header>
             <div className="p-5 space-y-3.5">
               {topQs.length === 0 ? (
                 <div className="text-center text-[13px] text-[#86b69a] py-6">
-                  No questions yet. Share the AI assistant with agents to start gathering insights.
+                  {tr.op_d_topqs_empty}
                 </div>
               ) : (
                 topQs.map((q, i) => {
@@ -301,8 +343,16 @@ export default async function OperatorDashboard({ params }: Props) {
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] text-white">"{q.question}"</div>
                         <div className={`text-[11px] mt-0.5 ${tone}`}>
-                          {q.asks} ask{q.asks === 1 ? "" : "s"} ·{" "}
-                          {sourceLabel(q.source_kind)}
+                          {fmt(
+                            q.asks === 1 ? tr.op_d_topqs_asks_one : tr.op_d_topqs_asks_plural,
+                            { n: q.asks },
+                          )}{" "}
+                          ·{" "}
+                          {sourceLabel(q.source_kind, {
+                            rag: tr.op_d_topqs_source_rag,
+                            web: tr.op_d_topqs_source_web,
+                            none: tr.op_d_topqs_source_none,
+                          })}
                         </div>
                       </div>
                     </div>
@@ -311,10 +361,10 @@ export default async function OperatorDashboard({ params }: Props) {
               )}
               <button
                 disabled
-                title="Content-gap deep-dive lands in v0.2"
+                title={tr.op_d_new_course_disabled}
                 className="w-full mt-3 px-3 py-2 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06] disabled:opacity-50"
               >
-                View all questions →
+                {tr.op_d_topqs_view_all}
               </button>
             </div>
           </section>
@@ -350,58 +400,75 @@ function KpiCard({
   );
 }
 
-function StatusPill({ status }: { status: string }) {
+function StatusPill({
+  status,
+  labels,
+}: {
+  status: string;
+  labels: { published: string; draft: string };
+}) {
   if (status === "published") {
     return (
       <span className="px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
-        Published
+        {labels.published}
       </span>
     );
   }
   return (
     <span className="px-2 py-0.5 rounded-full bg-amber-300/10 border border-amber-300/30 text-amber-300 text-[11px] font-medium">
-      Draft
+      {labels.draft}
     </span>
   );
 }
 
-function BadgePill({ status }: { status: "issued" | "pending" | "not_yet" }) {
+function BadgePill({
+  status,
+  labels,
+}: {
+  status: "issued" | "pending" | "not_yet";
+  labels: { issued: string; pending: string; not_yet: string };
+}) {
   if (status === "issued") {
     return (
       <span className="px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
-        Issued
+        {labels.issued}
       </span>
     );
   }
   if (status === "pending") {
     return (
       <span className="px-2 py-0.5 rounded-full bg-amber-300/10 border border-amber-300/30 text-amber-300 text-[11px] font-medium">
-        Pending
+        {labels.pending}
       </span>
     );
   }
   return (
     <span className="px-2 py-0.5 rounded-full bg-white/[.04] border border-white/[.08] text-[#a7d4b6] text-[11px] font-medium">
-      Not yet
+      {labels.not_yet}
     </span>
   );
 }
 
-function NoAccess({ slug }: { slug: string }) {
+async function NoAccess({ slug }: { slug: string }) {
+  const tr = await t();
+  const [before, after] = tr.op_d_403_body.split("{slug}");
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased flex items-center justify-center">
       <div className="text-center max-w-md px-6">
-        <div className="text-[11px] tracking-widest font-mono text-rose-300 mb-2">403</div>
-        <h1 className="text-[24px] font-semibold text-white">No operator access</h1>
+        <div className="text-[11px] tracking-widest font-mono text-rose-300 mb-2">
+          {tr.op_d_403_label}
+        </div>
+        <h1 className="text-[24px] font-semibold text-white">{tr.op_d_403_title}</h1>
         <p className="mt-3 text-[14px] text-[#a7d4b6]">
-          You don't have permission to manage <code className="font-mono text-emerald-300">{slug}</code>.
-          Ask the platform admin to grant you operator membership.
+          {before}
+          <code className="font-mono text-emerald-300">{slug}</code>
+          {after}
         </p>
         <Link
           href="/"
           className="mt-6 inline-block px-4 py-2 rounded-md border border-white/[.10] text-[14px] text-[#d8f0e1] hover:bg-white/[.06]"
         >
-          ← Home
+          {tr.op_d_403_home}
         </Link>
       </div>
     </div>
@@ -415,14 +482,14 @@ function maskEmail(email: string): string {
   return `${head}${"•".repeat(Math.max(3, u.length - 2))}@${d}`;
 }
 
-function sourceLabel(kind: string): string {
+function sourceLabel(kind: string, labels: { rag: string; web: string; none: string }): string {
   switch (kind) {
     case "rag":
-      return "✓ answered from your content";
+      return labels.rag;
     case "web":
-      return "⚠ fell back to web — consider adding to course";
+      return labels.web;
     case "no_answer":
-      return "✗ no answer found — content gap";
+      return labels.none;
     default:
       return kind;
   }

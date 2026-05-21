@@ -3,6 +3,7 @@ import { TopBar } from "../_components/top-bar";
 import { getCurrentRole, requireAdmin } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { grantMembership, revokeMembership } from "./actions";
+import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function AdminPage() {
   }
   void userId;
 
-  const role = await getCurrentRole();
+  const [role, tr] = await Promise.all([getCurrentRole(), t()]);
 
   // List operators (id, slug, name) + every user with current memberships count
   const [opsRes, usersRes, membersRes] = await Promise.all([
@@ -53,39 +54,39 @@ export default async function AdminPage() {
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2">
-            <Link href="/" className="hover:text-white">Home</Link>
+            <Link href="/" className="hover:text-white">{tr.nav_home}</Link>
             <span className="text-white/20">/</span>
-            <span className="text-white">Platform admin</span>
+            <span className="text-white">{tr.admin_breadcrumb}</span>
           </span>
         }
       />
 
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-lime-300/70">/ADMIN</div>
+        <div className="text-[11px] tracking-widest font-mono text-lime-300/70">
+          {tr.admin_chrome_label}
+        </div>
         <h1 className="text-[26px] sm:text-[30px] font-semibold text-white mt-1">
-          Platform admin
+          {tr.admin_title}
         </h1>
-        <p className="text-[13.5px] text-[#a7d4b6] mt-1.5">
-          Manage users and grant operator memberships. Use sparingly — every action writes to D1.
-        </p>
+        <p className="text-[13.5px] text-[#a7d4b6] mt-1.5">{tr.admin_blurb}</p>
 
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Stat label="Users" value={users.length.toString()} />
-          <Stat label="Operators" value={operators.length.toString()} />
-          <Stat label="Memberships" value={memberships.length.toString()} />
-          <Stat label="You" value={role.isAdmin ? "✓ admin" : "—"} />
+          <Stat label={tr.admin_stat_users} value={users.length.toString()} />
+          <Stat label={tr.admin_stat_operators} value={operators.length.toString()} />
+          <Stat label={tr.admin_stat_memberships} value={memberships.length.toString()} />
+          <Stat label={tr.admin_stat_you} value={role.isAdmin ? tr.admin_you_admin : "—"} />
         </div>
 
         <section className="mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
           <header className="px-5 py-4 border-b border-white/[.06]">
-            <div className="font-semibold text-[14px] text-white">Users + memberships</div>
-            <div className="text-[12px] text-[#86b69a] mt-0.5">
-              Last 100 by signup time. Submit the form on any row to grant a new operator membership.
-            </div>
+            <div className="font-semibold text-[14px] text-white">{tr.admin_users_title}</div>
+            <div className="text-[12px] text-[#86b69a] mt-0.5">{tr.admin_users_sub}</div>
           </header>
           <div>
             {users.length === 0 ? (
-              <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">No users yet.</div>
+              <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">
+                {tr.admin_users_empty}
+              </div>
             ) : (
               users.map((u) => {
                 const userMems = membershipsByUser.get(u.id) ?? [];
@@ -111,7 +112,10 @@ export default async function AdminPage() {
                               <button
                                 type="submit"
                                 className="px-2 py-0.5 rounded-full bg-emerald-400/10 border border-emerald-400/30 text-emerald-300 text-[11px] hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-300 transition"
-                                title={`Revoke ${m.role} access to ${m.operator_name}`}
+                                title={fmt(tr.admin_revoke_tooltip, {
+                                  role: m.role,
+                                  operator: m.operator_name,
+                                })}
                               >
                                 {m.operator_name} · {m.role} <span className="opacity-60">✕</span>
                               </button>
@@ -133,7 +137,7 @@ export default async function AdminPage() {
                         className="bg-[#062b22] border border-white/[.10] rounded-md px-2 py-1.5 text-[12.5px] text-white outline-none focus:border-emerald-400/50"
                       >
                         <option value="" disabled>
-                          Grant operator…
+                          {tr.admin_grant_placeholder}
                         </option>
                         {operators.map((o) => (
                           <option key={o.id} value={o.id}>
@@ -146,14 +150,14 @@ export default async function AdminPage() {
                         defaultValue="admin"
                         className="bg-[#062b22] border border-white/[.10] rounded-md px-2 py-1.5 text-[12.5px] text-white outline-none focus:border-emerald-400/50"
                       >
-                        <option value="admin">admin</option>
-                        <option value="editor">editor</option>
+                        <option value="admin">{tr.admin_role_admin}</option>
+                        <option value="editor">{tr.admin_role_editor}</option>
                       </select>
                       <button
                         type="submit"
                         className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12.5px] hover:bg-emerald-300"
                       >
-                        Grant
+                        {tr.admin_grant_button}
                       </button>
                     </form>
                   </div>
@@ -165,10 +169,8 @@ export default async function AdminPage() {
 
         <section className="mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
           <header className="px-5 py-4 border-b border-white/[.06]">
-            <div className="font-semibold text-[14px] text-white">Operators</div>
-            <div className="text-[12px] text-[#86b69a] mt-0.5">
-              Tap to open the console as admin.
-            </div>
+            <div className="font-semibold text-[14px] text-white">{tr.admin_operators_title}</div>
+            <div className="text-[12px] text-[#86b69a] mt-0.5">{tr.admin_operators_sub}</div>
           </header>
           <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {operators.map((o) => (
@@ -197,21 +199,19 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Forbidden() {
+async function Forbidden() {
+  const tr = await t();
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased flex items-center justify-center">
       <div className="text-center max-w-md px-6">
         <div className="text-[11px] tracking-widest font-mono text-rose-300 mb-2">403</div>
-        <h1 className="text-[24px] font-semibold text-white">Admin only</h1>
-        <p className="mt-3 text-[14px] text-[#a7d4b6]">
-          You're signed in but not a platform admin. If your email is on the allow-list, visit
-          /learn first to trigger the bootstrap.
-        </p>
+        <h1 className="text-[24px] font-semibold text-white">{tr.admin_403_title}</h1>
+        <p className="mt-3 text-[14px] text-[#a7d4b6]">{tr.admin_403_body}</p>
         <Link
           href="/"
           className="mt-6 inline-block px-4 py-2 rounded-md border border-white/[.10] text-[14px] text-[#d8f0e1] hover:bg-white/[.06]"
         >
-          ← Home
+          {tr.op_d_403_home}
         </Link>
       </div>
     </div>

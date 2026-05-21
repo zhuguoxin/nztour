@@ -24,6 +24,9 @@ export interface ModuleReaderStrings {
   mark_complete: string;
   mark_complete_and_continue: string;
   continue_to: string; // contains {title}
+  video_caption_default?: string;
+  video_not_uploaded?: string;
+  video_setup_hint?: string;
 }
 
 interface Props {
@@ -110,7 +113,17 @@ export function ModuleReader({
             {tr.no_blocks}
           </div>
         ) : (
-          blocks.map((b) => <BlockView key={b.id} block={b} />)
+          blocks.map((b) => (
+            <BlockView
+              key={b.id}
+              block={b}
+              videoFallback={{
+                caption_default: tr.video_caption_default ?? "Video",
+                not_uploaded: tr.video_not_uploaded ?? "video not yet uploaded",
+                setup_hint: tr.video_setup_hint ?? "Set NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN and a real Stream UID to embed",
+              }}
+            />
+          ))
         )}
       </article>
 
@@ -181,7 +194,13 @@ export function ModuleReader({
   );
 }
 
-function BlockView({ block }: { block: BlockRow }) {
+function BlockView({
+  block,
+  videoFallback,
+}: {
+  block: BlockRow;
+  videoFallback?: { caption_default: string; not_uploaded: string; setup_hint: string };
+}) {
   switch (block.kind) {
     case "text":
       return (
@@ -200,7 +219,7 @@ function BlockView({ block }: { block: BlockRow }) {
         </div>
       );
     case "video":
-      return <VideoBlock block={block} />;
+      return <VideoBlock block={block} fallback={videoFallback} />;
     case "image":
       return (
         <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-center text-[#a7d4b6] text-sm">
@@ -254,9 +273,20 @@ function mdToHtml(md: string): string {
  * stays "use client" alongside the rest of the reader) can read it from
  * build-time inlined env without an extra server prop.
  */
-function VideoBlock({ block }: { block: BlockRow }) {
+function VideoBlock({
+  block,
+  fallback = {
+    caption_default: "Video",
+    not_uploaded: "video not yet uploaded",
+    setup_hint:
+      "Set NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN and a real Stream UID to embed",
+  },
+}: {
+  block: BlockRow;
+  fallback?: { caption_default: string; not_uploaded: string; setup_hint: string };
+}) {
   const uid = block.video_uid?.trim() ?? "";
-  const caption = block.caption ?? "Video";
+  const caption = block.caption ?? fallback.caption_default;
 
   // YouTube fallback — accept "yt:<id>" so we can demo without Stream account.
   if (uid.startsWith("yt:")) {
@@ -313,11 +343,9 @@ function VideoBlock({ block }: { block: BlockRow }) {
       <div className="text-center text-white/75">
         <div className="text-[48px] mb-2 leading-none">▶</div>
         <div className="text-[12px] font-mono text-emerald-300/80">
-          {uid ? `video_uid: ${uid}` : "video not yet uploaded"}
+          {uid ? `video_uid: ${uid}` : fallback.not_uploaded}
         </div>
-        <div className="text-[11px] text-white/40 mt-1">
-          Set NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN and a real Stream UID to embed
-        </div>
+        <div className="text-[11px] text-white/40 mt-1">{fallback.setup_hint}</div>
       </div>
     </div>
   );
