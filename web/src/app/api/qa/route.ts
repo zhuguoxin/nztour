@@ -14,7 +14,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { retrieve, buildSystemPrompt, type Citation } from "@/lib/rag";
+import {
+  retrieve,
+  getAllCourseChunks,
+  buildSystemBlocks,
+  type Citation,
+} from "@/lib/rag";
 
 export const dynamic = "force-dynamic";
 
@@ -40,17 +45,33 @@ export async function POST(req: Request) {
   const scope = body.scope ?? {};
 
   const { env } = getCloudflareContext();
-  const citations = await retrieve(question, scope, 5);
 
+  // Citations shown to the user = top relevant snippets (always a similarity search).
+  const citations = await retrieve(question, scope, 5);
   const sourceKind: "rag" | "no_answer" = citations.length > 0 ? "rag" : "no_answer";
 
-  // We always run Claude — even with no citations Claude can say "I don't know"
-  // in the user's language. (Web fallback via Tavily lands in v0.2; flagged in SETUP.)
+  // Context fed to Claude:
+  //   - course-scoped → the WHOLE course (stable across follow-ups → prompt-cache hit)
+  //   - otherwise     → the top relevant snippets from retrieval
+  // The cacheable course context turns 2nd+ questions in a course into near-instant,
+  // ~10%-input-cost responses (5-min ephemeral cache TTL).
+  const cacheable = !!scope.course_id;
+  let contextCitations = citations;
+  if (cacheable) {
+    const all = await getAllCourseChunks(scope.course_id!);
+    if (all.length > 0) contextCitations = all;
+  }
+
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  const systemPrompt =
-    citations.length > 0
-      ? buildSystemPrompt(citations)
-      : `You are TourTrain's product assistant for New Zealand travel agents. Answer in the same language as the question. We could not find relevant operator content for this question — be honest about that and offer general knowledge if useful.`;
+  const systemBlocks =
+    contextCitations.length > 0
+      ? buildSystemBlocks(contextCitations, cacheable)
+      : [
+          {
+            type: "text" as const,
+            text: `You are TourTrain's product assistant for New Zealand travel agents. Answer in the same language as the question. We could not find relevant operator content for this question — be honest about that and offer general knowledge if useful.`,
+          },
+        ];
 
   // Pull user lang preference for logs (not used by Claude — it auto-detects).
   const user = await currentUser().catch(() => null);
@@ -68,11 +89,13 @@ export async function POST(req: Request) {
       send("citations", { citations: citations.map(toCitationPayload) });
 
       let answerText = "";
+      let cacheRead = 0;
+      let cacheWrite = 0;
       try {
         const claudeStream = client.messages.stream({
           model: MODEL,
           max_tokens: 800,
-          system: systemPrompt,
+          system: systemBlocks,
           messages: [{ role: "user", content: question }],
         });
         for await (const event of claudeStream) {
@@ -81,6 +104,15 @@ export async function POST(req: Request) {
             answerText += delta;
             send("text", { delta });
           }
+          // Capture cache usage from the message_start / message_delta usage fields.
+          if (event.type === "message_start") {
+            const u = event.message.usage as {
+              cache_read_input_tokens?: number;
+              cache_creation_input_tokens?: number;
+            };
+            cacheRead = u.cache_read_input_tokens ?? 0;
+            cacheWrite = u.cache_creation_input_tokens ?? 0;
+          }
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -88,7 +120,11 @@ export async function POST(req: Request) {
       }
 
       const latency_ms = Date.now() - start;
-      send("done", { latency_ms, source_kind: sourceKind });
+      send("done", {
+        latency_ms,
+        source_kind: sourceKind,
+        cache: { read: cacheRead, write: cacheWrite, hit: cacheRead > 0 },
+      });
       controller.close();
 
       // Best-effort log; don't fail the response on db hiccup.

@@ -78,6 +78,66 @@ export async function getOperatorKPIs(operatorId: string): Promise<OperatorKPIs>
   };
 }
 
+export interface DailyPoint {
+  date: string; // YYYY-MM-DD
+  module_completions: number;
+  new_learners: number;
+}
+
+/**
+ * Daily learning activity for the last `days` days (inclusive of today),
+ * scoped to one operator. Returns exactly `days` points with zero-fill so the
+ * chart has no gaps. Counts module completions and new enrollments per day.
+ */
+export async function getDailyActivity(operatorId: string, days = 7): Promise<DailyPoint[]> {
+  const since = Math.floor(Date.now() / 1000) - (days - 1) * 86400;
+  // Truncate `since` to local midnight-ish (UTC day boundary is fine for MVP).
+  const sinceMidnight = Math.floor(since / 86400) * 86400;
+
+  const [completions, enrolls] = await db().batch([
+    db()
+      .prepare(
+        `SELECT date(mp.completed_at, 'unixepoch') AS day, COUNT(*) AS n
+         FROM module_progress mp
+         JOIN modules m ON m.id = mp.module_id
+         JOIN courses c ON c.id = m.course_id
+         WHERE c.operator_id = ? AND mp.completed_at IS NOT NULL AND mp.completed_at >= ?
+         GROUP BY day`,
+      )
+      .bind(operatorId, sinceMidnight),
+    db()
+      .prepare(
+        `SELECT date(e.started_at, 'unixepoch') AS day, COUNT(*) AS n
+         FROM enrollments e
+         JOIN courses c ON c.id = e.course_id
+         WHERE c.operator_id = ? AND e.started_at >= ?
+         GROUP BY day`,
+      )
+      .bind(operatorId, sinceMidnight),
+  ]);
+
+  const compByDay = new Map<string, number>();
+  for (const r of (completions.results ?? []) as { day: string; n: number }[]) {
+    compByDay.set(r.day, r.n);
+  }
+  const enrByDay = new Map<string, number>();
+  for (const r of (enrolls.results ?? []) as { day: string; n: number }[]) {
+    enrByDay.set(r.day, r.n);
+  }
+
+  const points: DailyPoint[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date((Math.floor(Date.now() / 1000) - i * 86400) * 1000);
+    const key = d.toISOString().slice(0, 10);
+    points.push({
+      date: key,
+      module_completions: compByDay.get(key) ?? 0,
+      new_learners: enrByDay.get(key) ?? 0,
+    });
+  }
+  return points;
+}
+
 export interface CourseSummary {
   id: string;
   slug: string;

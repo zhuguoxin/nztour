@@ -8,9 +8,11 @@ import {
   listOperatorCourses,
   listRecentLearners,
   listTopQuestions,
+  getDailyActivity,
 } from "@/lib/operator-stats";
 import { UploadStub } from "./upload-stub";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
+import { ActivityChart } from "./activity-chart";
 import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -41,11 +43,12 @@ export default async function OperatorDashboard({ params }: Props) {
     .first<{ id: string; slug: string; name: string; display_name: string | null; country: string }>();
   if (!operator) notFound();
 
-  const [kpis, courses, learners, topQs, role, tr] = await Promise.all([
+  const [kpis, courses, learners, topQs, activity, role, tr] = await Promise.all([
     getOperatorKPIs(operator.id),
     listOperatorCourses(operator.id),
     listRecentLearners(operator.id, 10),
     listTopQuestions(operator.id, 6),
+    getDailyActivity(operator.id, 7),
     getCurrentRole(),
     t(),
   ]);
@@ -151,6 +154,17 @@ export default async function OperatorDashboard({ params }: Props) {
             tone="emerald"
           />
         </div>
+
+        {/* 7-day learning activity */}
+        <ActivityChart
+          points={activity}
+          labels={{
+            title: tr.op_d_activity_title,
+            completions: tr.op_d_activity_completions,
+            new_learners: tr.op_d_activity_new_learners,
+            empty: tr.op_d_activity_empty,
+          }}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 mb-8">
           {/* My courses */}

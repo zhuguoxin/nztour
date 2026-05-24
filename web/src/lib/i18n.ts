@@ -201,6 +201,11 @@ const en = {
   op_d_kpi_completion: "{pct}% completion",
   op_d_kpi_30d: "{n} in last 30d",
 
+  op_d_activity_title: "Learning activity · last 7 days",
+  op_d_activity_completions: "Module completions",
+  op_d_activity_new_learners: "New learners",
+  op_d_activity_empty: "No activity in the last 7 days yet.",
+
   op_d_my_courses: "My courses",
   op_d_total_count: "{n} total",
   op_d_no_courses: "No courses yet.",
@@ -460,6 +465,11 @@ const zhCN: Dict = {
   op_d_kpi_all_live: "全部已上线",
   op_d_kpi_completion: "完成率 {pct}%",
   op_d_kpi_30d: "近 30 天 {n}",
+
+  op_d_activity_title: "学习活动 · 近 7 天",
+  op_d_activity_completions: "模块完成",
+  op_d_activity_new_learners: "新增学员",
+  op_d_activity_empty: "近 7 天暂无学习活动。",
 
   op_d_my_courses: "我的课程",
   op_d_total_count: "共 {n} 门",
