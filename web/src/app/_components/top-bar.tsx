@@ -174,16 +174,13 @@ export function LibretourMark({
         </clipPath>
       </defs>
       <g clipPath="url(#lt-pin-clip)">
-        <path d="M -80 8 L 120 36 L 120 100 L -80 72 Z" fill={dark} />
-        <path d="M 320 8 L 120 36 L 120 100 L 320 72 Z" fill={light} />
-        <path d="M -80 104 L 120 128 L 120 158 L -80 134 Z" fill={dark} />
-        <path d="M 320 104 L 120 128 L 120 158 L 320 134 Z" fill={light} />
-        <path d="M -80 150 L 120 172 L 120 198 L -80 176 Z" fill={dark} />
-        <path d="M 320 150 L 120 172 L 120 198 L 320 176 Z" fill={light} />
-        <path d="M -80 190 L 120 209 L 120 230 L -80 211 Z" fill={dark} />
-        <path d="M 320 190 L 120 209 L 120 230 L 320 211 Z" fill={light} />
-        <path d="M -80 228 L 120 245 L 120 261 L -80 244 Z" fill={dark} />
-        <path d="M 320 228 L 120 245 L 120 261 L 320 244 Z" fill={light} />
+        {/* Simplified 3-band mark — bold enough to read at ~24px in the header */}
+        <path d="M -80 6 L 120 40 L 120 118 L -80 84 Z" fill={dark} />
+        <path d="M 320 6 L 120 40 L 120 118 L 320 84 Z" fill={light} />
+        <path d="M -80 132 L 120 166 L 120 218 L -80 184 Z" fill={dark} />
+        <path d="M 320 132 L 120 166 L 120 218 L 320 184 Z" fill={light} />
+        <path d="M -80 222 L 120 262 L 120 302 L -80 262 Z" fill={dark} />
+        <path d="M 320 222 L 120 262 L 120 302 L 320 262 Z" fill={light} />
       </g>
     </svg>
   );

@@ -71,23 +71,36 @@ def chevron_half(y_top: float, thickness: float, dip: float, side: str) -> str:
 
 # Bands: (y_top, thickness, dip). Decreasing as we go down; gaps via the
 # y_top steps being larger than thickness.
-BANDS = [
+# Detailed band set — used for the large lockup only.
+BANDS_DETAILED = [
     (8.0, 64.0, 28.0),    # dome: y_top above the circle so the clip yields a full rounded cap
     (104.0, 30.0, 24.0),
     (150.0, 26.0, 22.0),
     (190.0, 21.0, 19.0),
 ]
-# Tip diamond near the point.
-TIP = (228.0, 16.0, 17.0)
+TIP_DETAILED = (228.0, 16.0, 17.0)
+
+# Simple, bold band set — used for the small mark + favicon + header icon so
+# it stays legible at ~24px (only 3 thick bands + a tip, fat gaps).
+BANDS_SIMPLE = [
+    (6.0, 78.0, 34.0),    # bold dome
+    (132.0, 52.0, 34.0),  # middle band
+]
+TIP_SIMPLE = (222.0, 40.0, 40.0)  # chunky tip wedge
+
+# Active set (overridden per-call in build_mark).
+BANDS = BANDS_DETAILED
+TIP = TIP_DETAILED
 
 
-def build_mark(view=240, with_defs_id="pinclip") -> str:
+def build_mark(view=240, with_defs_id="pinclip", simple=False) -> str:
+    bands = BANDS_SIMPLE if simple else BANDS_DETAILED
+    tip = TIP_SIMPLE if simple else TIP_DETAILED
     bands_svg = []
-    for (yt, th, dip) in BANDS:
+    for (yt, th, dip) in bands:
         bands_svg.append(f'<path d="{chevron_half(yt, th, dip, "left")}" fill="{DARK}"/>')
         bands_svg.append(f'<path d="{chevron_half(yt, th, dip, "right")}" fill="{LIGHT}"/>')
-    # tip
-    yt, th, dip = TIP
+    yt, th, dip = tip
     bands_svg.append(f'<path d="{chevron_half(yt, th, dip, "left")}" fill="{DARK}"/>')
     bands_svg.append(f'<path d="{chevron_half(yt, th, dip, "right")}" fill="{LIGHT}"/>')
     inner = "\n      ".join(bands_svg)
@@ -102,13 +115,22 @@ def build_mark(view=240, with_defs_id="pinclip") -> str:
 
 
 def write_mark():
-    body = build_mark(with_defs_id="pinclip")
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" width="240" height="320" role="img" aria-label="Libretour">
-  {body}
+    # Detailed mark (large use)
+    detailed = build_mark(with_defs_id="pinclip", simple=False)
+    (PUB / "libretour-mark.svg").write_text(
+        f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" width="240" height="320" role="img" aria-label="Libretour">
+  {detailed}
 </svg>
 '''
-    (PUB / "libretour-mark.svg").write_text(svg)
-    (PUB / "favicon.svg").write_text(svg)
+    )
+    # Simple bold mark (favicon + header)
+    simple = build_mark(with_defs_id="pinclip", simple=True)
+    simple_svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" width="240" height="320" role="img" aria-label="Libretour">
+  {simple}
+</svg>
+'''
+    (PUB / "libretour-mark-simple.svg").write_text(simple_svg)
+    (PUB / "favicon.svg").write_text(simple_svg)
 
 
 def write_logo():
