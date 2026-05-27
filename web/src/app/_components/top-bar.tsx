@@ -10,7 +10,7 @@ import { LocaleSwitcher } from "./locale-switcher";
  * - Desktop: single row.
  *
  * `breadcrumb` is rendered in the desktop row in place of the nav links
- * (used on /learn/* pages to show "TourTrain / NZSki / Coronet Peak 2026").
+ * (used on /learn/* pages to show "Libretour / NZSki / Coronet Peak 2026").
  *
  * Role-aware: operators see an "Operator console" pill linking to
  * /operator/<first-slug>; platform admins see "Admin" linking to /admin.
@@ -148,7 +148,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
         <circle cx="12" cy="14" r="2" fill="#bef264" />
       </svg>
       <span className={`font-semibold ${compact ? "text-[15px]" : "text-[17px]"} text-white`}>
-        <span className="text-emerald-300">Tour</span>Train
+        <span className="text-emerald-300">Libre</span>tour
       </span>
     </Link>
   );

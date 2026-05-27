@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       : [
           {
             type: "text" as const,
-            text: `You are TourTrain's product assistant for New Zealand travel agents. Answer in the same language as the question. We could not find relevant operator content for this question — be honest about that and offer general knowledge if useful.`,
+            text: `You are Libretour's product assistant for New Zealand travel agents. Answer in the same language as the question. We could not find relevant operator content for this question — be honest about that and offer general knowledge if useful.`,
           },
         ];
 

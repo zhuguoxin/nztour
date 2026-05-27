@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TourTrain — NZ Tourism B2B Training",
+  title: "Libretour — NZ Tourism B2B Training",
   description:
     "Learn directly from New Zealand tourism operators. Get verifiable digital badges. Ask AI anything — in any language.",
 };

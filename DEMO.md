@@ -1,4 +1,4 @@
-# TourTrain — Activity Demo Script
+# Libretour — Activity Demo Script
 
 > 8 minutes · live walkthrough · production URL: <https://tourtrain.zhuguoxin.workers.dev>
 >
@@ -51,7 +51,7 @@ Open <https://tourtrain.zhuguoxin.workers.dev> in the anonymous tab.
 > hand-outs, and email threads — which means 80% of what an operator wants
 > agents to know never lands.
 >
-> TourTrain is the platform we're building to fix that. Every operator can
+> Libretour is the platform we're building to fix that. Every operator can
 > upload their existing materials, agents earn verifiable badges, and there's
 > an AI assistant grounded in operator content so agents can answer client
 > questions in real time."

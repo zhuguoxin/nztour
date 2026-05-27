@@ -1,4 +1,4 @@
-# TourTrain — MVP Setup (Cloudflare-only)
+# Libretour — MVP Setup (Cloudflare-only)
 
 > Two-week build, single demo target. Pure Cloudflare stack.
 > Anything that doesn't run on Workers is **stubbed with seed data** for the demo and flagged here for v0.2.

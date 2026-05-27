@@ -1,4 +1,4 @@
-# TourTrain
+# Libretour
 
 NZ tourism B2B training & certification platform. MVP for activity demo in 2 weeks.
 

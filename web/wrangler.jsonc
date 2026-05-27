@@ -1,5 +1,5 @@
 /**
- * TourTrain — Next.js 16 on Cloudflare Workers via @opennextjs/cloudflare.
+ * Libretour — Next.js 16 on Cloudflare Workers via @opennextjs/cloudflare.
  * Bindings here are merged from c3 scaffold + our MVP plan.
  *
  * Deploy:    pnpm run deploy
@@ -76,7 +76,7 @@
 
   // === Non-secret env vars ===
   "vars": {
-    "APP_NAME": "TourTrain",
+    "APP_NAME": "Libretour",
     "DEFAULT_LOCALE": "en",
     "SUPPORTED_LOCALES": "en,zh-CN,zh-TW,ja,ko,de,es",
     "STREAM_CUSTOMER_SUBDOMAIN": "REPLACE_WITH_CF_STREAM_SUBDOMAIN",

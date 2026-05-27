@@ -139,7 +139,7 @@ const en = {
   verify_label: "VERIFIED BADGE",
   verify_authentic: "Authentic",
   verify_subtitle:
-    "This badge was issued by TourTrain on behalf of the operator listed below.",
+    "This badge was issued by Libretour on behalf of the operator listed below.",
   verify_course: "COURSE",
   verify_operator: "OPERATOR",
   verify_learner: "LEARNER",
@@ -149,13 +149,13 @@ const en = {
     "Anyone with this URL can verify authenticity. Share on LinkedIn or in your email signature:",
 
   // Footer
-  footer_build: "TourTrain · d5 build · {operators} operators / {courses} courses live",
+  footer_build: "Libretour · d5 build · {operators} operators / {courses} courses live",
 
   // ===== /verify/[code] =====
   verify_chrome_label: "VERIFIED BADGE",
   verify_chrome_title: "Authentic",
   verify_chrome_subtitle:
-    "This badge was issued by TourTrain on behalf of the operator listed below.",
+    "This badge was issued by Libretour on behalf of the operator listed below.",
   verify_field_course: "COURSE",
   verify_field_operator: "OPERATOR",
   verify_field_learner: "LEARNER",
@@ -407,7 +407,7 @@ const zhCN: Dict = {
   verify_label: "已验证徽章",
   verify_authentic: "真实有效",
   verify_subtitle:
-    "本徽章由 TourTrain 代表下列运营商颁发。",
+    "本徽章由 Libretour 代表下列运营商颁发。",
   verify_course: "课程",
   verify_operator: "运营商",
   verify_learner: "学员",
@@ -417,12 +417,12 @@ const zhCN: Dict = {
     "任何人通过该链接均可验证徽章真伪。可分享至 LinkedIn 或邮件签名:",
 
   // Footer
-  footer_build: "TourTrain · d5 构建 · 已上线 {operators} 家运营商 / {courses} 门课程",
+  footer_build: "Libretour · d5 构建 · 已上线 {operators} 家运营商 / {courses} 门课程",
 
   // ===== /verify/[code] =====
   verify_chrome_label: "已验证徽章",
   verify_chrome_title: "真实有效",
-  verify_chrome_subtitle: "本徽章由 TourTrain 代表下列运营商颁发。",
+  verify_chrome_subtitle: "本徽章由 Libretour 代表下列运营商颁发。",
   verify_field_course: "课程",
   verify_field_operator: "运营商",
   verify_field_learner: "学员",
