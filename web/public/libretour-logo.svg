@@ -1,10 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" width="240" height="320" role="img" aria-label="Libretour">
-  <defs>
-    <clipPath id="pinclip">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 480" width="600" height="480" role="img" aria-label="Libretour — since 2026">
+  <g transform="translate(180, 30)">
+    <defs>
+    <clipPath id="pinclipL">
       <path d="M 120.0 300.0 C 42.0 208.0 28.0 174.0 28.0 116.0 a 92.0 92.0 0 1 1 184.0 0 C 212.0 174.0 198.0 208.0 120.0 300.0 Z"/>
     </clipPath>
   </defs>
-  <g clip-path="url(#pinclip)">
+  <g clip-path="url(#pinclipL)">
       <path d="M -80.0 8.0 L 120.0 36.0 L 120.0 100.0 L -80.0 72.0 Z" fill="#1B7A4F"/>
       <path d="M 320.0 8.0 L 120.0 36.0 L 120.0 100.0 L 320.0 72.0 Z" fill="#46B175"/>
       <path d="M -80.0 104.0 L 120.0 128.0 L 120.0 158.0 L -80.0 134.0 Z" fill="#1B7A4F"/>
@@ -16,4 +17,11 @@
       <path d="M -80.0 228.0 L 120.0 245.0 L 120.0 261.0 L -80.0 244.0 Z" fill="#1B7A4F"/>
       <path d="M 320.0 228.0 L 120.0 245.0 L 120.0 261.0 L 320.0 244.0 Z" fill="#46B175"/>
   </g>
+  </g>
+  <text x="300" y="410" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-weight="800"
+        font-size="64" letter-spacing="4" fill="#2C8C5A">LIBRETOUR</text>
+  <text x="300" y="452" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-weight="400"
+        font-size="24" letter-spacing="10" fill="#5FA77E">SINCE 2026</text>
 </svg>

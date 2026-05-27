@@ -140,16 +140,51 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
 }
 
 export function Logo({ compact = false }: { compact?: boolean }) {
-  const size = compact ? 20 : 24;
+  const h = compact ? 22 : 26;
+  const w = (h * 240) / 320; // preserve the 240×320 mark aspect ratio
   return (
     <Link href="/" className="flex items-center gap-2 shrink-0">
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M3 19l9-14 9 14H3z" stroke="#34d399" strokeWidth="2" fill="rgba(52,211,153,.12)" />
-        <circle cx="12" cy="14" r="2" fill="#bef264" />
-      </svg>
+      <LibretourMark height={h} width={w} />
       <span className={`font-semibold ${compact ? "text-[15px]" : "text-[17px]"} text-white`}>
         <span className="text-emerald-300">Libre</span>tour
       </span>
     </Link>
+  );
+}
+
+/** The layered-chevron pin mark. Uses a fixed clip id — every instance clips
+ *  to the identical teardrop, so a shared/duplicate <clipPath id> is harmless
+ *  and avoids any SSR-hydration id mismatch. */
+export function LibretourMark({
+  width,
+  height,
+  dark = "#1B7A4F",
+  light = "#46B175",
+}: {
+  width: number;
+  height: number;
+  dark?: string;
+  light?: string;
+}) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 240 320" fill="none" aria-hidden>
+      <defs>
+        <clipPath id="lt-pin-clip">
+          <path d="M 120 300 C 42 208 28 174 28 116 a 92 92 0 1 1 184 0 C 212 174 198 208 120 300 Z" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#lt-pin-clip)">
+        <path d="M -80 8 L 120 36 L 120 100 L -80 72 Z" fill={dark} />
+        <path d="M 320 8 L 120 36 L 120 100 L 320 72 Z" fill={light} />
+        <path d="M -80 104 L 120 128 L 120 158 L -80 134 Z" fill={dark} />
+        <path d="M 320 104 L 120 128 L 120 158 L 320 134 Z" fill={light} />
+        <path d="M -80 150 L 120 172 L 120 198 L -80 176 Z" fill={dark} />
+        <path d="M 320 150 L 120 172 L 120 198 L 320 176 Z" fill={light} />
+        <path d="M -80 190 L 120 209 L 120 230 L -80 211 Z" fill={dark} />
+        <path d="M 320 190 L 120 209 L 120 230 L 320 211 Z" fill={light} />
+        <path d="M -80 228 L 120 245 L 120 261 L -80 244 Z" fill={dark} />
+        <path d="M 320 228 L 120 245 L 120 261 L 320 244 Z" fill={light} />
+      </g>
+    </svg>
   );
 }
