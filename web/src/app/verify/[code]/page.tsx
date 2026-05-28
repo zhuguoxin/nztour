@@ -110,7 +110,7 @@ export default async function VerifyPage({
         <div className="mt-8 text-center text-[12px] text-[#86b69a]">
           {tr.verify_share_lead}
           <div className="font-mono text-[11px] text-[#5d9279] mt-1">
-            libretour.com/verify/{row.verify_code}
+            www.libretour.com/verify/{row.verify_code}
           </div>
         </div>
       </main>

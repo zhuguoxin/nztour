@@ -1,6 +1,6 @@
 # Libretour — Activity Demo Script
 
-> 8 minutes · live walkthrough · production URL: <https://libretour.com>
+> 8 minutes · live walkthrough · production URL: <https://www.libretour.com>
 >
 > Audience: NZ tourism operators + potential pilot partners. Goal of the demo
 > is to land **one pilot operator agreement** by end of week, not to sign
@@ -32,7 +32,7 @@
 - [ ] **Hotspot**: bring your own. Venue WiFi often blocks Clerk's OAuth
       handshake on first connect; mobile hotspot is more reliable.
 - [ ] **Demo browser**: Chrome incognito, zoom 110%, tabs:
-      1. `https://libretour.com` (anonymous, EN)
+      1. `https://www.libretour.com` (anonymous, EN)
       2. signed-in admin/operator window
       3. (optional) signed-in agent window
 - [ ] **Phone**: Have one ready to show the responsive layout — open the
@@ -44,7 +44,7 @@
 
 ### 0:00 — 1:00 · Hook (anonymous home)
 
-Open <https://libretour.com> in the anonymous tab.
+Open <https://www.libretour.com> in the anonymous tab.
 
 > "There are over 200 tourism operators in NZ. Travel agents sell what they
 > remember. Today most operator training happens through PDFs, trade-show
@@ -199,5 +199,5 @@ If a pilot says yes:
 3. Hand-curate into `seed/operators/<their-slug>/courses.json`.
 4. Apply seed to D1 (`build_seed_sql.py` + `wrangler d1 execute`).
 5. Run reindex: `curl -X POST -H "x-reindex-token: $TOKEN"
-   https://libretour.com/api/admin/reindex`.
+   https://www.libretour.com/api/admin/reindex`.
 6. Onboard their staff via `/admin` → grant `operator` role.

@@ -9,6 +9,7 @@
  * @opennextjs/cloudflare supports the Next 16 proxy contract.
  */
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "experimental-edge";
 
@@ -19,7 +20,20 @@ const isProtected = createRouteMatcher([
   "/api/qa(.*)",
 ]);
 
+// Canonical host = www.libretour.com. Apex requests get a 301 → www so we
+// have a single canonical URL for SEO, Clerk allowed-origins and badge
+// verify links.
+const CANONICAL_HOST = "www.libretour.com";
+const APEX_HOSTS = new Set(["libretour.com"]);
+
 export default clerkMiddleware(async (auth, req) => {
+  // Apex → www redirect, applied before any Clerk session work.
+  const url = req.nextUrl;
+  if (APEX_HOSTS.has(url.host)) {
+    const target = new URL(url.toString());
+    target.host = CANONICAL_HOST;
+    return NextResponse.redirect(target, 301);
+  }
   if (isProtected(req)) {
     await auth.protect();
   }
