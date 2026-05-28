@@ -10,10 +10,23 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tourtrain",
   "main": ".open-next/worker.js",
+  // Keep the *.workers.dev fallback URL live alongside the custom domain so
+  // bookmarks and DEMO.md links don't break during the cutover.
+  "workers_dev": true,
+  "preview_urls": true,
   "compatibility_date": "2026-05-15",
   "compatibility_flags": [
     "nodejs_compat",
     "global_fetch_strictly_public"
+  ],
+
+  // === Custom domains ===
+  // Apex + www both serve the Worker. custom_domain:true creates a Workers
+  // Custom Domain (auto DNS, free TLS) rather than a route on an existing
+  // hostname — so a CNAME pointing somewhere else is not required.
+  "routes": [
+    { "pattern": "libretour.com", "custom_domain": true },
+    { "pattern": "www.libretour.com", "custom_domain": true }
   ],
 
   "assets": {
