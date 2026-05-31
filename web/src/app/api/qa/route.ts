@@ -18,7 +18,10 @@ import {
   retrieve,
   getAllCourseChunks,
   buildSystemBlocks,
+  tavilyWebSearch,
+  buildWebSystemBlocks,
   type Citation,
+  type WebCitation,
 } from "@/lib/rag";
 
 export const dynamic = "force-dynamic";
@@ -48,14 +51,22 @@ export async function POST(req: Request) {
 
   // Citations shown to the user = top relevant snippets (always a similarity search).
   const citations = await retrieve(question, scope, 5);
-  const sourceKind: "rag" | "no_answer" = citations.length > 0 ? "rag" : "no_answer";
+
+  // If operator content has nothing, try Tavily web search as a fallback.
+  let webCitations: WebCitation[] = [];
+  if (citations.length === 0) {
+    webCitations = await tavilyWebSearch(question, 5);
+  }
+
+  const sourceKind: "rag" | "web" | "no_answer" =
+    citations.length > 0 ? "rag" : webCitations.length > 0 ? "web" : "no_answer";
 
   // Context fed to Claude:
-  //   - course-scoped → the WHOLE course (stable across follow-ups → prompt-cache hit)
-  //   - otherwise     → the top relevant snippets from retrieval
-  // The cacheable course context turns 2nd+ questions in a course into near-instant,
-  // ~10%-input-cost responses (5-min ephemeral cache TTL).
-  const cacheable = !!scope.course_id;
+  //   - course-scoped + RAG hit → the WHOLE course (stable across follow-ups → prompt-cache hit)
+  //   - RAG hit, no course scope → the top relevant snippets from retrieval
+  //   - no RAG hit, web hit       → Tavily web snippets
+  //   - nothing → minimal no-answer system prompt
+  const cacheable = !!scope.course_id && citations.length > 0;
   let contextCitations = citations;
   if (cacheable) {
     const all = await getAllCourseChunks(scope.course_id!);
@@ -66,12 +77,14 @@ export async function POST(req: Request) {
   const systemBlocks =
     contextCitations.length > 0
       ? buildSystemBlocks(contextCitations, cacheable)
-      : [
-          {
-            type: "text" as const,
-            text: `You are Libretour's product assistant for New Zealand travel agents. Answer in the same language as the question. We could not find relevant operator content for this question — be honest about that and offer general knowledge if useful.`,
-          },
-        ];
+      : webCitations.length > 0
+        ? buildWebSystemBlocks(webCitations)
+        : [
+            {
+              type: "text" as const,
+              text: `You are Libretour's product assistant for New Zealand travel agents. Answer in the same language as the question. We could not find relevant operator content or web information for this question — be honest about that and offer general knowledge if useful.`,
+            },
+          ];
 
   // Pull user lang preference for logs (not used by Claude — it auto-detects).
   const user = await currentUser().catch(() => null);
@@ -86,7 +99,11 @@ export async function POST(req: Request) {
         );
       }
 
-      send("citations", { citations: citations.map(toCitationPayload) });
+      // Unified citation list — RAG chips first, then web chips. The client
+      // tells them apart via the `kind` field.
+      const ragPayload = citations.map(toCitationPayload);
+      const webPayload = webCitations.map(toWebCitationPayload);
+      send("citations", { citations: [...ragPayload, ...webPayload] });
 
       let answerText = "";
       let cacheRead = 0;
@@ -146,7 +163,10 @@ export async function POST(req: Request) {
             answerText,
             detectedLang,
             sourceKind,
-            JSON.stringify(citations.map((c) => ({ chunk_id: c.chunk_id, snippet: c.text.slice(0, 200) }))),
+            JSON.stringify([
+              ...citations.map((c) => ({ chunk_id: c.chunk_id, snippet: c.text.slice(0, 200) })),
+              ...webCitations.map((c) => ({ url: c.url, title: c.title, snippet: c.snippet.slice(0, 200) })),
+            ]),
             latency_ms,
           )
           .run();
@@ -168,6 +188,7 @@ export async function POST(req: Request) {
 
 function toCitationPayload(c: Citation) {
   return {
+    kind: "rag" as const,
     id: c.chunk_id,
     score: c.score,
     operator_name: c.operator_name,
@@ -177,6 +198,17 @@ function toCitationPayload(c: Citation) {
     module_title: c.module_title,
     module_slug: c.module_slug,
     snippet: c.text.slice(0, 180),
+  };
+}
+
+function toWebCitationPayload(c: WebCitation) {
+  return {
+    kind: "web" as const,
+    id: c.id,
+    score: c.score,
+    url: c.url,
+    title: c.title,
+    snippet: c.snippet.slice(0, 180),
   };
 }
 

@@ -12,8 +12,10 @@
   "main": ".open-next/worker.js",
   // Keep the *.workers.dev fallback URL live alongside the custom domain so
   // bookmarks and DEMO.md links don't break during the cutover.
-  "workers_dev": true,
-  "preview_urls": true,
+  // workers_dev: true here once kicked the build into a flaky
+  // /workers/subdomain/edge-preview API path. With libretour.com live as the
+  // primary domain we don't need the *.workers.dev URL anymore for production.
+  "workers_dev": false,
   "compatibility_date": "2026-05-15",
   "compatibility_flags": [
     "nodejs_compat",

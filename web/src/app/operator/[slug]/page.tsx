@@ -114,13 +114,12 @@ export default async function OperatorDashboard({ params }: Props) {
             </div>
             <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">{tr.op_d_blurb}</p>
           </div>
-          <button
-            disabled
-            title={tr.op_d_new_course_disabled}
-            className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300 disabled:opacity-60"
+          <Link
+            href={`/operator/${slug}/courses/new`}
+            className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
           >
             {tr.op_d_new_course}
-          </button>
+          </Link>
         </div>
 
         {/* KPI cards */}
@@ -219,13 +218,12 @@ export default async function OperatorDashboard({ params }: Props) {
                       👁 {c.learners}
                     </span>
                     <StatusPill status={c.status} labels={{ published: tr.op_d_status_published, draft: tr.op_d_status_draft }} />
-                    <button
-                      disabled
-                      className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06] disabled:opacity-50"
-                      title={tr.op_d_new_course_disabled}
+                    <Link
+                      href={`/operator/${operator.slug}/courses/${c.slug}/edit`}
+                      className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
                     >
                       {tr.op_d_action_edit}
-                    </button>
+                    </Link>
                     {c.status === "published" ? (
                       <Link
                         href={`/learn/${operator.slug}/${c.slug}`}

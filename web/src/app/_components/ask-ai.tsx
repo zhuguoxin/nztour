@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 
-interface CitationView {
+interface RagCitationView {
+  kind: "rag";
   id: string;
   score: number;
   operator_name: string;
@@ -14,11 +15,22 @@ interface CitationView {
   snippet: string;
 }
 
+interface WebCitationView {
+  kind: "web";
+  id: string;
+  score: number;
+  url: string;
+  title: string;
+  snippet: string;
+}
+
+type CitationView = RagCitationView | WebCitationView;
+
 interface AskAIResult {
   question: string;
   answer: string;
   citations: CitationView[];
-  source_kind?: "rag" | "no_answer";
+  source_kind?: "rag" | "web" | "no_answer";
   latency_ms?: number;
 }
 
@@ -295,18 +307,42 @@ function ConversationTurn({
         </div>
       ) : null}
       {item.citations.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5 max-w-[92%]">
-          {item.citations.slice(0, 5).map((c, i) => (
-            <a
-              key={c.id}
-              href={`/learn/${c.operator_slug}/${c.course_slug}?m=${c.module_slug}`}
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-400/10 border border-emerald-400/30 text-emerald-200 text-[11px] hover:bg-emerald-400/20"
-              title={c.snippet}
-            >
-              <span className="font-mono">[{i + 1}]</span>
-              <span>{c.operator_name} · {c.course_title}</span>
-            </a>
-          ))}
+        <div className="flex flex-col gap-1.5 max-w-[92%]">
+          {item.source_kind === "web" ? (
+            <div className="text-[11px] text-amber-300/90 inline-flex items-center gap-1">
+              <span>🌐</span>
+              <span>Answer is from the public web — not verified Libretour content.</span>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-1.5">
+            {item.citations.slice(0, 5).map((c, i) =>
+              c.kind === "web" ? (
+                <a
+                  key={c.id}
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-300/10 border border-amber-300/30 text-amber-200 text-[11px] hover:bg-amber-300/20 max-w-full"
+                  title={c.snippet}
+                >
+                  <span className="font-mono">[{i + 1}]</span>
+                  <span>🌐</span>
+                  <span className="truncate max-w-[200px]">{c.title}</span>
+                  <span className="text-amber-300/60">↗</span>
+                </a>
+              ) : (
+                <a
+                  key={c.id}
+                  href={`/learn/${c.operator_slug}/${c.course_slug}?m=${c.module_slug}`}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-400/10 border border-emerald-400/30 text-emerald-200 text-[11px] hover:bg-emerald-400/20"
+                  title={c.snippet}
+                >
+                  <span className="font-mono">[{i + 1}]</span>
+                  <span>{c.operator_name} · {c.course_title}</span>
+                </a>
+              ),
+            )}
+          </div>
         </div>
       ) : item.source_kind === "no_answer" ? (
         <div className="text-[11px] text-amber-300/80">{noAnswerWarning}</div>
@@ -399,8 +435,21 @@ function renderAnswerWithCitations(text: string, citations: CitationView[]): Rea
     if (m.index > lastIdx) parts.push(text.slice(lastIdx, m.index));
     const n = parseInt(m[1], 10);
     const c = citations[n - 1];
-    parts.push(
-      c ? (
+    if (c?.kind === "web") {
+      parts.push(
+        <a
+          key={`c-${m.index}`}
+          href={c.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block align-super text-[10px] font-mono px-1 rounded bg-amber-300/20 text-amber-200 hover:bg-amber-300/40"
+          title={c.snippet}
+        >
+          {n}
+        </a>,
+      );
+    } else if (c?.kind === "rag") {
+      parts.push(
         <a
           key={`c-${m.index}`}
           href={`/learn/${c.operator_slug}/${c.course_slug}?m=${c.module_slug}`}
@@ -408,11 +457,13 @@ function renderAnswerWithCitations(text: string, citations: CitationView[]): Rea
           title={c.snippet}
         >
           {n}
-        </a>
-      ) : (
-        <span key={`c-${m.index}`} className="align-super text-[10px] opacity-50">[{n}]</span>
-      ),
-    );
+        </a>,
+      );
+    } else {
+      parts.push(
+        <span key={`c-${m.index}`} className="align-super text-[10px] opacity-50">[{n}]</span>,
+      );
+    }
     lastIdx = re.lastIndex;
   }
   if (lastIdx < text.length) parts.push(text.slice(lastIdx));

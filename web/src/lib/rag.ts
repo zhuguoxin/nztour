@@ -218,6 +218,82 @@ export function buildSystemBlocks(citations: Citation[], cacheable: boolean): Sy
   return [{ type: "text", text: SYSTEM_INSTRUCTIONS }, snippetsBlock];
 }
 
+// ===========================================================================
+//  Tavily web fallback — used when RAG returns 0 hits (or no operator content
+//  was provided yet). Results are wrapped as "web citations" with a `kind`
+//  discriminator so the client renders them with a different chip (globe icon
+//  + external link).
+// ===========================================================================
+
+export interface WebCitation {
+  kind: "web";
+  id: string;
+  score: number;
+  url: string;
+  title: string;
+  snippet: string;
+}
+
+interface TavilyResponse {
+  answer?: string;
+  results?: Array<{ title: string; url: string; content: string; score?: number }>;
+}
+
+/** Calls Tavily search. Returns [] silently if no key configured. */
+export async function tavilyWebSearch(
+  query: string,
+  maxResults = 5,
+): Promise<WebCitation[]> {
+  const { env } = getCloudflareContext();
+  const key = (env as { TAVILY_API_KEY?: string }).TAVILY_API_KEY;
+  if (!key) return [];
+
+  try {
+    const r = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        api_key: key,
+        query,
+        search_depth: "basic",
+        max_results: maxResults,
+        include_answer: false,
+      }),
+    });
+    if (!r.ok) return [];
+    const data = (await r.json()) as TavilyResponse;
+    return (data.results ?? []).map((res, i) => ({
+      kind: "web" as const,
+      id: `web_${i}`,
+      score: res.score ?? 0,
+      url: res.url,
+      title: res.title,
+      snippet: res.content.slice(0, 400),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+const WEB_SYSTEM_INSTRUCTIONS = `You are Libretour's product assistant for New Zealand travel agents.
+You were not able to find an answer in any operator's course content, so the snippets below come from a public web search.
+Answer in the SAME LANGUAGE the agent used. Be concise (under 200 words).
+
+Cite sources inline using bracketed markers [^1], [^2] — these correspond to the numbered web snippets below.
+Begin your answer with a brief one-sentence caveat that the information is from the public web, not from a verified Libretour operator. Use the agent's own language for the caveat (e.g. "以下信息来自公开网络…" in Chinese, "Heads up — this is from the public web…" in English).`;
+
+/** Build system blocks for the Tavily web fallback path. Not cacheable: each
+ *  query yields fresh snippets and we want a low-friction one-shot call. */
+export function buildWebSystemBlocks(web: WebCitation[]): SystemBlock[] {
+  const snippets = web
+    .map((c, i) => `[Web Source ${i + 1}] ${c.title}\nURL: ${c.url}\n${c.snippet}`)
+    .join("\n\n");
+  return [
+    { type: "text", text: WEB_SYSTEM_INSTRUCTIONS },
+    { type: "text", text: `=== WEB SNIPPETS ===\n${snippets}\n=== END SNIPPETS ===` },
+  ];
+}
+
 /** Back-compat string builder (no caching). Kept for the no-citation path. */
 export function buildSystemPrompt(citations: Citation[]): string {
   return `${SYSTEM_INSTRUCTIONS}\n\n=== SNIPPETS ===\n${renderSnippets(citations)}\n=== END SNIPPETS ===`;
