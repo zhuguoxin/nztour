@@ -13,7 +13,10 @@ import {
   createBlock,
   updateBlock,
   deleteBlock,
+  generateBlockAudio,
+  clearBlockAudio,
 } from "../../actions";
+import { TTS_VOICES } from "@/lib/tts";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +47,10 @@ interface BlockRow {
   text_md: string | null;
   video_uid: string | null;
   caption: string | null;
+  audio_r2_key: string | null;
+  audio_voice: string | null;
+  audio_duration_s: number | null;
+  audio_generated_at: number | null;
 }
 
 export default async function EditCoursePage({
@@ -88,7 +95,8 @@ export default async function EditCoursePage({
     const ph = moduleIds.map(() => "?").join(",");
     const { results: blocks } = await db()
       .prepare(
-        `SELECT id, module_id, position, kind, text_md, video_uid, caption
+        `SELECT id, module_id, position, kind, text_md, video_uid, caption,
+                audio_r2_key, audio_voice, audio_duration_s, audio_generated_at
          FROM content_blocks WHERE module_id IN (${ph}) ORDER BY module_id, position`,
       )
       .bind(...moduleIds)
@@ -439,14 +447,12 @@ function BlockEditor({
   courseSlug: string;
   moduleId: string;
 }) {
+  const isNarratable = block.kind === "text" || block.kind === "callout";
+  const hasAudio = !!block.audio_r2_key;
   return (
-    <form
-      action={updateBlock}
-      className="bg-[#04241e] border border-white/[.08] rounded-lg p-3 space-y-2"
-    >
-      <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-      <input type="hidden" name="module_id" value={moduleId} />
-      <input type="hidden" name="block_id" value={block.id} />
+    <div className="bg-[#04241e] border border-white/[.08] rounded-lg p-3 space-y-3">
+      {/* Header row — kind chip + delete (a separate form so it can sit
+          above the update form without nesting). */}
       <div className="flex items-center justify-between text-[11px]">
         <span className="px-2 py-0.5 rounded-full bg-white/[.04] border border-white/[.08] text-[#a7d4b6] uppercase font-mono">
           {block.kind}
@@ -464,43 +470,123 @@ function BlockEditor({
         </SmallForm>
       </div>
 
-      {block.kind === "text" || block.kind === "callout" ? (
-        <textarea
-          name="text_md"
-          rows={3}
-          defaultValue={block.text_md ?? ""}
-          placeholder="Markdown (**bold**, *italic*)"
-          className={inputClass + " resize-y"}
-        />
-      ) : null}
+      {/* Field-update form */}
+      <form action={updateBlock} className="space-y-2">
+        <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+        <input type="hidden" name="module_id" value={moduleId} />
+        <input type="hidden" name="block_id" value={block.id} />
 
-      {block.kind === "video" ? (
-        <input
-          name="video_uid"
-          defaultValue={block.video_uid ?? ""}
-          placeholder="yt:<youtube-id>  or  Cloudflare Stream UID (32 hex)"
-          className={inputClass + " font-mono text-[12.5px]"}
-        />
-      ) : null}
+        {isNarratable ? (
+          <textarea
+            name="text_md"
+            rows={3}
+            defaultValue={block.text_md ?? ""}
+            placeholder="Markdown (**bold**, *italic*)"
+            className={inputClass + " resize-y"}
+          />
+        ) : null}
 
-      {block.kind === "image" || block.kind === "video" || block.kind === "pdf" ? (
-        <input
-          name="caption"
-          defaultValue={block.caption ?? ""}
-          placeholder="Caption (optional)"
-          className={inputClass}
-        />
-      ) : null}
+        {block.kind === "video" ? (
+          <input
+            name="video_uid"
+            defaultValue={block.video_uid ?? ""}
+            placeholder="yt:<youtube-id>  or  Cloudflare Stream UID (32 hex)"
+            className={inputClass + " font-mono text-[12.5px]"}
+          />
+        ) : null}
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] text-[#e6f5ec] text-[12px] hover:bg-white/[.10]"
-        >
-          Save block
-        </button>
-      </div>
-    </form>
+        {block.kind === "image" || block.kind === "video" || block.kind === "pdf" ? (
+          <input
+            name="caption"
+            defaultValue={block.caption ?? ""}
+            placeholder="Caption (optional)"
+            className={inputClass}
+          />
+        ) : null}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] text-[#e6f5ec] text-[12px] hover:bg-white/[.10]"
+          >
+            Save block
+          </button>
+        </div>
+      </form>
+
+      {/* Voice-over panel — only for text + callout blocks (the only kinds
+          with a text script to narrate). Sits in its own form so the generate
+          action carries its own fields without polluting the update form. */}
+      {isNarratable ? (
+        <div className="rounded-md border border-emerald-400/15 bg-emerald-400/[.04] p-2.5">
+          <div className="flex items-center justify-between text-[11px] mb-1.5">
+            <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+              🎙️ Voice-over
+              {hasAudio ? (
+                <span className="ml-1 text-[10px] text-[#86b69a] font-normal">
+                  {block.audio_voice} · {block.audio_duration_s ?? "?"}s · generated{" "}
+                  {block.audio_generated_at ? fmtRelative(block.audio_generated_at) : ""}
+                </span>
+              ) : (
+                <span className="ml-1 text-[10px] text-[#86b69a] font-normal">
+                  Not generated yet
+                </span>
+              )}
+            </div>
+            {hasAudio ? (
+              <SmallForm action={clearBlockAudio}>
+                <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+                <input type="hidden" name="module_id" value={moduleId} />
+                <input type="hidden" name="block_id" value={block.id} />
+                <button
+                  type="submit"
+                  className="text-[10px] text-rose-300/80 hover:underline"
+                  title="Delete the generated audio"
+                >
+                  clear
+                </button>
+              </SmallForm>
+            ) : null}
+          </div>
+
+          {hasAudio ? (
+            <audio
+              controls
+              preload="none"
+              src={`/api/audio?id=${block.id}&t=${block.audio_generated_at ?? 0}`}
+              className="w-full h-9 mb-2"
+            />
+          ) : null}
+
+          <form action={generateBlockAudio} className="flex items-center gap-1.5">
+            <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+            <input type="hidden" name="module_id" value={moduleId} />
+            <input type="hidden" name="block_id" value={block.id} />
+            <select
+              name="voice"
+              defaultValue={block.audio_voice ?? "nova"}
+              className={inputClass + " flex-1 text-[12px]"}
+            >
+              {TTS_VOICES.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.label} — {v.description}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300 shrink-0"
+            >
+              {hasAudio ? "Regenerate" : "Generate audio"}
+            </button>
+          </form>
+          <div className="text-[10.5px] text-[#86b69a] mt-1.5">
+            OpenAI TTS-1 · auto-detects language from the text · saves to R2 ·
+            served via /api/audio/&lt;block-id&gt;
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -516,6 +602,14 @@ function SmallForm({
       {children}
     </form>
   );
+}
+
+function fmtRelative(unix: number): string {
+  const diff = Date.now() / 1000 - unix;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 function Hidden({ operatorSlug, courseSlug }: { operatorSlug: string; courseSlug: string }) {

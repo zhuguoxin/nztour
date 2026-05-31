@@ -74,6 +74,13 @@ export interface BlockRow {
   pdf_r2_key: string | null;
   caption: string | null;
   lang: string;
+  // Voice-over audio (migration 0003). NULL until a text/callout block has had
+  // TTS generated. Served via /api/audio/<block_id>.
+  audio_r2_key: string | null;
+  audio_voice: string | null;
+  audio_lang: string | null;
+  audio_duration_s: number | null;
+  audio_generated_at: number | null;
 }
 
 export interface CourseWithOperator extends CourseRow {
@@ -205,7 +212,9 @@ export async function getCourseBySlug(
 export async function getModuleBlocks(moduleId: string): Promise<BlockRow[]> {
   const { results } = await db()
     .prepare(
-      `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key, caption, lang
+      `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
+              caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
+              audio_generated_at
        FROM content_blocks WHERE module_id = ? ORDER BY position`,
     )
     .bind(moduleId)

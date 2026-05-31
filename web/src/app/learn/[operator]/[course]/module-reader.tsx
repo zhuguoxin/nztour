@@ -204,10 +204,13 @@ function BlockView({
   switch (block.kind) {
     case "text":
       return (
-        <div
-          className="max-w-none text-[15px] text-[#d8f0e1] leading-relaxed [&>p]:my-3 [&_strong]:text-white [&_strong]:font-semibold"
-          dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
-        />
+        <div>
+          <div
+            className="max-w-none text-[15px] text-[#d8f0e1] leading-relaxed [&>p]:my-3 [&_strong]:text-white [&_strong]:font-semibold"
+            dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
+          />
+          <AudioPlayer block={block} />
+        </div>
       );
     case "callout":
       return (
@@ -216,6 +219,7 @@ function BlockView({
             className="text-[14.5px] text-white leading-relaxed [&>p]:my-2 [&_strong]:text-white"
             dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
           />
+          <AudioPlayer block={block} compact />
         </div>
       );
     case "video":
@@ -347,6 +351,27 @@ function VideoBlock({
         </div>
         <div className="text-[11px] text-white/40 mt-1">{fallback.setup_hint}</div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Voice-over player attached to text/callout blocks. Hidden when the block has
+ * no audio_r2_key. `compact` shrinks padding so it fits nicely inside callouts.
+ */
+function AudioPlayer({ block, compact = false }: { block: BlockRow; compact?: boolean }) {
+  if (!block.audio_r2_key) return null;
+  const src = `/api/audio?id=${block.id}&t=${block.audio_generated_at ?? 0}`;
+  return (
+    <div
+      className={`mt-3 flex items-center gap-2 ${
+        compact ? "" : "rounded-lg bg-white/[.03] border border-white/[.06] p-2"
+      }`}
+    >
+      <span className="text-[11px] text-emerald-300/80 font-mono uppercase tracking-widest shrink-0">
+        🎙 Voice-over
+      </span>
+      <audio controls preload="none" src={src} className="flex-1 h-8" />
     </div>
   );
 }

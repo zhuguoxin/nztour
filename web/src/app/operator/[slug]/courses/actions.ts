@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireOperatorMembership } from "@/lib/roles";
+import { synthesizeAndStore, isValidVoice } from "@/lib/tts";
 
 function slugify(s: string): string {
   return s
@@ -266,6 +267,73 @@ export async function updateBlock(form: FormData) {
     .bind(text, videoUid, caption, blockId, moduleId)
     .run();
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+}
+
+// =========================================================================
+//  VOICE-OVER (TTS) — OpenAI TTS-1 via @/lib/tts, mp3 stored in R2.
+// =========================================================================
+
+export async function generateBlockAudio(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const moduleId = String(form.get("module_id") ?? "");
+  const blockId = String(form.get("block_id") ?? "");
+  const voice = String(form.get("voice") ?? "nova");
+  if (!isValidVoice(voice)) throw new Error("invalid voice");
+  await authModule(operatorSlug, courseSlug, moduleId);
+
+  // Pull the text and lang of this block.
+  const block = await db()
+    .prepare(`SELECT text_md, lang FROM content_blocks WHERE id = ? AND module_id = ?`)
+    .bind(blockId, moduleId)
+    .first<{ text_md: string | null; lang: string }>();
+  if (!block?.text_md?.trim()) throw new Error("block has no text to narrate");
+
+  // Synthesize → R2 → write key + meta back to D1.
+  const result = await synthesizeAndStore(blockId, block.text_md, voice);
+  await db()
+    .prepare(
+      `UPDATE content_blocks
+         SET audio_r2_key = ?, audio_voice = ?, audio_lang = ?,
+             audio_duration_s = ?, audio_generated_at = unixepoch()
+       WHERE id = ? AND module_id = ?`,
+    )
+    .bind(result.r2Key, result.voice, block.lang, result.durationSeconds, blockId, moduleId)
+    .run();
+
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+export async function clearBlockAudio(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const moduleId = String(form.get("module_id") ?? "");
+  const blockId = String(form.get("block_id") ?? "");
+  await authModule(operatorSlug, courseSlug, moduleId);
+
+  // Best-effort R2 delete; ignore if missing.
+  const row = await db()
+    .prepare(`SELECT audio_r2_key FROM content_blocks WHERE id = ? AND module_id = ?`)
+    .bind(blockId, moduleId)
+    .first<{ audio_r2_key: string | null }>();
+  if (row?.audio_r2_key) {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    await env.ASSETS_BUCKET.delete(row.audio_r2_key).catch(() => {});
+  }
+
+  await db()
+    .prepare(
+      `UPDATE content_blocks
+         SET audio_r2_key = NULL, audio_voice = NULL, audio_lang = NULL,
+             audio_duration_s = NULL, audio_generated_at = NULL
+       WHERE id = ? AND module_id = ?`,
+    )
+    .bind(blockId, moduleId)
+    .run();
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
 export async function deleteBlock(form: FormData) {
