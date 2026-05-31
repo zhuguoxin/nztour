@@ -16,9 +16,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.libretour.com"),
   title: "Libretour — NZ Tourism B2B Training",
   description:
     "Learn directly from New Zealand tourism operators. Get verifiable digital badges. Ask AI anything — in any language.",
+  openGraph: {
+    title: "Libretour — NZ Tourism B2B Training",
+    description:
+      "Learn directly from New Zealand tourism operators. Get verifiable digital badges. Ask AI anything — in any language.",
+    url: "https://www.libretour.com",
+    siteName: "Libretour",
+    images: [{ url: "/og-default.png", width: 1200, height: 1200, alt: "Libretour" }],
+    locale: "en_NZ",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Libretour — NZ Tourism B2B Training",
+    description:
+      "Learn directly from New Zealand tourism operators. Get verifiable digital badges. Ask AI anything — in any language.",
+    images: ["/og-default.png"],
+  },
 };
 
 export default async function RootLayout({

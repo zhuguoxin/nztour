@@ -151,10 +151,69 @@ def write_logo():
     (PUB / "libretour-logo.svg").write_text(svg)
 
 
+def write_og():
+    """Brand-only OG card, 1200×1200 square (LinkedIn/Twitter accept; qlmanage
+    renders this aspect cleanly without padding). Static — every badge URL
+    shares this card. Swap to per-badge dynamic when @cf-wasm/og bundling
+    works under OpenNext."""
+    body = build_mark(with_defs_id="ogpin", simple=True)
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200">
+  <defs>
+    <radialGradient id="ogGlow1" cx="0%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ogGlow2" cx="100%" cy="100%" r="80%">
+      <stop offset="0%" stop-color="#bef264" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#bef264" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1200" fill="#04241e"/>
+  <rect width="1200" height="1200" fill="url(#ogGlow1)"/>
+  <rect width="1200" height="1200" fill="url(#ogGlow2)"/>
+
+  <!-- Pin mark, large, upper centre -->
+  <g transform="translate(420, 160) scale(1.4)">
+    {body}
+  </g>
+
+  <!-- Wordmark -->
+  <text x="600" y="850" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-weight="800"
+        font-size="110" letter-spacing="8" fill="#ffffff">
+    <tspan fill="#46B175">LIBRE</tspan><tspan>TOUR</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="600" y="930" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-weight="500"
+        font-size="34" letter-spacing="6" fill="#a7d4b6">
+    NZ TOURISM B2B TRAINING
+  </text>
+
+  <!-- Verified badge chip -->
+  <g transform="translate(420, 990)">
+    <rect width="360" height="60" rx="30" fill="rgba(190,242,100,0.10)"
+          stroke="rgba(190,242,100,0.4)" stroke-width="1.5"/>
+    <text x="180" y="40" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+          font-weight="700" font-size="22" fill="#bef264" letter-spacing="4">
+      ✓ VERIFIED BADGE
+    </text>
+  </g>
+
+  <!-- URL footer -->
+  <text x="600" y="1110" text-anchor="middle" font-family="ui-monospace, Menlo, monospace"
+        font-size="24" fill="#5d9279" letter-spacing="3">www.libretour.com</text>
+</svg>
+'''
+    (PUB / "og-default.svg").write_text(svg)
+
+
 if __name__ == "__main__":
     PUB.mkdir(parents=True, exist_ok=True)
     write_mark()
     write_logo()
+    write_og()
     print("wrote:")
-    for f in ("libretour-mark.svg", "libretour-logo.svg", "favicon.svg"):
+    for f in ("libretour-mark.svg", "libretour-logo.svg", "favicon.svg", "og-default.svg"):
         print(f"  web/public/{f}")
