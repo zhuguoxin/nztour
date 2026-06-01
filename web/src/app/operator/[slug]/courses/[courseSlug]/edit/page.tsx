@@ -16,7 +16,7 @@ import {
   generateBlockAudio,
   clearBlockAudio,
 } from "../../actions";
-import { TTS_VOICES } from "@/lib/tts";
+import { TTS_LANGS } from "@/lib/tts";
 
 export const dynamic = "force-dynamic";
 
@@ -524,7 +524,7 @@ function BlockEditor({
               🎙️ Voice-over
               {hasAudio ? (
                 <span className="ml-1 text-[10px] text-[#86b69a] font-normal">
-                  {block.audio_voice} · {block.audio_duration_s ?? "?"}s · generated{" "}
+                  {block.audio_voice ?? "auto"} · {block.audio_duration_s ?? "?"}s · generated{" "}
                   {block.audio_generated_at ? fmtRelative(block.audio_generated_at) : ""}
                 </span>
               ) : (
@@ -563,13 +563,13 @@ function BlockEditor({
             <input type="hidden" name="module_id" value={moduleId} />
             <input type="hidden" name="block_id" value={block.id} />
             <select
-              name="voice"
-              defaultValue={block.audio_voice ?? "nova"}
+              name="lang"
+              defaultValue={block.audio_voice ?? "auto"}
               className={inputClass + " flex-1 text-[12px]"}
             >
-              {TTS_VOICES.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.label} — {v.description}
+              {TTS_LANGS.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.label}
                 </option>
               ))}
             </select>
@@ -581,8 +581,8 @@ function BlockEditor({
             </button>
           </form>
           <div className="text-[10.5px] text-[#86b69a] mt-1.5">
-            OpenAI TTS-1 · auto-detects language from the text · saves to R2 ·
-            served via /api/audio/&lt;block-id&gt;
+            Cloudflare Workers AI · @cf/myshell-ai/melotts · saves to R2 ·
+            served via /api/audio?id=&lt;block-id&gt;
           </div>
         </div>
       ) : null}

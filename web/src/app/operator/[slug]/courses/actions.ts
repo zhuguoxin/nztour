@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireOperatorMembership } from "@/lib/roles";
-import { synthesizeAndStore, isValidVoice } from "@/lib/tts";
+import { synthesizeAndStore, isValidLang } from "@/lib/tts";
 
 function slugify(s: string): string {
   return s
@@ -278,11 +278,11 @@ export async function generateBlockAudio(form: FormData) {
   const courseSlug = String(form.get("course_slug") ?? "");
   const moduleId = String(form.get("module_id") ?? "");
   const blockId = String(form.get("block_id") ?? "");
-  const voice = String(form.get("voice") ?? "nova");
-  if (!isValidVoice(voice)) throw new Error("invalid voice");
+  const lang = String(form.get("lang") ?? "auto");
+  if (!isValidLang(lang)) throw new Error("invalid lang");
   await authModule(operatorSlug, courseSlug, moduleId);
 
-  // Pull the text and lang of this block.
+  // Pull the text of this block.
   const block = await db()
     .prepare(`SELECT text_md, lang FROM content_blocks WHERE id = ? AND module_id = ?`)
     .bind(blockId, moduleId)
@@ -290,7 +290,9 @@ export async function generateBlockAudio(form: FormData) {
   if (!block?.text_md?.trim()) throw new Error("block has no text to narrate");
 
   // Synthesize → R2 → write key + meta back to D1.
-  const result = await synthesizeAndStore(blockId, block.text_md, voice);
+  //   audio_voice column reused to store the user's lang preference ("auto"
+  //   or a fixed language code), audio_lang stores what we actually synthesized.
+  const result = await synthesizeAndStore(blockId, block.text_md, lang);
   await db()
     .prepare(
       `UPDATE content_blocks
@@ -298,7 +300,7 @@ export async function generateBlockAudio(form: FormData) {
              audio_duration_s = ?, audio_generated_at = unixepoch()
        WHERE id = ? AND module_id = ?`,
     )
-    .bind(result.r2Key, result.voice, block.lang, result.durationSeconds, blockId, moduleId)
+    .bind(result.r2Key, lang, result.langUsed, result.durationSeconds, blockId, moduleId)
     .run();
 
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
