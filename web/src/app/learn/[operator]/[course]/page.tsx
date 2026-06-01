@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getCourseBySlug, getModuleBlocks, parseAiExamples, type ModuleRow } from "@/lib/db";
+import { resolveTheme, themeCssVars } from "@/lib/theme";
 import {
   ensureUser,
   ensureEnrollment,
@@ -65,8 +66,13 @@ export default async function CoursePage({ params, searchParams }: Props) {
     });
   }
 
+  const theme = resolveTheme(operator);
+
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+    <div
+      className="min-h-screen font-sans antialiased text-[16px]"
+      style={themeCssVars(theme)}
+    >
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0">
@@ -90,22 +96,30 @@ export default async function CoursePage({ params, searchParams }: Props) {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_360px]">
         {/* Module list */}
-        <aside className="border-b lg:border-b-0 lg:border-r border-white/[.06] p-5 lg:min-h-[calc(100vh-65px)] bg-[#062b22]/50">
+        <aside
+          className="border-b lg:border-b-0 lg:border-r border-white/[.06] p-5 lg:min-h-[calc(100vh-65px)]"
+          style={{ background: "color-mix(in srgb, var(--op-panel) 60%, transparent)" }}
+        >
           <div className="text-[11px] font-mono text-emerald-300/70 mb-2">{tr.course_label}</div>
           <div className="text-[15px] font-semibold mb-1 text-white">{course.title}</div>
           <div className="text-[13px] text-[#a7d4b6] mb-4">{operator.name}</div>
 
           <div className="h-1.5 bg-black/30 rounded-full overflow-hidden mb-2">
             <div
-              className="h-full bg-gradient-to-r from-emerald-400 to-lime-300 transition-all"
-              style={{ width: `${progressPct}%` }}
+              className="h-full transition-all"
+              style={{
+                width: `${progressPct}%`,
+                background: "var(--op-accent)",
+              }}
             />
           </div>
           <div className="flex items-center justify-between text-[13px] text-[#a7d4b6] mb-5">
             <span>
               {completedCount} / {modules.length}
             </span>
-            <span className="text-lime-300 font-medium">{progressPct}%</span>
+            <span className="font-medium" style={{ color: "var(--op-accent)" }}>
+              {progressPct}%
+            </span>
           </div>
 
           <div className="text-[11px] font-mono text-emerald-300/70 mb-2">{tr.modules_label}</div>

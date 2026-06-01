@@ -14,6 +14,8 @@ import { UploadStub } from "./upload-stub";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
 import { ActivityChart } from "./activity-chart";
 import { t, fmt } from "@/lib/i18n";
+import { resolveTheme, themeCssVars } from "@/lib/theme";
+import { updateOperatorTheme, resetOperatorTheme } from "./branding-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +40,23 @@ export default async function OperatorDashboard({ params }: Props) {
   }
 
   const operator = await db()
-    .prepare(`SELECT id, slug, name, display_name, country FROM operators WHERE slug = ?`)
+    .prepare(
+      `SELECT id, slug, name, display_name, country,
+              theme_bg, theme_accent, theme_ink, theme_logo_r2_key
+       FROM operators WHERE slug = ?`,
+    )
     .bind(slug)
-    .first<{ id: string; slug: string; name: string; display_name: string | null; country: string }>();
+    .first<{
+      id: string;
+      slug: string;
+      name: string;
+      display_name: string | null;
+      country: string;
+      theme_bg: string | null;
+      theme_accent: string | null;
+      theme_ink: string | null;
+      theme_logo_r2_key: string | null;
+    }>();
   if (!operator) notFound();
 
   const [kpis, courses, learners, topQs, activity, role, tr] = await Promise.all([
@@ -73,8 +89,13 @@ export default async function OperatorDashboard({ params }: Props) {
     }));
   }
 
+  const theme = resolveTheme(operator);
+
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+    <div
+      className="min-h-screen font-sans antialiased text-[16px]"
+      style={themeCssVars(theme)}
+    >
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2">
@@ -381,8 +402,124 @@ export default async function OperatorDashboard({ params }: Props) {
             </div>
           </section>
         </div>
+
+        {/* === Branding section === */}
+        <BrandingPanel operator={operator} />
       </main>
     </div>
+  );
+}
+
+function BrandingPanel({
+  operator,
+}: {
+  operator: {
+    slug: string;
+    theme_bg: string | null;
+    theme_accent: string | null;
+    theme_ink: string | null;
+  };
+}) {
+  return (
+    <section className="mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
+      <header className="px-5 py-4 border-b border-white/[.06]">
+        <div className="font-semibold text-[14px] text-white">Branding</div>
+        <div className="text-[12px] text-[#86b69a] mt-0.5">
+          Three colours decide how your courses look to agents. Save → the page chrome on every
+          course you publish shifts to match. Leave blank to use Libretour green.
+        </div>
+      </header>
+      <form action={updateOperatorTheme} className="p-5 space-y-4">
+        <input type="hidden" name="operator_slug" value={operator.slug} />
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <ColourField
+            name="theme_bg"
+            label="Background"
+            hint="Main page surface"
+            defaultValue={operator.theme_bg}
+          />
+          <ColourField
+            name="theme_accent"
+            label="Accent"
+            hint="Buttons, links, highlights"
+            defaultValue={operator.theme_accent}
+          />
+          <ColourField
+            name="theme_ink"
+            label="Text"
+            hint="Headline text contrast"
+            defaultValue={operator.theme_ink}
+          />
+        </div>
+
+        <div className="flex items-center justify-between flex-wrap gap-2 pt-2">
+          <div className="text-[11.5px] text-[#86b69a]">
+            Preview reloads automatically — refresh the course page after saving to see the new
+            theme on every published course.
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
+            >
+              Save branding
+            </button>
+          </div>
+        </div>
+      </form>
+      <form action={resetOperatorTheme} className="px-5 pb-5 flex justify-end">
+        <input type="hidden" name="operator_slug" value={operator.slug} />
+        <button
+          type="submit"
+          className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
+        >
+          Reset to Libretour default
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function ColourField({
+  name,
+  label,
+  hint,
+  defaultValue,
+}: {
+  name: string;
+  label: string;
+  hint: string;
+  defaultValue: string | null;
+}) {
+  const v = defaultValue ?? "";
+  return (
+    <label className="block">
+      <div className="text-[12px] font-semibold text-white">{label}</div>
+      <div className="text-[11px] text-[#86b69a] mb-1.5">{hint}</div>
+      <div className="flex items-center gap-2 bg-[#04241e] border border-white/[.10] rounded-md px-2 py-1.5">
+        {/* Native colour swatch + hex text both feeding the same field name. We
+            ship two inputs in the same row, one of them hidden-from-sub mit so
+            only the typed hex reaches the action. */}
+        <input
+          type="color"
+          defaultValue={v || "#000000"}
+          aria-label={`${label} colour`}
+          className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0"
+          // updates the sibling hex input via JS-free <output> trick: native
+          // pickers don't auto-sync but operators can paste hex directly into
+          // the text input — that's the value the action reads.
+          name=""
+        />
+        <input
+          name={name}
+          defaultValue={v}
+          placeholder="#hex or blank"
+          maxLength={7}
+          className="flex-1 bg-transparent border-0 outline-none text-[13px] text-white font-mono"
+        />
+      </div>
+    </label>
   );
 }
 

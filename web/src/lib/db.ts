@@ -26,6 +26,11 @@ export interface OperatorRow {
   cover_color: string | null;
   contact_email: string | null;
   status: string;
+  // Per-operator theme tokens (migration 0004). Null = use Libretour defaults.
+  theme_bg: string | null;
+  theme_accent: string | null;
+  theme_ink: string | null;
+  theme_logo_r2_key: string | null;
 }
 
 export interface CourseRow {
@@ -153,7 +158,9 @@ export async function getCourseBySlug(
     .prepare(
       `SELECT c.*, o.id AS o_id, o.slug AS o_slug, o.name AS o_name, o.display_name AS o_display_name,
               o.country AS o_country, o.primary_lang AS o_primary_lang, o.cover_color AS o_cover_color,
-              o.contact_email AS o_contact_email, o.status AS o_status
+              o.contact_email AS o_contact_email, o.status AS o_status,
+              o.theme_bg AS o_theme_bg, o.theme_accent AS o_theme_accent,
+              o.theme_ink AS o_theme_ink, o.theme_logo_r2_key AS o_theme_logo_r2_key
        FROM courses c
        JOIN operators o ON o.id = c.operator_id
        WHERE o.slug = ? AND c.slug = ?`,
@@ -170,6 +177,10 @@ export async function getCourseBySlug(
         o_cover_color: string | null;
         o_contact_email: string | null;
         o_status: string;
+        o_theme_bg: string | null;
+        o_theme_accent: string | null;
+        o_theme_ink: string | null;
+        o_theme_logo_r2_key: string | null;
       }
     >();
   if (!row) return null;
@@ -192,6 +203,10 @@ export async function getCourseBySlug(
     cover_color: row.o_cover_color,
     contact_email: row.o_contact_email,
     status: row.o_status,
+    theme_bg: row.o_theme_bg,
+    theme_accent: row.o_theme_accent,
+    theme_ink: row.o_theme_ink,
+    theme_logo_r2_key: row.o_theme_logo_r2_key,
   };
   const course: CourseRow = {
     id: row.id,
