@@ -16,6 +16,7 @@ import { ActivityChart } from "./activity-chart";
 import { t, fmt } from "@/lib/i18n";
 import { resolveTheme, themeCssVars } from "@/lib/theme";
 import { updateOperatorTheme, resetOperatorTheme } from "./branding-actions";
+import { ColourField } from "./colour-field";
 
 export const dynamic = "force-dynamic";
 
@@ -481,47 +482,9 @@ function BrandingPanel({
   );
 }
 
-function ColourField({
-  name,
-  label,
-  hint,
-  defaultValue,
-}: {
-  name: string;
-  label: string;
-  hint: string;
-  defaultValue: string | null;
-}) {
-  const v = defaultValue ?? "";
-  return (
-    <label className="block">
-      <div className="text-[12px] font-semibold text-white">{label}</div>
-      <div className="text-[11px] text-[#86b69a] mb-1.5">{hint}</div>
-      <div className="flex items-center gap-2 bg-[#04241e] border border-white/[.10] rounded-md px-2 py-1.5">
-        {/* Native colour swatch + hex text both feeding the same field name. We
-            ship two inputs in the same row, one of them hidden-from-sub mit so
-            only the typed hex reaches the action. */}
-        <input
-          type="color"
-          defaultValue={v || "#000000"}
-          aria-label={`${label} colour`}
-          className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0"
-          // updates the sibling hex input via JS-free <output> trick: native
-          // pickers don't auto-sync but operators can paste hex directly into
-          // the text input — that's the value the action reads.
-          name=""
-        />
-        <input
-          name={name}
-          defaultValue={v}
-          placeholder="#hex or blank"
-          maxLength={7}
-          className="flex-1 bg-transparent border-0 outline-none text-[13px] text-white font-mono"
-        />
-      </div>
-    </label>
-  );
-}
+// ColourField moved to ./colour-field.tsx (client component) so the swatch
+// and hex input stay synced — previously the picker's choice was silently
+// dropped because the two inputs didn't share state.
 
 // ============================================================================
 //  Subcomponents
