@@ -12,8 +12,17 @@ import {
   reorderModulesBulk,
   reorderBlocksBulk,
 } from "../../actions";
-import { TTS_LANGS } from "@/lib/tts";
 import { SortableList, GrabHandle, type DragHandleProps } from "./sortable-list";
+import { langLabel } from "@/lib/translate";
+
+export interface VoiceOption {
+  id: string;
+  name: string;
+  provider: string;
+  kind: string;
+  gender: string | null;
+  status: string;
+}
 
 export interface ModuleData {
   id: string;
@@ -56,11 +65,17 @@ const inputClass =
 export function EditorModules({
   operatorSlug,
   courseSlug,
+  primaryLang,
+  availableLangs,
+  voices,
   modules,
   blocksByModuleId,
 }: {
   operatorSlug: string;
   courseSlug: string;
+  primaryLang: string;
+  availableLangs: string[];
+  voices: VoiceOption[];
   modules: ModuleData[];
   blocksByModuleId: Record<string, BlockData[]>;
 }) {
@@ -82,6 +97,9 @@ export function EditorModules({
           blocks={blocksByModuleId[m.id] ?? []}
           operatorSlug={operatorSlug}
           courseSlug={courseSlug}
+          primaryLang={primaryLang}
+          availableLangs={availableLangs}
+          voices={voices}
         />
       )}
     />
@@ -94,12 +112,18 @@ function ModuleEditor({
   blocks,
   operatorSlug,
   courseSlug,
+  primaryLang,
+  availableLangs,
+  voices,
 }: {
   module: ModuleData;
   handle: DragHandleProps;
   blocks: BlockData[];
   operatorSlug: string;
   courseSlug: string;
+  primaryLang: string;
+  availableLangs: string[];
+  voices: VoiceOption[];
 }) {
   return (
     <details className="group border-b border-white/[.04]" open={blocks.length === 0}>
@@ -191,6 +215,9 @@ function ModuleEditor({
                 operatorSlug={operatorSlug}
                 courseSlug={courseSlug}
                 moduleId={module.id}
+                primaryLang={primaryLang}
+                availableLangs={availableLangs}
+                voices={voices}
               />
             </div>
           )}
@@ -217,21 +244,49 @@ function ModuleEditor({
   );
 }
 
+interface AudioI18nEntry {
+  r2_key: string;
+  voice_id: string;
+  duration_s: number;
+  generated_at: number;
+}
+
+function parseAudioI18n(json: string | null | undefined): Record<string, AudioI18nEntry> {
+  if (!json) return {};
+  try {
+    const v = JSON.parse(json);
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  } catch {
+    return {};
+  }
+}
+
 function BlockEditor({
   block,
   handle,
   operatorSlug,
   courseSlug,
   moduleId,
+  primaryLang,
+  availableLangs,
+  voices,
 }: {
   block: BlockData;
   handle: DragHandleProps;
   operatorSlug: string;
   courseSlug: string;
   moduleId: string;
+  primaryLang: string;
+  availableLangs: string[];
+  voices: VoiceOption[];
 }) {
   const isNarratable = block.kind === "text" || block.kind === "callout";
   const hasAudio = !!block.audio_r2_key;
+  const audioI18n = parseAudioI18n(
+    (block as unknown as { audio_i18n?: string | null }).audio_i18n ?? null,
+  );
+  // Show one row per available language with its current audio state.
+  const langsWithAudio = availableLangs.slice().sort((a, b) => (a === primaryLang ? -1 : b === primaryLang ? 1 : a.localeCompare(b)));
   return (
     <div className="bg-[#04241e] border border-white/[.08] rounded-lg p-3 space-y-3">
       <div className="flex items-center justify-between text-[11px]">
@@ -329,74 +384,131 @@ function BlockEditor({
       </form>
 
       {isNarratable ? (
-        <div className="rounded-md border border-emerald-400/15 bg-emerald-400/[.04] p-2.5">
-          <div className="flex items-center justify-between text-[11px] mb-1.5">
-            <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
-              🎙️ Voice-over
-              {hasAudio ? (
-                <span className="ml-1 text-[10px] text-[#86b69a] font-normal">
-                  {block.audio_voice ?? "auto"} · {block.audio_duration_s ?? "?"}s · generated{" "}
-                  {block.audio_generated_at ? fmtRelative(block.audio_generated_at) : ""}
-                </span>
-              ) : (
-                <span className="ml-1 text-[10px] text-[#86b69a] font-normal">
-                  Not generated yet
-                </span>
-              )}
-            </div>
-            {hasAudio ? (
-              <form action={clearBlockAudio} className="inline-flex">
-                <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-                <input type="hidden" name="module_id" value={moduleId} />
-                <input type="hidden" name="block_id" value={block.id} />
-                <button
-                  type="submit"
-                  className="text-[10px] text-rose-300/80 hover:underline"
-                  title="Delete the generated audio"
-                >
-                  clear
-                </button>
-              </form>
-            ) : null}
+        <div className="rounded-md border border-emerald-400/15 bg-emerald-400/[.04] p-2.5 space-y-2">
+          <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-[11px]">
+            🎙️ Voice-over
+            <span className="text-[10px] text-[#86b69a] font-normal">
+              one row per available language
+            </span>
           </div>
+
+          {langsWithAudio.map((lang) => {
+            const entry = lang === primaryLang
+              ? (hasAudio
+                  ? {
+                      r2_key: block.audio_r2_key!,
+                      voice_id: block.audio_voice ?? "voice_melotts_auto",
+                      duration_s: block.audio_duration_s ?? 0,
+                      generated_at: block.audio_generated_at ?? 0,
+                    }
+                  : audioI18n[lang])
+              : audioI18n[lang];
+            return (
+              <AudioLangRow
+                key={lang}
+                lang={lang}
+                isPrimary={lang === primaryLang}
+                entry={entry ?? null}
+                blockId={block.id}
+                moduleId={moduleId}
+                operatorSlug={operatorSlug}
+                courseSlug={courseSlug}
+                voices={voices}
+              />
+            );
+          })}
 
           {hasAudio ? (
-            <audio
-              controls
-              preload="none"
-              src={`/api/audio?id=${block.id}&t=${block.audio_generated_at ?? 0}`}
-              className="w-full h-9 mb-2"
-            />
+            <form action={clearBlockAudio} className="inline-flex">
+              <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+              <input type="hidden" name="module_id" value={moduleId} />
+              <input type="hidden" name="block_id" value={block.id} />
+              <button
+                type="submit"
+                className="text-[10px] text-rose-300/80 hover:underline"
+                title="Delete the primary-lang generated audio (other languages stay)"
+              >
+                clear primary audio
+              </button>
+            </form>
           ) : null}
-
-          <form action={generateBlockAudio} className="flex items-center gap-1.5">
-            <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-            <input type="hidden" name="module_id" value={moduleId} />
-            <input type="hidden" name="block_id" value={block.id} />
-            <select
-              name="lang"
-              defaultValue={block.audio_voice ?? "auto"}
-              className={inputClass + " flex-1 text-[12px]"}
-            >
-              {TTS_LANGS.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300 shrink-0"
-            >
-              {hasAudio ? "Regenerate" : "Generate audio"}
-            </button>
-          </form>
-          <div className="text-[10.5px] text-[#86b69a] mt-1.5">
-            Cloudflare Workers AI · @cf/myshell-ai/melotts · saves to R2 ·
-            served via /api/audio?id=&lt;block-id&gt;
-          </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function AudioLangRow({
+  lang,
+  isPrimary,
+  entry,
+  blockId,
+  moduleId,
+  operatorSlug,
+  courseSlug,
+  voices,
+}: {
+  lang: string;
+  isPrimary: boolean;
+  entry: AudioI18nEntry | null;
+  blockId: string;
+  moduleId: string;
+  operatorSlug: string;
+  courseSlug: string;
+  voices: VoiceOption[];
+}) {
+  const has = !!entry;
+  return (
+    <div className="rounded border border-white/[.06] bg-black/[.10] p-2">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="px-1.5 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/30 text-emerald-200 text-[10px] font-mono uppercase">
+          {langLabel(lang)}
+          {isPrimary ? " · primary" : ""}
+        </span>
+        {has ? (
+          <span className="text-[10px] text-[#86b69a] font-mono">
+            {entry!.duration_s}s · {entry!.voice_id}
+          </span>
+        ) : (
+          <span className="text-[10px] text-[#86b69a]">not generated</span>
+        )}
+      </div>
+      {has ? (
+        <audio
+          controls
+          preload="none"
+          src={
+            isPrimary
+              ? `/api/audio?id=${blockId}&t=${entry!.generated_at}`
+              : `/api/audio?id=${blockId}&lang=${encodeURIComponent(lang)}&t=${entry!.generated_at}`
+          }
+          className="w-full h-8 mb-1.5"
+        />
+      ) : null}
+      <form action={generateBlockAudio} className="flex items-center gap-1.5">
+        <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+        <input type="hidden" name="module_id" value={moduleId} />
+        <input type="hidden" name="block_id" value={blockId} />
+        <input type="hidden" name="lang" value={lang} />
+        <select
+          name="voice_id"
+          defaultValue={entry?.voice_id ?? voices[0]?.id ?? "voice_melotts_auto"}
+          className={inputClass + " flex-1 text-[11.5px] py-1"}
+        >
+          {voices.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name} {v.gender ? `· ${v.gender}` : ""}
+              {v.kind === "cloned" ? " · cloned" : ""}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 shrink-0"
+        >
+          {has ? "↻" : "Generate"}
+        </button>
+      </form>
     </div>
   );
 }

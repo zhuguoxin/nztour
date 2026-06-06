@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireOperatorMembership } from "@/lib/roles";
 import { synthesizeAndStore, isValidLang } from "@/lib/tts";
+import { translateBatch, readI18nMap, writeI18nMap, isSupportedLang } from "@/lib/translate";
 
 function slugify(s: string): string {
   return s
@@ -340,36 +341,151 @@ export async function updateBlock(form: FormData) {
 //  VOICE-OVER (TTS) — OpenAI TTS-1 via @/lib/tts, mp3 stored in R2.
 // =========================================================================
 
+/**
+ * Generate audio for a block in a specific target language with a chosen voice.
+ *
+ * Resolves voice by id:
+ *   • `voice_id = 'voice_melotts_auto'` (or empty) → Workers AI melotts. Free.
+ *   • Otherwise: ElevenLabs voice. Requires XI_API_KEY. Premium quality,
+ *     supports cloned voices.
+ *
+ * Storage:
+ *   • Primary lang (== course.primary_lang): writes to legacy columns AND
+ *     `audio_i18n[lang]` (for uniform read path).
+ *   • Non-primary: writes ONLY to `audio_i18n[lang]`. Legacy columns
+ *     untouched so existing audio at primary_lang isn't clobbered.
+ */
 export async function generateBlockAudio(form: FormData) {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
   const moduleId = String(form.get("module_id") ?? "");
   const blockId = String(form.get("block_id") ?? "");
-  const lang = String(form.get("lang") ?? "auto");
-  if (!isValidLang(lang)) throw new Error("invalid lang");
+  const requestedLang = String(form.get("lang") ?? "auto");
+  const voiceId = String(form.get("voice_id") ?? "").trim() || "voice_melotts_auto";
   await authModule(operatorSlug, courseSlug, moduleId);
 
-  // Pull the text of this block.
+  // Pull block + parent module + course (need primary_lang).
   const block = await db()
-    .prepare(`SELECT text_md, lang FROM content_blocks WHERE id = ? AND module_id = ?`)
-    .bind(blockId, moduleId)
-    .first<{ text_md: string | null; lang: string }>();
-  if (!block?.text_md?.trim()) throw new Error("block has no text to narrate");
-
-  // Synthesize → R2 → write key + meta back to D1.
-  //   audio_voice column reused to store the user's lang preference ("auto"
-  //   or a fixed language code), audio_lang stores what we actually synthesized.
-  const result = await synthesizeAndStore(blockId, block.text_md, lang);
-  await db()
     .prepare(
-      `UPDATE content_blocks
-         SET audio_r2_key = ?, audio_voice = ?, audio_lang = ?,
-             audio_duration_s = ?, duration_s = ?,
-             audio_generated_at = unixepoch()
-       WHERE id = ? AND module_id = ?`,
+      `SELECT cb.text_md, cb.text_md_i18n, cb.audio_i18n, cb.lang AS block_lang,
+              c.primary_lang AS course_primary_lang
+       FROM content_blocks cb
+       JOIN modules m ON m.id = cb.module_id
+       JOIN courses c ON c.id = m.course_id
+       WHERE cb.id = ? AND cb.module_id = ?`,
     )
-    .bind(result.r2Key, lang, result.langUsed, result.durationSeconds, result.durationSeconds, blockId, moduleId)
-    .run();
+    .bind(blockId, moduleId)
+    .first<{
+      text_md: string | null;
+      text_md_i18n: string;
+      audio_i18n: string;
+      block_lang: string;
+      course_primary_lang: string;
+    }>();
+  if (!block) throw new Error("not_found");
+
+  // Resolve target lang. 'auto' means primary.
+  const targetLang =
+    requestedLang === "auto" || !requestedLang ? block.course_primary_lang : requestedLang;
+
+  // Pull the right source text for that target lang.
+  const i18nMap = readI18nMap(block.text_md_i18n);
+  const sourceText =
+    targetLang === block.course_primary_lang ? block.text_md ?? "" : i18nMap[targetLang] ?? "";
+  if (!sourceText.trim()) {
+    throw new Error(
+      `Block has no text in ${targetLang}. Translate the course to ${targetLang} first.`,
+    );
+  }
+
+  // Look up the voice profile.
+  const voice = await db()
+    .prepare(`SELECT id, provider, external_id, status FROM voice_profiles WHERE id = ?`)
+    .bind(voiceId)
+    .first<{ id: string; provider: string; external_id: string | null; status: string }>();
+  if (!voice) throw new Error("voice not found");
+  if (voice.status !== "active") throw new Error(`voice is ${voice.status}`);
+
+  let r2Key: string;
+  let durationSeconds: number;
+
+  if (voice.provider === "elevenlabs") {
+    if (!voice.external_id) throw new Error("elevenlabs voice missing external_id");
+    const { synthesizeWithVoice } = await import("@/lib/elevenlabs");
+    const { plainTextFromMarkdown } = await import("@/lib/tts");
+    const cleanText = plainTextFromMarkdown(sourceText).slice(0, 2000);
+    const { bytes } = await synthesizeWithVoice({
+      text: cleanText,
+      voiceId: voice.external_id,
+      lang: targetLang,
+    });
+    r2Key = `audio/${blockId}-${targetLang}-${voice.id}.mp3`;
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    await env.ASSETS_BUCKET.put(r2Key, bytes, { httpMetadata: { contentType: "audio/mpeg" } });
+    // Rough duration estimate based on plain-text length (160 wpm).
+    durationSeconds = Math.max(2, Math.round((cleanText.split(/\s+/).length / 160) * 60));
+  } else {
+    // Workers AI melotts. The existing helper only accepts hard-coded lang
+    // codes; map BCP-47 → its short form.
+    const shortLang =
+      targetLang.startsWith("zh") ? "zh"
+        : targetLang.startsWith("en") ? "en"
+        : targetLang.startsWith("ja") ? "ja"
+        : targetLang.startsWith("ko") ? "ko"
+        : targetLang.startsWith("es") ? "es"
+        : targetLang.startsWith("fr") ? "fr"
+        : "auto";
+    if (!isValidLang(shortLang)) throw new Error("melotts: invalid lang");
+    const result = await synthesizeAndStore(`${blockId}-${targetLang}`, sourceText, shortLang);
+    r2Key = result.r2Key;
+    durationSeconds = result.durationSeconds;
+  }
+
+  // Update the audio_i18n map (always) + legacy columns (primary only).
+  const audioMap = (() => {
+    try {
+      const v = JSON.parse(block.audio_i18n);
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch {
+      return {};
+    }
+  })();
+  audioMap[targetLang] = {
+    r2_key: r2Key,
+    voice_id: voice.id,
+    duration_s: durationSeconds,
+    generated_at: Math.floor(Date.now() / 1000),
+  };
+
+  if (targetLang === block.course_primary_lang) {
+    await db()
+      .prepare(
+        `UPDATE content_blocks
+           SET audio_r2_key = ?, audio_voice = ?, audio_lang = ?,
+               audio_duration_s = ?, duration_s = ?,
+               audio_generated_at = unixepoch(),
+               audio_i18n = ?
+         WHERE id = ? AND module_id = ?`,
+      )
+      .bind(
+        r2Key,
+        voice.id,
+        targetLang,
+        durationSeconds,
+        durationSeconds,
+        JSON.stringify(audioMap),
+        blockId,
+        moduleId,
+      )
+      .run();
+  } else {
+    // Non-primary: don't clobber legacy fields.
+    await db()
+      .prepare(`UPDATE content_blocks SET audio_i18n = ? WHERE id = ? AND module_id = ?`)
+      .bind(JSON.stringify(audioMap), blockId, moduleId)
+      .run();
+  }
 
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
@@ -402,6 +518,158 @@ export async function clearBlockAudio(form: FormData) {
     )
     .bind(blockId, moduleId)
     .run();
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+// =========================================================================
+//  MULTI-LANGUAGE TRANSLATION (Claude)
+// =========================================================================
+
+/**
+ * Translate every text fragment in a course into the target language, in a
+ * single Claude call per module (terminology stays consistent within a
+ * module).
+ *
+ * Walks the course → modules → blocks tree, pulls source text from the
+ * primary lang fields, and writes results to *_i18n JSON map columns.
+ * If target == primary lang we skip (would be a no-op). Adds `toLang` to
+ * `courses.available_langs` so the learner picker shows it.
+ */
+export async function translateCourse(form: FormData): Promise<void> {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const toLang = String(form.get("to_lang") ?? "");
+  if (!isSupportedLang(toLang)) throw new Error("unsupported target language");
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
+
+  const course = await db()
+    .prepare(
+      `SELECT id, primary_lang, title, summary, title_i18n, summary_i18n, available_langs
+       FROM courses WHERE id = ?`,
+    )
+    .bind(courseId)
+    .first<{
+      id: string;
+      primary_lang: string;
+      title: string;
+      summary: string | null;
+      title_i18n: string;
+      summary_i18n: string;
+      available_langs: string;
+    }>();
+  if (!course) throw new Error("not_found");
+  if (toLang === course.primary_lang) return; // no-op
+
+  // === Course-level title / summary
+  const courseInputs = [
+    { id: "title", text: course.title },
+    { id: "summary", text: course.summary ?? "" },
+  ];
+  const courseTrans = await translateBatch(course.primary_lang, toLang, courseInputs);
+  const titleMap = { ...readI18nMap(course.title_i18n), [toLang]: courseTrans[0].translation };
+  const summaryMap = { ...readI18nMap(course.summary_i18n), [toLang]: courseTrans[1].translation };
+
+  // === Modules
+  const { results: modules = [] } = await db()
+    .prepare(
+      `SELECT id, title, summary, title_i18n, summary_i18n
+       FROM modules WHERE course_id = ? ORDER BY position, id`,
+    )
+    .bind(courseId)
+    .all<{
+      id: string;
+      title: string;
+      summary: string | null;
+      title_i18n: string;
+      summary_i18n: string;
+    }>();
+
+  const moduleUpdates: Array<{ id: string; title_i18n: string; summary_i18n: string }> = [];
+
+  for (const m of modules) {
+    // Build the per-module batch: module title + summary, then all block
+    // text + captions for blocks belonging to this module. Single Claude call.
+    const { results: blocks = [] } = await db()
+      .prepare(
+        `SELECT id, text_md, caption, text_md_i18n, caption_i18n
+         FROM content_blocks WHERE module_id = ? ORDER BY position`,
+      )
+      .bind(m.id)
+      .all<{
+        id: string;
+        text_md: string | null;
+        caption: string | null;
+        text_md_i18n: string;
+        caption_i18n: string;
+      }>();
+
+    const batch = [
+      { id: `m:title`, text: m.title },
+      { id: `m:summary`, text: m.summary ?? "" },
+      ...blocks.flatMap((b) => [
+        { id: `b:${b.id}:text`, text: b.text_md ?? "" },
+        { id: `b:${b.id}:caption`, text: b.caption ?? "" },
+      ]),
+    ];
+    const out = await translateBatch(course.primary_lang, toLang, batch);
+    const byId = new Map(out.map((r) => [r.id, r.translation]));
+
+    moduleUpdates.push({
+      id: m.id,
+      title_i18n: writeI18nMap({ ...readI18nMap(m.title_i18n), [toLang]: byId.get("m:title") ?? "" }),
+      summary_i18n: writeI18nMap({
+        ...readI18nMap(m.summary_i18n),
+        [toLang]: byId.get("m:summary") ?? "",
+      }),
+    });
+
+    // Per-block updates — one batch insert
+    const blockStmts = blocks.map((b) => {
+      const txt = byId.get(`b:${b.id}:text`) ?? "";
+      const cap = byId.get(`b:${b.id}:caption`) ?? "";
+      return db()
+        .prepare(`UPDATE content_blocks SET text_md_i18n = ?, caption_i18n = ? WHERE id = ?`)
+        .bind(
+          writeI18nMap({ ...readI18nMap(b.text_md_i18n), [toLang]: txt }),
+          writeI18nMap({ ...readI18nMap(b.caption_i18n), [toLang]: cap }),
+          b.id,
+        );
+    });
+    if (blockStmts.length > 0) await db().batch(blockStmts);
+  }
+
+  // Apply module updates
+  if (moduleUpdates.length > 0) {
+    await db().batch(
+      moduleUpdates.map((mu) =>
+        db()
+          .prepare(`UPDATE modules SET title_i18n = ?, summary_i18n = ? WHERE id = ?`)
+          .bind(mu.title_i18n, mu.summary_i18n, mu.id),
+      ),
+    );
+  }
+
+  // Apply course updates + mark this lang available
+  const availParsed = (() => {
+    try {
+      const a = JSON.parse(course.available_langs);
+      return Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [];
+    } catch {
+      return [];
+    }
+  })();
+  const avail = Array.from(new Set([...availParsed, course.primary_lang, toLang]));
+
+  await db()
+    .prepare(
+      `UPDATE courses
+         SET title_i18n = ?, summary_i18n = ?, available_langs = ?, updated_at = unixepoch()
+       WHERE id = ?`,
+    )
+    .bind(writeI18nMap(titleMap), writeI18nMap(summaryMap), JSON.stringify(avail), courseId)
+    .run();
+
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }

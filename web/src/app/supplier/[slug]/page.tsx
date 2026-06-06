@@ -4,6 +4,8 @@ import { TopBar } from "../../_components/top-bar";
 import { requireSupplierMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
+import { hasElevenLabsKey } from "@/lib/elevenlabs";
+import { VoicesPanel, type VoiceRow } from "./voices-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +99,19 @@ export default async function SupplierDashboard({ params }: Props) {
     redirect(`/operator/${products[0].slug}`);
   }
 
+  // Voices owned by this supplier OR platform stock (supplier_id IS NULL).
+  // Stock first in the panel so customers see what's available out of the box.
+  const { results: voices = [] } = await db()
+    .prepare(
+      `SELECT id, name, provider, external_id, kind, gender, status, status_detail, created_at
+       FROM voice_profiles
+       WHERE supplier_id = ? OR supplier_id IS NULL
+       ORDER BY (supplier_id IS NULL) DESC, created_at DESC`,
+    )
+    .bind(supplier.id)
+    .all<VoiceRow>();
+  const xiKey = hasElevenLabsKey();
+
   // Aggregate KPIs.
   const totalProducts = products.length;
   const totalCourses = products.reduce((acc, p) => acc + p.course_count, 0);
@@ -171,7 +186,7 @@ export default async function SupplierDashboard({ params }: Props) {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
           {products.map((p) => (
             <Link
               key={p.id}
@@ -198,6 +213,8 @@ export default async function SupplierDashboard({ params }: Props) {
             </Link>
           ))}
         </div>
+
+        <VoicesPanel supplierSlug={supplier.slug} voices={voices ?? []} hasXIKey={xiKey} />
       </main>
     </div>
   );

@@ -45,6 +45,10 @@ export interface CourseRow {
   status: string;
   est_minutes: number | null;
   ai_examples_json: string | null;
+  /** JSON array of BCP-47 codes the course has content in (migration 0007). */
+  available_langs?: string | null;
+  title_i18n?: string | null;
+  summary_i18n?: string | null;
 }
 
 /** Parse the JSON-encoded string[] in courses.ai_examples_json safely. */
@@ -66,6 +70,9 @@ export interface ModuleRow {
   summary: string | null;
   est_minutes: number | null;
   position: number;
+  /** JSON map of lang code → translated title (excludes primary lang) */
+  title_i18n?: string | null;
+  summary_i18n?: string | null;
 }
 
 export interface BlockRow {
@@ -86,6 +93,10 @@ export interface BlockRow {
   audio_lang: string | null;
   audio_duration_s: number | null;
   audio_generated_at: number | null;
+  /** Migration 0007 — translation maps. */
+  text_md_i18n?: string | null;
+  caption_i18n?: string | null;
+  audio_i18n?: string | null;
 }
 
 export interface CourseWithOperator extends CourseRow {
@@ -187,7 +198,8 @@ export async function getCourseBySlug(
 
   const { results: modules } = await db()
     .prepare(
-      `SELECT id, course_id, slug, title, summary, est_minutes, position
+      `SELECT id, course_id, slug, title, summary, est_minutes, position,
+              title_i18n, summary_i18n
        FROM modules WHERE course_id = ? ORDER BY position`,
     )
     .bind(row.id)
@@ -220,6 +232,9 @@ export async function getCourseBySlug(
     status: row.status,
     est_minutes: row.est_minutes,
     ai_examples_json: row.ai_examples_json ?? null,
+    available_langs: (row as unknown as { available_langs?: string | null }).available_langs ?? null,
+    title_i18n: (row as unknown as { title_i18n?: string | null }).title_i18n ?? null,
+    summary_i18n: (row as unknown as { summary_i18n?: string | null }).summary_i18n ?? null,
   };
   return { operator, course, modules: modules ?? [] };
 }
@@ -240,7 +255,7 @@ export async function getModuleBlocks(
         .prepare(
           `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
                   caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
-                  audio_generated_at
+                  audio_generated_at, text_md_i18n, caption_i18n, audio_i18n
            FROM content_blocks WHERE module_id = ? ORDER BY position`,
         )
         .bind(moduleId)
@@ -249,7 +264,7 @@ export async function getModuleBlocks(
         .prepare(
           `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
                   caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
-                  audio_generated_at
+                  audio_generated_at, text_md_i18n, caption_i18n, audio_i18n
            FROM content_blocks WHERE module_id = ? AND visibility = 'training' ORDER BY position`,
         )
         .bind(moduleId)

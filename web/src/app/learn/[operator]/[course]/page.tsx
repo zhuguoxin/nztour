@@ -18,12 +18,12 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ operator: string; course: string }>;
-  searchParams: Promise<{ m?: string; preview?: string }>;
+  searchParams: Promise<{ m?: string; preview?: string; lang?: string }>;
 }
 
 export default async function CoursePage({ params, searchParams }: Props) {
   const { operator: operatorSlug, course: courseSlug } = await params;
-  const { m: moduleSlug, preview } = await searchParams;
+  const { m: moduleSlug, preview, lang: langParam } = await searchParams;
   const isPreview = preview === "1";
 
   const data = await getCourseBySlug(operatorSlug, courseSlug);
@@ -71,6 +71,59 @@ export default async function CoursePage({ params, searchParams }: Props) {
   const progressPct = Math.round((completedCount / modules.length) * 100);
   const tr = await t();
 
+  // Multi-language: pick the chosen lang from ?lang= when it's in the
+  // available_langs set; otherwise fall back to primary.
+  const { pickLocalized } = await import("@/lib/translate");
+  const availableLangs: string[] = (() => {
+    try {
+      const a = JSON.parse(course.available_langs ?? "[]");
+      return Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [];
+    } catch {
+      return [];
+    }
+  })();
+  const chosenLang =
+    langParam && availableLangs.includes(langParam) ? langParam : course.primary_lang;
+
+  // Localize titles/summaries for header + module list. Per-block text/audio
+  // localization happens inside ModuleReader.
+  const courseTitleLocal = pickLocalized(course.title, course.title_i18n ?? null, course.primary_lang, chosenLang);
+  const localizedModules = modules.map((m) => ({
+    ...m,
+    title: pickLocalized(m.title, m.title_i18n ?? null, course.primary_lang, chosenLang),
+    summary: pickLocalized(m.summary, m.summary_i18n ?? null, course.primary_lang, chosenLang),
+  }));
+  const activeLocal = localizedModules.find((m) => m.id === active.id) ?? localizedModules[0];
+  const localizedBlocks = blocks.map((b) => ({
+    ...b,
+    text_md: pickLocalized(b.text_md, b.text_md_i18n ?? null, course.primary_lang, chosenLang),
+    caption: pickLocalized(b.caption, b.caption_i18n ?? null, course.primary_lang, chosenLang),
+    // Audio: when chosen != primary, swap audio_r2_key + audio_generated_at
+    // to the localized version from audio_i18n so ModuleReader's existing
+    // audio src logic just works (it queries /api/audio?id=...).
+    ...(chosenLang === course.primary_lang
+      ? {}
+      : (() => {
+          try {
+            const map = JSON.parse(b.audio_i18n ?? "{}");
+            const e = map?.[chosenLang];
+            if (e?.r2_key) {
+              return {
+                audio_r2_key: e.r2_key,
+                audio_voice: e.voice_id,
+                audio_lang: chosenLang,
+                audio_duration_s: e.duration_s,
+                audio_generated_at: e.generated_at,
+                _audio_lang_query: chosenLang,
+              } as Partial<typeof b> & { _audio_lang_query?: string };
+            }
+            return { audio_r2_key: null } as Partial<typeof b>;
+          } catch {
+            return { audio_r2_key: null } as Partial<typeof b>;
+          }
+        })()),
+  }));
+
   async function onComplete(dwellSeconds: number): Promise<{ verifyCode?: string }> {
     "use server";
     return completeModuleAction({
@@ -94,7 +147,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
             <span className="text-white/20 shrink-0">/</span>
             <span className="shrink-0">{operator.name}</span>
             <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{course.title}</span>
+            <span className="text-white truncate">{courseTitleLocal}</span>
           </span>
         }
       />
@@ -104,6 +157,16 @@ export default async function CoursePage({ params, searchParams }: Props) {
           ⚠ PREVIEW MODE — viewing {course.status} content as a learner.
           AI-only blocks are hidden, the same as in production.
         </div>
+      ) : null}
+
+      {availableLangs.length > 1 ? (
+        <LangPicker
+          langs={availableLangs}
+          chosen={chosenLang}
+          basePath={`/learn/${operatorSlug}/${courseSlug}`}
+          activeSlug={activeLocal.slug}
+          preserveQuery={{ preview: isPreview ? "1" : undefined }}
+        />
       ) : null}
 
       {/* Mobile-only: floating "Ask AI" pill that scrolls the sidebar into view. */}
@@ -122,7 +185,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
           style={{ background: "color-mix(in srgb, var(--op-panel) 60%, transparent)" }}
         >
           <div className="text-[11px] font-mono text-emerald-300/70 mb-2">{tr.course_label}</div>
-          <div className="text-[15px] font-semibold mb-1 text-white">{course.title}</div>
+          <div className="text-[15px] font-semibold mb-1 text-white">{courseTitleLocal}</div>
           <div className="text-[13px] text-[#a7d4b6] mb-4">{operator.name}</div>
 
           <div className="h-1.5 bg-black/30 rounded-full overflow-hidden mb-2">
@@ -145,21 +208,23 @@ export default async function CoursePage({ params, searchParams }: Props) {
 
           <div className="text-[11px] font-mono text-emerald-300/70 mb-2">{tr.modules_label}</div>
           <ModuleList
-            modules={modules}
-            active={active}
+            modules={localizedModules}
+            active={activeLocal}
             progressMap={progressMap}
             basePath={`/learn/${operatorSlug}/${courseSlug}`}
             completedLabel={tr.completed_chip}
+            langQuery={chosenLang !== course.primary_lang ? chosenLang : null}
+            isPreview={isPreview}
           />
         </aside>
 
         {/* Reader */}
         <ModuleReader
-          module={active}
-          blocks={blocks}
+          module={activeLocal}
+          blocks={localizedBlocks}
           courseSlug={courseSlug}
           operatorSlug={operatorSlug}
-          modules={modules}
+          modules={localizedModules}
           isCompleted={!!progressMap.get(active.id)?.completed_at}
           onComplete={onComplete}
           tr={{
@@ -218,12 +283,16 @@ function ModuleList({
   progressMap,
   basePath,
   completedLabel,
+  langQuery,
+  isPreview,
 }: {
   modules: ModuleRow[];
   active: ModuleRow;
   progressMap: Map<string, { completed_at: number | null }>;
   basePath: string;
   completedLabel: string;
+  langQuery: string | null;
+  isPreview: boolean;
 }) {
   return (
     <div className="space-y-1">
@@ -238,7 +307,11 @@ function ModuleList({
         return (
           <Link
             key={m.id}
-            href={`${basePath}?m=${m.slug}`}
+            href={`${basePath}?${new URLSearchParams({
+              m: m.slug,
+              ...(langQuery ? { lang: langQuery } : {}),
+              ...(isPreview ? { preview: "1" } : {}),
+            }).toString()}`}
             className={`flex items-start gap-3 px-3 py-2.5 rounded-lg ${
               isActive
                 ? "bg-emerald-400/10 border border-emerald-400/30"
@@ -260,6 +333,66 @@ function ModuleList({
       })}
     </div>
   );
+}
+
+/**
+ * Compact language picker shown above the reader when a course has > 1
+ * available language. Each chip is a regular Link that preserves the
+ * active module slug (?m=) and preview flag (?preview=1).
+ */
+function LangPicker({
+  langs,
+  chosen,
+  basePath,
+  activeSlug,
+  preserveQuery,
+}: {
+  langs: string[];
+  chosen: string;
+  basePath: string;
+  activeSlug: string;
+  preserveQuery: Record<string, string | undefined>;
+}) {
+  return (
+    <div className="border-b border-white/[.06] px-4 py-2 flex items-center gap-2 overflow-x-auto">
+      <span className="text-[11px] font-mono text-emerald-300/70 uppercase shrink-0">Language</span>
+      {langs.map((code) => {
+        const params = new URLSearchParams({ m: activeSlug, lang: code });
+        for (const [k, v] of Object.entries(preserveQuery)) {
+          if (v) params.set(k, v);
+        }
+        const isOn = code === chosen;
+        return (
+          <Link
+            key={code}
+            href={`${basePath}?${params.toString()}`}
+            className={`px-2.5 py-1 rounded-md text-[12px] font-medium border transition shrink-0 ${
+              isOn
+                ? "bg-emerald-400 text-[#04241e] border-emerald-400"
+                : "border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06]"
+            }`}
+          >
+            {nativeLabel(code)}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function nativeLabel(code: string): string {
+  const map: Record<string, string> = {
+    en: "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
+    ja: "日本語",
+    ko: "한국어",
+    es: "Español",
+    fr: "Français",
+    de: "Deutsch",
+    pt: "Português",
+  };
+  return map[code] ?? code;
 }
 
 function EmptyCourse({ operator, title }: { operator: string; title: string }) {

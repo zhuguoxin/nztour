@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { updateCourse, deleteCourse, createModule } from "../../actions";
 import { EditorModules, type BlockData, type ModuleData } from "./editor-modules";
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
+import { TranslationsPanel } from "./translations-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ interface CourseEditRow {
   status: string;
   est_minutes: number | null;
   primary_lang: string;
+  available_langs: string;
 }
 
 type ModuleRow = ModuleData;
@@ -44,12 +46,20 @@ export default async function EditCoursePage({
 
   const course = await db()
     .prepare(
-      `SELECT id, slug, title, summary, emoji, status, est_minutes, primary_lang
+      `SELECT id, slug, title, summary, emoji, status, est_minutes, primary_lang, available_langs
        FROM courses WHERE operator_id = ? AND slug = ?`,
     )
     .bind(op.id, courseSlug)
     .first<CourseEditRow>();
   if (!course) notFound();
+  const availableLangs: string[] = (() => {
+    try {
+      const a = JSON.parse(course.available_langs);
+      return Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [course.primary_lang];
+    } catch {
+      return [course.primary_lang];
+    }
+  })();
 
   const { results: modules } = await db()
     .prepare(
@@ -89,6 +99,28 @@ export default async function EditCoursePage({
     )
     .bind(course.id)
     .all<AttachmentRow>();
+
+  // Voices available to this product: every platform stock voice + every
+  // cloned voice owned by the parent supplier.
+  const { results: voices = [] } = await db()
+    .prepare(
+      `SELECT v.id, v.name, v.provider, v.kind, v.gender, v.status
+       FROM voice_profiles v
+       LEFT JOIN operators o ON o.supplier_id = v.supplier_id
+       WHERE v.status = 'active'
+         AND (v.supplier_id IS NULL OR o.slug = ?)
+       GROUP BY v.id
+       ORDER BY (v.supplier_id IS NULL) DESC, v.created_at DESC`,
+    )
+    .bind(slug)
+    .all<{
+      id: string;
+      name: string;
+      provider: string;
+      kind: string;
+      gender: string | null;
+      status: string;
+    }>();
 
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased">
@@ -232,6 +264,9 @@ export default async function EditCoursePage({
           <EditorModules
             operatorSlug={slug}
             courseSlug={course.slug}
+            primaryLang={course.primary_lang}
+            availableLangs={availableLangs}
+            voices={voices ?? []}
             modules={modules ?? []}
             blocksByModuleId={blocksByModule}
           />
@@ -254,6 +289,14 @@ export default async function EditCoursePage({
             </button>
           </form>
         </section>
+
+        {/* ============== Languages (AI translation) ============== */}
+        <TranslationsPanel
+          operatorSlug={slug}
+          courseSlug={course.slug}
+          primaryLang={course.primary_lang}
+          availableLangs={availableLangs}
+        />
 
         {/* ============== Supplementary materials (RAG-only) ============== */}
         <AttachmentsPanel
