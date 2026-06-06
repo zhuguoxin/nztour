@@ -205,6 +205,64 @@ export async function reorderModule(form: FormData) {
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
+/**
+ * Bulk reorder modules by submitting the full ordered ID list. Used by the
+ * drag-drop UI: client sends the list after a drop, server renumbers from 1.
+ * Only modules belonging to this course are touched (others rejected).
+ */
+export async function reorderModulesBulk(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  orderedIds: string[];
+}): Promise<void> {
+  const { operatorSlug, courseSlug, orderedIds } = input;
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
+
+  // Validate every id belongs to this course — refuse if any stray.
+  const ph = orderedIds.map(() => "?").join(",");
+  const { results } = await db()
+    .prepare(`SELECT id FROM modules WHERE course_id = ? AND id IN (${ph})`)
+    .bind(courseId, ...orderedIds)
+    .all<{ id: string }>();
+  const ours = new Set((results ?? []).map((r) => r.id));
+  if (ours.size !== orderedIds.length) throw new Error("forbidden");
+
+  const stmts = orderedIds.map((id, i) =>
+    db().prepare(`UPDATE modules SET position = ? WHERE id = ? AND course_id = ?`).bind(i + 1, id, courseId),
+  );
+  if (stmts.length > 0) await db().batch(stmts);
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+}
+
+/**
+ * Bulk reorder blocks within a single module. Same shape as reorderModulesBulk.
+ * (Cross-module drags would require updating module_id too — out of scope here;
+ * the UI confines drag sources to a single module's block list.)
+ */
+export async function reorderBlocksBulk(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+  orderedIds: string[];
+}): Promise<void> {
+  const { operatorSlug, courseSlug, moduleId, orderedIds } = input;
+  await authModule(operatorSlug, courseSlug, moduleId);
+
+  const ph = orderedIds.map(() => "?").join(",");
+  const { results } = await db()
+    .prepare(`SELECT id FROM content_blocks WHERE module_id = ? AND id IN (${ph})`)
+    .bind(moduleId, ...orderedIds)
+    .all<{ id: string }>();
+  const ours = new Set((results ?? []).map((r) => r.id));
+  if (ours.size !== orderedIds.length) throw new Error("forbidden");
+
+  const stmts = orderedIds.map((id, i) =>
+    db().prepare(`UPDATE content_blocks SET position = ? WHERE id = ? AND module_id = ?`).bind(i, id, moduleId),
+  );
+  if (stmts.length > 0) await db().batch(stmts);
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+}
+
 // =========================================================================
 //  CONTENT BLOCKS
 // =========================================================================
@@ -258,13 +316,22 @@ export async function updateBlock(form: FormData) {
   const text = String(form.get("text_md") ?? "").trim() || null;
   const caption = String(form.get("caption") ?? "").trim() || null;
   const videoUid = String(form.get("video_uid") ?? "").trim() || null;
+  // Checkbox: present if checked, absent if not. Map to a stable enum.
+  const visibility = form.get("visibility_assistant_only") ? "assistant_only" : "training";
+  // Duration recompute: text → words/180wpm; audio block reuses its audio_duration_s
+  // (set by generateBlockAudio); video/image blocks stay NULL.
+  const duration =
+    text && (text.split(/\s+/).filter(Boolean).length > 0)
+      ? Math.max(3, Math.round((text.split(/\s+/).filter(Boolean).length / 180) * 60))
+      : null;
   await db()
     .prepare(
       `UPDATE content_blocks
-         SET text_md = ?, video_uid = ?, caption = ?
+         SET text_md = ?, video_uid = ?, caption = ?, visibility = ?,
+             duration_s = COALESCE(?, audio_duration_s, duration_s)
        WHERE id = ? AND module_id = ?`,
     )
-    .bind(text, videoUid, caption, blockId, moduleId)
+    .bind(text, videoUid, caption, visibility, duration, blockId, moduleId)
     .run();
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
 }
@@ -297,10 +364,11 @@ export async function generateBlockAudio(form: FormData) {
     .prepare(
       `UPDATE content_blocks
          SET audio_r2_key = ?, audio_voice = ?, audio_lang = ?,
-             audio_duration_s = ?, audio_generated_at = unixepoch()
+             audio_duration_s = ?, duration_s = ?,
+             audio_generated_at = unixepoch()
        WHERE id = ? AND module_id = ?`,
     )
-    .bind(result.r2Key, lang, result.langUsed, result.durationSeconds, blockId, moduleId)
+    .bind(result.r2Key, lang, result.langUsed, result.durationSeconds, result.durationSeconds, blockId, moduleId)
     .run();
 
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
@@ -336,6 +404,33 @@ export async function clearBlockAudio(form: FormData) {
     .run();
   revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+// =========================================================================
+//  COURSE ATTACHMENTS (RAG-only supplementary materials)
+// =========================================================================
+
+export async function deleteCourseAttachment(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const attachmentId = String(form.get("attachment_id") ?? "");
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
+
+  const row = await db()
+    .prepare(`SELECT r2_key FROM course_attachments WHERE id = ? AND course_id = ?`)
+    .bind(attachmentId, courseId)
+    .first<{ r2_key: string }>();
+  if (!row) return;
+
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const { env } = getCloudflareContext();
+  await env.ASSETS_BUCKET.delete(row.r2_key).catch(() => {});
+  await db()
+    .prepare(`DELETE FROM course_attachments WHERE id = ? AND course_id = ?`)
+    .bind(attachmentId, courseId)
+    .run();
+
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 export async function deleteBlock(form: FormData) {

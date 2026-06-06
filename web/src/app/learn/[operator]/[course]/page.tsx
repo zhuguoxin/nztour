@@ -18,16 +18,30 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ operator: string; course: string }>;
-  searchParams: Promise<{ m?: string }>;
+  searchParams: Promise<{ m?: string; preview?: string }>;
 }
 
 export default async function CoursePage({ params, searchParams }: Props) {
   const { operator: operatorSlug, course: courseSlug } = await params;
-  const { m: moduleSlug } = await searchParams;
+  const { m: moduleSlug, preview } = await searchParams;
+  const isPreview = preview === "1";
 
   const data = await getCourseBySlug(operatorSlug, courseSlug);
   if (!data) notFound();
   const { operator, course, modules } = data;
+
+  // Draft-gate: only operator/supplier/admin members can preview a draft.
+  // We let the call to requireOperatorMembership throw for unauthorised users
+  // and treat anything other than success as notFound (no draft leak).
+  if (course.status !== "published") {
+    if (!isPreview) notFound();
+    const { requireOperatorMembership } = await import("@/lib/roles");
+    try {
+      await requireOperatorMembership(operatorSlug);
+    } catch {
+      notFound();
+    }
+  }
 
   if (modules.length === 0) {
     return <EmptyCourse operator={operator.name} title={course.title} />;
@@ -84,6 +98,13 @@ export default async function CoursePage({ params, searchParams }: Props) {
           </span>
         }
       />
+
+      {isPreview ? (
+        <div className="bg-amber-400/20 border-b border-amber-400/40 text-amber-100 text-[12.5px] font-mono px-4 py-1.5 flex items-center justify-center gap-2">
+          ⚠ PREVIEW MODE — viewing {course.status} content as a learner.
+          AI-only blocks are hidden, the same as in production.
+        </div>
+      ) : null}
 
       {/* Mobile-only: floating "Ask AI" pill that scrolls the sidebar into view. */}
       <a

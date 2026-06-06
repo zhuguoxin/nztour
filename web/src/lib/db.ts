@@ -224,15 +224,35 @@ export async function getCourseBySlug(
   return { operator, course, modules: modules ?? [] };
 }
 
-export async function getModuleBlocks(moduleId: string): Promise<BlockRow[]> {
-  const { results } = await db()
-    .prepare(
-      `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
-              caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
-              audio_generated_at
-       FROM content_blocks WHERE module_id = ? ORDER BY position`,
-    )
-    .bind(moduleId)
-    .all<BlockRow>();
+/**
+ * Fetch blocks for a module. `opts.includeAssistantOnly` defaults to false:
+ * learner-facing pages get only `visibility='training'` blocks; the editor
+ * preview and any RAG-internal call pass `true` to include
+ * `visibility='assistant_only'` blocks (which are fed to the AI but never
+ * shown in /learn).
+ */
+export async function getModuleBlocks(
+  moduleId: string,
+  opts: { includeAssistantOnly?: boolean } = {},
+): Promise<BlockRow[]> {
+  const { results } = opts.includeAssistantOnly
+    ? await db()
+        .prepare(
+          `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
+                  caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
+                  audio_generated_at
+           FROM content_blocks WHERE module_id = ? ORDER BY position`,
+        )
+        .bind(moduleId)
+        .all<BlockRow>()
+    : await db()
+        .prepare(
+          `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
+                  caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
+                  audio_generated_at
+           FROM content_blocks WHERE module_id = ? AND visibility = 'training' ORDER BY position`,
+        )
+        .bind(moduleId)
+        .all<BlockRow>();
   return results ?? [];
 }
