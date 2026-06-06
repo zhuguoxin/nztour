@@ -22,10 +22,27 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }
 
-export default async function OperatorDashboard({ params }: Props) {
+/** Parse a YYYY-MM-DD date into unix seconds. Returns null on bad input. */
+function parseDateParam(s: string | undefined, endOfDay = false): number | null {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(s + (endOfDay ? "T23:59:59Z" : "T00:00:00Z"));
+  const t = d.getTime();
+  return Number.isFinite(t) ? Math.floor(t / 1000) : null;
+}
+
+export default async function OperatorDashboard({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { from: fromParam, to: toParam } = await searchParams;
+
+  // Default window: last 30 days. Date pickers narrow it.
+  const now = Math.floor(Date.now() / 1000);
+  const defaultFrom = now - 30 * 86400;
+  const fromTs = parseDateParam(fromParam) ?? defaultFrom;
+  const toTs = parseDateParam(toParam, true) ?? now;
+  const windowDays = Math.max(1, Math.round((toTs - fromTs) / 86400));
 
   // Auth + role gate. Admins can see any operator's console; operators only theirs.
   let access;
@@ -61,11 +78,11 @@ export default async function OperatorDashboard({ params }: Props) {
   if (!operator) notFound();
 
   const [kpis, courses, learners, topQs, activity, role, tr] = await Promise.all([
-    getOperatorKPIs(operator.id),
+    getOperatorKPIs(operator.id, { from: fromTs, to: toTs }),
     listOperatorCourses(operator.id),
     listRecentLearners(operator.id, 10),
     listTopQuestions(operator.id, 6),
-    getDailyActivity(operator.id, 7),
+    getDailyActivity(operator.id, Math.min(30, Math.max(7, windowDays))),
     getCurrentRole(),
     t(),
   ]);
@@ -144,8 +161,16 @@ export default async function OperatorDashboard({ params }: Props) {
           </Link>
         </div>
 
+        {/* Date range + CSV export */}
+        <DateRangeBar
+          fromTs={fromTs}
+          toTs={toTs}
+          windowDays={windowDays}
+          slug={slug}
+        />
+
         {/* KPI cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <KpiCard
             label={tr.op_d_kpi_total_learners}
             value={kpis.total_learners.toLocaleString()}
@@ -173,6 +198,12 @@ export default async function OperatorDashboard({ params }: Props) {
             value={kpis.ai_questions_total.toLocaleString()}
             sub={fmt(tr.op_d_kpi_30d, { n: kpis.ai_questions_30d })}
             tone="emerald"
+          />
+          <KpiCard
+            label="SATISFACTION"
+            value={kpis.satisfaction_avg > 0 ? `${kpis.satisfaction_avg.toFixed(1)} ★` : "—"}
+            sub={kpis.satisfaction_count > 0 ? `${kpis.satisfaction_count} ratings` : "no ratings yet"}
+            tone="default"
           />
         </div>
 
@@ -489,6 +520,102 @@ function BrandingPanel({
 // ============================================================================
 //  Subcomponents
 // ============================================================================
+
+/**
+ * Sticky date-range bar above the KPI grid. Three preset buttons + a
+ * GET form with from/to date inputs. CSV export buttons live here too —
+ * they hit /api/operator/learners.csv and /api/operator/qa.csv with the
+ * current ?from=&to= preserved.
+ */
+function DateRangeBar({
+  fromTs,
+  toTs,
+  windowDays,
+  slug,
+}: {
+  fromTs: number;
+  toTs: number;
+  windowDays: number;
+  slug: string;
+}) {
+  const fmtIso = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
+  const fromIso = fmtIso(fromTs);
+  const toIso = fmtIso(toTs);
+  const todayIso = fmtIso(Math.floor(Date.now() / 1000));
+  const presets: Array<{ label: string; days: number }> = [
+    { label: "Last 7d", days: 7 },
+    { label: "Last 30d", days: 30 },
+    { label: "Last 90d", days: 90 },
+  ];
+  return (
+    <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] px-4 py-3 mb-5 flex items-center gap-2 flex-wrap">
+      <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">REPORTING WINDOW</div>
+      <div className="font-mono text-[12.5px] text-white">
+        {fromIso} → {toIso}{" "}
+        <span className="text-[#86b69a]">({windowDays}d)</span>
+      </div>
+
+      <div className="flex items-center gap-1 ml-2">
+        {presets.map((p) => {
+          const fromD = new Date(Date.now() - p.days * 86400 * 1000);
+          const params = new URLSearchParams({
+            from: fromD.toISOString().slice(0, 10),
+            to: todayIso,
+          });
+          return (
+            <Link
+              key={p.days}
+              href={`/operator/${slug}?${params.toString()}`}
+              className="px-2 py-1 rounded border border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06] text-[11.5px]"
+            >
+              {p.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <form action={`/operator/${slug}`} className="flex items-center gap-1 ml-1">
+        <input
+          type="date"
+          name="from"
+          defaultValue={fromIso}
+          max={todayIso}
+          className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white"
+        />
+        <span className="text-[#86b69a]">→</span>
+        <input
+          type="date"
+          name="to"
+          defaultValue={toIso}
+          max={todayIso}
+          className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white"
+        />
+        <button
+          type="submit"
+          className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300"
+        >
+          Apply
+        </button>
+      </form>
+
+      <div className="ml-auto flex items-center gap-2">
+        <a
+          href={`/api/operator/learners.csv?slug=${encodeURIComponent(slug)}&from=${fromIso}&to=${toIso}`}
+          className="px-2.5 py-1 rounded border border-white/[.10] text-emerald-300 hover:bg-white/[.06] text-[12px]"
+          title="Download every learner in this window as CSV"
+        >
+          ⬇ Learners CSV
+        </a>
+        <Link
+          href={`/operator/${slug}/qa?from=${fromIso}&to=${toIso}`}
+          className="px-2.5 py-1 rounded border border-white/[.10] text-emerald-300 hover:bg-white/[.06] text-[12px]"
+        >
+          View Q&amp;A archive →
+        </Link>
+      </div>
+    </section>
+  );
+}
 
 function KpiCard({
   label,

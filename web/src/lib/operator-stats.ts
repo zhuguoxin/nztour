@@ -6,19 +6,40 @@ import { db } from "./db";
 
 export interface OperatorKPIs {
   total_learners: number;
+  /** Learners whose enrollment STARTED in the window. */
   learners_this_week: number;
   courses_published: number;
   courses_draft: number;
+  /** Badges awarded in the window. */
   badges_awarded: number;
-  completion_rate_pct: number;     // 0-100, rounded
+  /** completed-in-window / enrolled-in-window, 0..100. */
+  completion_rate_pct: number;
+  /** Q&A asked in the window. */
   ai_questions_total: number;
+  /** Same as ai_questions_total — kept under legacy name for the UI labels. */
   ai_questions_30d: number;
+  /** Average star rating (0..5) of course_feedback rows in the window. */
+  satisfaction_avg: number;
+  satisfaction_count: number;
 }
 
-export async function getOperatorKPIs(operatorId: string): Promise<OperatorKPIs> {
-  const NOW = Math.floor(Date.now() / 1000);
-  const WEEK = NOW - 7 * 24 * 3600;
-  const MONTH = NOW - 30 * 24 * 3600;
+export interface KPIWindow {
+  /** Inclusive unix seconds */
+  from: number;
+  /** Inclusive unix seconds (end-of-day for date pickers) */
+  to: number;
+}
+
+export function lastNDaysWindow(days: number): KPIWindow {
+  const now = Math.floor(Date.now() / 1000);
+  return { from: now - days * 86400, to: now };
+}
+
+export async function getOperatorKPIs(
+  operatorId: string,
+  window: KPIWindow = lastNDaysWindow(30),
+): Promise<OperatorKPIs> {
+  const { from, to } = window;
 
   // Single round trip via batch.
   const stmts = [
@@ -26,14 +47,14 @@ export async function getOperatorKPIs(operatorId: string): Promise<OperatorKPIs>
       `SELECT COUNT(DISTINCT e.user_id) AS n
        FROM enrollments e
        JOIN courses c ON c.id = e.course_id
-       WHERE c.operator_id = ?`,
-    ).bind(operatorId),
+       WHERE c.operator_id = ? AND e.started_at <= ?`,
+    ).bind(operatorId, to),
     db().prepare(
       `SELECT COUNT(DISTINCT e.user_id) AS n
        FROM enrollments e
        JOIN courses c ON c.id = e.course_id
-       WHERE c.operator_id = ? AND e.started_at >= ?`,
-    ).bind(operatorId, WEEK),
+       WHERE c.operator_id = ? AND e.started_at >= ? AND e.started_at <= ?`,
+    ).bind(operatorId, from, to),
     db().prepare(
       `SELECT
          SUM(CASE WHEN status='published' THEN 1 ELSE 0 END) AS pub,
@@ -41,22 +62,27 @@ export async function getOperatorKPIs(operatorId: string): Promise<OperatorKPIs>
        FROM courses WHERE operator_id = ?`,
     ).bind(operatorId),
     db().prepare(
-      `SELECT COUNT(*) AS n FROM badges WHERE operator_id = ?`,
-    ).bind(operatorId),
+      `SELECT COUNT(*) AS n FROM badges
+       WHERE operator_id = ? AND awarded_at >= ? AND awarded_at <= ?`,
+    ).bind(operatorId, from, to),
     db().prepare(
       `SELECT
          COUNT(DISTINCT e.user_id) AS enrolled,
          COUNT(DISTINCT CASE WHEN e.completed_at IS NOT NULL THEN e.user_id END) AS completed
        FROM enrollments e
        JOIN courses c ON c.id = e.course_id
-       WHERE c.operator_id = ?`,
-    ).bind(operatorId),
+       WHERE c.operator_id = ? AND e.started_at >= ? AND e.started_at <= ?`,
+    ).bind(operatorId, from, to),
     db().prepare(
-      `SELECT COUNT(*) AS n FROM qa_logs WHERE operator_id = ?`,
-    ).bind(operatorId),
+      `SELECT COUNT(*) AS n FROM qa_logs
+       WHERE operator_id = ? AND created_at >= ? AND created_at <= ?`,
+    ).bind(operatorId, from, to),
     db().prepare(
-      `SELECT COUNT(*) AS n FROM qa_logs WHERE operator_id = ? AND created_at >= ?`,
-    ).bind(operatorId, MONTH),
+      `SELECT AVG(rating) AS avg_r, COUNT(*) AS n
+       FROM course_feedback f
+       JOIN courses c ON c.id = f.course_id
+       WHERE c.operator_id = ? AND f.created_at >= ? AND f.created_at <= ?`,
+    ).bind(operatorId, from, to),
   ];
   const rows = await db().batch(stmts);
 
@@ -65,6 +91,8 @@ export async function getOperatorKPIs(operatorId: string): Promise<OperatorKPIs>
     enrCounts && enrCounts.enrolled > 0
       ? Math.round((enrCounts.completed / enrCounts.enrolled) * 100)
       : 0;
+  const fb = rows[6].results?.[0] as { avg_r: number | null; n: number } | undefined;
+  const qaCount = (rows[5].results?.[0] as { n: number } | undefined)?.n ?? 0;
 
   return {
     total_learners: ((rows[0].results?.[0] as { n: number } | undefined)?.n ?? 0),
@@ -73,8 +101,10 @@ export async function getOperatorKPIs(operatorId: string): Promise<OperatorKPIs>
     courses_draft: ((rows[2].results?.[0] as { draft: number } | undefined)?.draft ?? 0),
     badges_awarded: ((rows[3].results?.[0] as { n: number } | undefined)?.n ?? 0),
     completion_rate_pct: completion,
-    ai_questions_total: ((rows[5].results?.[0] as { n: number } | undefined)?.n ?? 0),
-    ai_questions_30d: ((rows[6].results?.[0] as { n: number } | undefined)?.n ?? 0),
+    ai_questions_total: qaCount,
+    ai_questions_30d: qaCount,
+    satisfaction_avg: fb?.avg_r ? Math.round(fb.avg_r * 10) / 10 : 0,
+    satisfaction_count: fb?.n ?? 0,
   };
 }
 
