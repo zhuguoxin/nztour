@@ -97,23 +97,23 @@ export default async function VerifyPage({
   const learnerLabel = row.learner_name ?? maskEmail(row.learner_email);
 
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px] flex flex-col">
-      <header className="border-b border-white/[.06] px-5 sm:px-8 py-3.5">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px] flex flex-col">
+      <header className="border-b border-slate-200 px-5 sm:px-8 py-3.5">
         <Logo />
       </header>
 
       <main className="flex-1 px-5 sm:px-8 py-12 sm:py-16 max-w-2xl mx-auto w-full">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70 mb-2">
+        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
           {tr.verify_chrome_label}
         </div>
-        <h1 className="text-[32px] sm:text-[36px] font-semibold tracking-tight text-white">
-          <span className="text-lime-300">✓</span> {tr.verify_chrome_title}
+        <h1 className="text-[32px] sm:text-[36px] font-semibold tracking-tight text-slate-900">
+          <span className="text-emerald-600">✓</span> {tr.verify_chrome_title}
         </h1>
-        <p className="text-[14px] sm:text-[15px] text-[#a7d4b6] mt-1.5">
+        <p className="text-[14px] sm:text-[15px] text-slate-600 mt-1.5">
           {tr.verify_chrome_subtitle}
         </p>
 
-        <div className="mt-8 rounded-2xl overflow-hidden border border-white/[.08] bg-[#0a3a2f]">
+        <div className="mt-8 rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,.04),0_8px_24px_rgba(15,23,42,.06)]">
           <div
             className="h-40 flex items-center justify-center"
             style={{
@@ -124,10 +124,10 @@ export default async function VerifyPage({
           </div>
           <div className="p-6 space-y-5">
             <div>
-              <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_course}</div>
-              <div className="text-[20px] font-semibold text-white mt-0.5">{row.course_title}</div>
+              <div className="text-[11px] font-mono text-emerald-700/70">{tr.verify_field_course}</div>
+              <div className="text-[20px] font-semibold text-slate-900 mt-0.5">{row.course_title}</div>
               {row.course_summary ? (
-                <div className="text-[14px] text-[#a7d4b6] mt-1.5 leading-relaxed">
+                <div className="text-[14px] text-slate-600 mt-1.5 leading-relaxed">
                   {row.course_summary}
                 </div>
               ) : null}
@@ -135,31 +135,31 @@ export default async function VerifyPage({
 
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_operator}</div>
-                <div className="text-[14px] text-white mt-0.5">{row.operator_name}</div>
-                <div className="text-[11px] text-[#86b69a]">{row.operator_country}</div>
+                <div className="text-[11px] font-mono text-emerald-700/70">{tr.verify_field_operator}</div>
+                <div className="text-[14px] text-slate-900 mt-0.5">{row.operator_name}</div>
+                <div className="text-[11px] text-slate-500">{row.operator_country}</div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_learner}</div>
-                <div className="text-[14px] text-white mt-0.5">{learnerLabel}</div>
+                <div className="text-[11px] font-mono text-emerald-700/70">{tr.verify_field_learner}</div>
+                <div className="text-[14px] text-slate-900 mt-0.5">{learnerLabel}</div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_awarded}</div>
-                <div className="text-[14px] text-white mt-0.5">
+                <div className="text-[11px] font-mono text-emerald-700/70">{tr.verify_field_awarded}</div>
+                <div className="text-[14px] text-slate-900 mt-0.5">
                   {awarded.toISOString().slice(0, 10)}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-emerald-300/70">{tr.verify_field_code}</div>
-                <div className="font-mono text-[14px] text-emerald-300 mt-0.5">{row.verify_code}</div>
+                <div className="text-[11px] font-mono text-emerald-700/70">{tr.verify_field_code}</div>
+                <div className="font-mono text-[14px] text-emerald-700 mt-0.5">{row.verify_code}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 text-center text-[12px] text-[#86b69a]">
+        <div className="mt-8 text-center text-[12px] text-slate-500">
           {tr.verify_share_lead}
-          <div className="font-mono text-[11px] text-[#5d9279] mt-1">
+          <div className="font-mono text-[11px] text-slate-400 mt-1">
             www.libretour.com/verify/{row.verify_code}
           </div>
         </div>

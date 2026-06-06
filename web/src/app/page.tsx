@@ -8,19 +8,17 @@ import { getCurrentRole } from "@/lib/roles";
 export const dynamic = "force-dynamic";
 
 /**
- * Dark-green tech palette. Tokens:
- *   --bg          #04241e  (page)
- *   --bg-soft     #062b22  (sticky header w/ blur)
- *   --panel       #0a3a2f  (card surface)
- *   --panel-hover #0e4738
- *   --line        rgba(255,255,255,.08)
- *   --line-hover  rgba(52,211,153,.4)
- *   --ink         #f0fdf4  (high-contrast text)
- *   --ink-muted   #a7d4b6
- *   --ink-faint   #6b9981
- *   --accent      #34d399 (emerald-400)
- *   --accent-deep #10b981
- *   --lime        #bef264
+ * Libretour platform — light theme. Tokens:
+ *   bg            #ffffff  (page)
+ *   bg-soft       #f9fafb  (sticky header w/ blur, very faint hero glow)
+ *   panel         #ffffff  (card surface, on a light slate-200 border)
+ *   line          #e5e7eb  (slate-200)
+ *   ink           #0f172a  (slate-900) — primary text
+ *   ink-muted     #475569  (slate-600) — secondary text
+ *   ink-faint     #64748b  (slate-500) — tertiary
+ *   accent        #059669  (emerald-600) — primary CTA, links
+ *   accent-deep   #047857  (emerald-700) — hover
+ *   accent-soft   #ecfdf5  (emerald-50)  — accent backgrounds
  */
 export default async function Home() {
   const [operators, tr, role] = await Promise.all([
@@ -29,7 +27,6 @@ export default async function Home() {
     getCurrentRole(),
   ]);
   const totalCourses = operators.reduce((s, o) => s + o.course_count, 0);
-  // Set of operator slugs the current user can manage (admins can manage any).
   const manageableSlugs = new Set(
     role.isAdmin
       ? operators.map((o) => o.slug)
@@ -37,7 +34,7 @@ export default async function Home() {
   );
 
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
       <TopBar />
 
       {/* Hero with AI bar */}
@@ -47,25 +44,25 @@ export default async function Home() {
           className="absolute inset-0 -z-0"
           style={{
             background:
-              "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(52,211,153,0.12) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 100% 30%, rgba(190,242,100,0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 0% 80%, rgba(20,184,166,0.08) 0%, transparent 60%)",
+              "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(16,185,129,0.08) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 100% 30%, rgba(132,204,22,0.05) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 0% 80%, rgba(20,184,166,0.05) 0%, transparent 60%)",
           }}
         />
         <div className="relative px-5 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center max-w-4xl mx-auto">
           <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-6 sm:mb-7">
-            <span className="px-3 py-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/30 text-emerald-300 text-[12px] sm:text-[13px] font-medium">
+            <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] sm:text-[13px] font-medium">
               {fmt(tr.hero_live_chip, { operators: operators.length, courses: totalCourses })}
             </span>
-            <span className="px-3 py-1.5 rounded-full bg-white/[.04] border border-white/[.08] text-[#c4e9d3] text-[12px] sm:text-[13px] font-medium">
+            <span className="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[12px] sm:text-[13px] font-medium">
               {tr.hero_lang_chip}
             </span>
           </div>
-          <h1 className="text-[36px] sm:text-[48px] md:text-[64px] leading-[1.1] sm:leading-[1.05] font-semibold tracking-tight text-white">
+          <h1 className="text-[36px] sm:text-[48px] md:text-[64px] leading-[1.1] sm:leading-[1.05] font-semibold tracking-tight text-slate-900">
             {tr.hero_title_a}{" "}
-            <span className="bg-gradient-to-br from-emerald-300 via-emerald-400 to-lime-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-br from-emerald-600 via-emerald-500 to-lime-500 bg-clip-text text-transparent">
               {tr.hero_title_b}
             </span>
           </h1>
-          <p className="mt-5 sm:mt-6 text-[15px] sm:text-[17px] md:text-[19px] text-[#a7d4b6] max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 sm:mt-6 text-[15px] sm:text-[17px] md:text-[19px] text-slate-600 max-w-2xl mx-auto leading-relaxed">
             {tr.hero_subtitle}
           </p>
 
@@ -87,14 +84,14 @@ export default async function Home() {
       <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-6xl mx-auto">
         <div className="flex items-end justify-between mb-5 sm:mb-7 gap-3">
           <div className="min-w-0">
-            <h2 className="text-[20px] sm:text-[24px] font-semibold text-white">
+            <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900">
               {tr.featured_operators}
             </h2>
-            <p className="text-[13px] sm:text-[15px] text-[#a7d4b6] mt-1 sm:mt-1.5">
+            <p className="text-[13px] sm:text-[15px] text-slate-600 mt-1 sm:mt-1.5">
               {tr.featured_operators_subtitle}
             </p>
           </div>
-          <a className="text-[13px] sm:text-[15px] text-emerald-300 hover:text-emerald-200 font-medium whitespace-nowrap shrink-0">
+          <a className="text-[13px] sm:text-[15px] text-emerald-700 hover:text-emerald-800 font-medium whitespace-nowrap shrink-0">
             {fmt(tr.view_all_count, { n: operators.length })}
           </a>
         </div>
@@ -114,23 +111,23 @@ export default async function Home() {
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
           <ValueProp
             badge={tr.value_for_agents_badge}
-            badgeClass="bg-emerald-400/10 text-emerald-300 border-emerald-400/30"
+            badgeClass="bg-emerald-50 text-emerald-700 border-emerald-200"
             text={tr.value_for_agents}
           />
           <ValueProp
             badge={tr.value_for_operators_badge}
-            badgeClass="bg-lime-400/10 text-lime-300 border-lime-400/30"
+            badgeClass="bg-lime-50 text-lime-700 border-lime-200"
             text={tr.value_for_operators}
           />
           <ValueProp
             badge={tr.value_ai_badge}
-            badgeClass="bg-white/[.04] text-[#c4e9d3] border-white/[.10]"
+            badgeClass="bg-slate-50 text-slate-700 border-slate-200"
             text={tr.value_ai}
           />
         </div>
       </section>
 
-      <footer className="border-t border-white/[.06] px-8 py-7 text-center text-[12px] font-mono text-[#5d9279]">
+      <footer className="border-t border-slate-200 px-8 py-7 text-center text-[12px] font-mono text-slate-400">
         {fmt(tr.footer_build, { operators: operators.length, courses: totalCourses })}
       </footer>
     </div>
@@ -151,6 +148,9 @@ function OperatorCard({
   canManage: boolean;
 }) {
   const hasCourses = op.course_count > 0;
+  // Operator cover gradients stay as-is — they're each operator's brand
+  // signature and survive a light page background by virtue of the dark cover
+  // tile that sits inside an otherwise white card.
   const cover = op.cover_color ?? "linear-gradient(135deg,#475569 0%,#64748b 100%)";
   const coursesLabel =
     op.course_count === 1
@@ -163,7 +163,7 @@ function OperatorCard({
       : null;
 
   return (
-    <article className="rounded-2xl overflow-hidden bg-[#0a3a2f] border border-white/[.08] hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(52,211,153,0.10)] transition h-full relative">
+    <article className="rounded-2xl overflow-hidden bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition h-full relative">
       <div className="h-32 relative" style={{ background: cover }}>
         <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5">
           {hasCourses ? (
@@ -179,7 +179,7 @@ function OperatorCard({
         {canManage ? (
           <Link
             href={`/operator/${op.slug}`}
-            className="absolute top-3.5 right-3.5 z-10 px-2.5 py-1 rounded-full bg-emerald-400 text-[#04241e] text-[11px] font-semibold hover:bg-emerald-300 shadow"
+            className="absolute top-3.5 right-3.5 z-10 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 shadow"
           >
             ⚙ Manage
           </Link>
@@ -189,21 +189,21 @@ function OperatorCard({
         </div>
       </div>
       <div className="p-5">
-        <div className="text-[13px] text-[#86b69a] mb-1">{op.name}</div>
-        <div className="font-semibold text-[17px] text-white leading-snug line-clamp-2">
+        <div className="text-[13px] text-slate-500 mb-1">{op.name}</div>
+        <div className="font-semibold text-[17px] text-slate-900 leading-snug line-clamp-2">
           {op.sample_course_title ?? tr.card_curriculum_coming_soon}
         </div>
-        <div className="flex items-center gap-2.5 mt-3.5 text-[13px] text-[#86b69a]">
+        <div className="flex items-center gap-2.5 mt-3.5 text-[13px] text-slate-500">
           <span>{coursesLabel}</span>
           {op.module_count > 0 ? (
             <>
-              <span className="text-white/20">·</span>
+              <span className="text-slate-300">·</span>
               <span>{fmt(tr.card_modules_count, { n: op.module_count })}</span>
             </>
           ) : null}
           {op.est_minutes > 0 ? (
             <>
-              <span className="text-white/20">·</span>
+              <span className="text-slate-300">·</span>
               <span>{fmt(tr.card_minutes, { n: op.est_minutes })}</span>
             </>
           ) : null}
@@ -239,8 +239,7 @@ function ValueProp({
       >
         {badge}
       </span>
-      <p className="text-[15px] text-[#c4e9d3] leading-relaxed">{text}</p>
+      <p className="text-[15px] text-slate-700 leading-relaxed">{text}</p>
     </div>
   );
 }
-

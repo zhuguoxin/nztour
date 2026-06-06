@@ -70,16 +70,16 @@ export default async function OperatorIndex() {
   }
 
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
       <TopBar />
       <main className="px-5 sm:px-8 py-10 max-w-5xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">
+        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
           {tr.op_picker_label}
         </div>
-        <h1 className="text-[26px] sm:text-[30px] font-semibold text-white mt-1">
+        <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">
           {role.isAdmin ? tr.op_picker_title_admin : tr.op_picker_title_user}
         </h1>
-        <p className="text-[13.5px] text-[#a7d4b6] mt-1.5">
+        <p className="text-[13.5px] text-slate-600 mt-1.5">
           {cards.length === 0
             ? tr.op_picker_empty_blurb
             : role.isAdmin
@@ -91,9 +91,9 @@ export default async function OperatorIndex() {
         </p>
 
         {cards.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6">
-            <div className="text-[14px] text-white font-semibold">{tr.op_picker_none_title}</div>
-            <p className="mt-2 text-[13.5px] text-[#a7d4b6]">{tr.op_picker_none_body}</p>
+          <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6">
+            <div className="text-[14px] text-slate-900 font-semibold">{tr.op_picker_none_title}</div>
+            <p className="mt-2 text-[13.5px] text-slate-600">{tr.op_picker_none_body}</p>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -101,7 +101,7 @@ export default async function OperatorIndex() {
               <Link
                 key={o.id}
                 href={`/operator/${o.slug}`}
-                className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(52,211,153,0.10)] transition"
+                className="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition"
               >
                 <div
                   className="h-20"
@@ -110,13 +110,13 @@ export default async function OperatorIndex() {
                   }}
                 />
                 <div className="p-4">
-                  <div className="font-semibold text-[15px] text-white">{o.display_name ?? o.name}</div>
-                  <div className="flex items-center gap-2 mt-1.5 text-[12px] text-[#86b69a]">
+                  <div className="font-semibold text-[15px] text-slate-900">{o.display_name ?? o.name}</div>
+                  <div className="flex items-center gap-2 mt-1.5 text-[12px] text-slate-500">
                     <span>{fmt(tr.op_picker_card_published, { n: o.course_count })}</span>
-                    <span className="text-white/20">·</span>
+                    <span className="text-slate-300">·</span>
                     <span className="font-mono uppercase text-[10px]">{o.role}</span>
                   </div>
-                  <div className="text-[12px] text-emerald-300 mt-3">{tr.op_picker_card_cta}</div>
+                  <div className="text-[12px] text-emerald-700 mt-3">{tr.op_picker_card_cta}</div>
                 </div>
               </Link>
             ))}
