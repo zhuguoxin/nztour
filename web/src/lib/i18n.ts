@@ -43,13 +43,15 @@ export async function t() {
 const en = {
   // Navigation
   nav_explore: "Explore",
-  nav_operators: "Operators",
+  nav_operators: "Products",
   nav_badges: "Badges",
   nav_pricing: "Pricing",
   nav_home: "Home",
   nav_my_learning: "My learning",
-  nav_operator_console: "Operator console",
-  nav_operator_short: "Operator",
+  nav_operator_console: "Product console",
+  nav_operator_short: "Product",
+  nav_supplier_console: "Supplier console",
+  nav_supplier_short: "Supplier",
   nav_admin: "Admin",
   nav_learning_button: "Learning →",
   nav_learning_short: "Learning",
@@ -60,12 +62,12 @@ const en = {
   language_label: "Language",
 
   // Home hero
-  hero_live_chip: "● Live · {operators} operators · {courses} courses",
+  hero_live_chip: "● Live · {operators} products · {courses} courses",
   hero_lang_chip: "🌐 7 languages · AI answers in 30+",
   hero_title_a: "Sell New Zealand with",
   hero_title_b: "confidence.",
   hero_subtitle:
-    "The B2B training & certification platform for the NZ tourism industry. Learn directly from operators. Earn verifiable digital badges. Ask AI anything — in any language.",
+    "The B2B training & certification platform for the NZ tourism industry. Learn directly from suppliers. Earn verifiable digital badges. Ask AI anything — in any language.",
   hero_ask_label: "Ask the agent assistant",
   hero_ask_placeholder:
     "What's the difference between Coronet Peak and The Remarkables?",
@@ -75,9 +77,9 @@ const en = {
   hero_example_3: "Snow-day cancellation policy",
 
   // Marketplace
-  featured_operators: "Featured operators",
+  featured_operators: "Featured products",
   featured_operators_subtitle:
-    "Each operator brings their own course curriculum. One agent account, every NZ operator.",
+    "Each product brings its own curriculum. One agent account, every NZ tourism product.",
   view_all_count: "View all {n} →",
   card_live: "● Live",
   card_coming_soon: "Coming soon",
@@ -90,20 +92,20 @@ const en = {
   // Value props
   value_for_agents_badge: "For agents",
   value_for_agents:
-    "One account, every NZ operator. Earn verifiable badges to share on LinkedIn and email signatures.",
-  value_for_operators_badge: "For operators",
+    "One account, every NZ tourism product. Earn verifiable badges to share on LinkedIn and email signatures.",
+  value_for_operators_badge: "For suppliers",
   value_for_operators:
     "Upload your existing PDFs and decks — we extract, structure, and turn them into trainable courses.",
   value_ai_badge: "AI-native",
   value_ai:
-    "Agents can ask product questions in plain English or Chinese. Answers cite the operator source.",
+    "Agents can ask product questions in plain English or Chinese. Answers cite the supplier's content.",
 
   // /learn
   learn_label: "/LEARN",
   learn_welcome: "Welcome, {name}.",
   learn_anonymous: "there",
   learn_summary:
-    "{courses} published course(s) available across {operators} operator(s).",
+    "{courses} published course(s) across {operators} product(s).",
   learn_empty: "No published courses yet.",
 
   // Course detail
@@ -128,10 +130,10 @@ const en = {
 
   // AI sidebar
   ai_sidebar_title: "Ask about this course",
-  ai_sidebar_subtitle: "Grounded in operator content · EN / 中",
+  ai_sidebar_subtitle: "Grounded in product content · EN / 中",
   ai_thinking: "Thinking…",
   ai_no_answer:
-    "⚠ Not found in operator content. Answer is from general knowledge.",
+    "⚠ Not found in product content. Answer is from general knowledge.",
   ai_empty_state: "Try asking about this course. Examples below.",
   ai_sidebar_placeholder: "Ask about {title}…",
 
@@ -139,9 +141,9 @@ const en = {
   verify_label: "VERIFIED BADGE",
   verify_authentic: "Authentic",
   verify_subtitle:
-    "This badge was issued by Libretour on behalf of the operator listed below.",
+    "This badge was issued by Libretour on behalf of the product / supplier listed below.",
   verify_course: "COURSE",
-  verify_operator: "OPERATOR",
+  verify_operator: "PRODUCT",
   verify_learner: "LEARNER",
   verify_awarded: "AWARDED",
   verify_code_label: "VERIFY CODE",
@@ -149,36 +151,62 @@ const en = {
     "Anyone with this URL can verify authenticity. Share on LinkedIn or in your email signature:",
 
   // Footer
-  footer_build: "Libretour · d5 build · {operators} operators / {courses} courses live",
+  footer_build: "Libretour · d5 build · {operators} products / {courses} courses live",
 
   // ===== /verify/[code] =====
   verify_chrome_label: "VERIFIED BADGE",
   verify_chrome_title: "Authentic",
   verify_chrome_subtitle:
-    "This badge was issued by Libretour on behalf of the operator listed below.",
+    "This badge was issued by Libretour on behalf of the product / supplier listed below.",
   verify_field_course: "COURSE",
-  verify_field_operator: "OPERATOR",
+  verify_field_operator: "PRODUCT",
   verify_field_learner: "LEARNER",
   verify_field_awarded: "AWARDED",
   verify_field_code: "VERIFY CODE",
   verify_share_lead:
     "Anyone with this URL can verify authenticity. Share on LinkedIn or in your email signature:",
 
-  // ===== /operator (picker) =====
-  op_picker_label: "/OPERATOR",
-  op_picker_title_admin: "All operators",
-  op_picker_title_user: "Your operators",
+  // ===== /operator (picker — user-facing "Products") =====
+  op_picker_label: "/PRODUCTS",
+  op_picker_title_admin: "All products",
+  op_picker_title_user: "Your products",
   op_picker_empty_blurb: "Nothing to manage yet.",
   op_picker_admin_blurb: "You can manage any of these {n} as platform admin.",
   op_picker_user_blurb_one:
-    "You have {n} operator membership. Pick one to open the console.",
+    "You have {n} product. Pick one to open the console.",
   op_picker_user_blurb_many:
-    "You have {n} operator memberships. Pick one to open the console.",
-  op_picker_none_title: "No operator memberships",
+    "You have {n} products. Pick one to open the console.",
+  op_picker_none_title: "No product memberships",
   op_picker_none_body:
-    "You're signed in as a learner. To manage an operator's content, ask the platform admin to add you to operator_memberships.",
+    "You're signed in as a learner. To manage a product's content, ask your supplier owner or the platform admin to grant you access.",
   op_picker_card_published: "{n} published",
   op_picker_card_cta: "Open console →",
+
+  // ===== /supplier (picker) =====
+  sup_picker_label: "/SUPPLIERS",
+  sup_picker_title_admin: "All suppliers",
+  sup_picker_title_user: "Your suppliers",
+  sup_picker_empty_blurb: "Nothing to manage yet.",
+  sup_picker_admin_blurb: "You can manage any of these {n} suppliers as platform admin.",
+  sup_picker_user_blurb: "You have access to {n} supplier(s). Pick one to see the roll-up.",
+  sup_picker_none_title: "No supplier memberships",
+  sup_picker_none_body:
+    "Supplier access lets you see every product under a holding entity (e.g. SkyCity). Ask your supplier owner to add you.",
+  sup_picker_card_products: "{n} products",
+  sup_picker_card_published: "{n} published",
+  sup_picker_card_cta: "Open dashboard →",
+
+  // ===== /supplier/[slug] dashboard =====
+  sup_d_chrome_label: "/SUPPLIER",
+  sup_d_kpi_products: "PRODUCTS",
+  sup_d_kpi_courses: "PUBLISHED COURSES",
+  sup_d_kpi_learners: "TOTAL LEARNERS",
+  sup_d_kpi_badges: "BADGES ISSUED",
+  sup_d_products_heading: "Products ({n})",
+  sup_d_mini_courses: "courses",
+  sup_d_mini_learners: "learners",
+  sup_d_mini_badges: "badges",
+  sup_d_card_cta: "Open product console →",
 
   // ===== /operator/[slug] dashboard =====
   op_d_chrome_label: "/OPERATOR",
@@ -295,7 +323,7 @@ const en = {
   // ===== AskAI conversation =====
   ai_thinking_inline: "Thinking…",
   ai_no_answer_inline:
-    "⚠ Not found in operator content. Answer is from general knowledge.",
+    "⚠ Not found in product content. Answer is from general knowledge.",
   ai_ask_button_inline: "Ask",
 
   // ===== Module reader / video block =====
@@ -311,13 +339,15 @@ type Dict = typeof en;
 const zhCN: Dict = {
   // Navigation
   nav_explore: "探索",
-  nav_operators: "运营商",
+  nav_operators: "产品",
   nav_badges: "徽章",
   nav_pricing: "定价",
   nav_home: "首页",
   nav_my_learning: "我的学习",
-  nav_operator_console: "运营商后台",
-  nav_operator_short: "运营商",
+  nav_operator_console: "产品后台",
+  nav_operator_short: "产品",
+  nav_supplier_console: "供应商面板",
+  nav_supplier_short: "供应商",
   nav_admin: "管理",
   nav_learning_button: "去学习 →",
   nav_learning_short: "学习",
@@ -328,12 +358,12 @@ const zhCN: Dict = {
   language_label: "语言",
 
   // Home hero
-  hero_live_chip: "● 在线 · {operators} 家运营商 · {courses} 门课程",
+  hero_live_chip: "● 在线 · {operators} 个产品 · {courses} 门课程",
   hero_lang_chip: "🌐 7 种界面语言 · AI 可用 30+ 种语言回答",
   hero_title_a: "自信地销售",
   hero_title_b: "新西兰。",
   hero_subtitle:
-    "新西兰旅游行业的 B2B 培训与认证平台。直接从运营商学习产品知识。获得可验证的数字徽章。用任何语言向 AI 提问。",
+    "新西兰旅游行业的 B2B 培训与认证平台。直接从供应商学习产品知识。获得可验证的数字徽章。用任何语言向 AI 提问。",
   hero_ask_label: "向 AI 销售助手提问",
   hero_ask_placeholder:
     "Coronet Peak 和 The Remarkables 有什么区别?",
@@ -343,9 +373,9 @@ const zhCN: Dict = {
   hero_example_3: "雪天关闭的退改政策",
 
   // Marketplace
-  featured_operators: "精选运营商",
+  featured_operators: "精选产品",
   featured_operators_subtitle:
-    "每家运营商提供自己的课程内容。一个代理账号,覆盖所有新西兰运营商。",
+    "每个产品提供自己的课程内容。一个代理账号,覆盖所有新西兰旅游产品。",
   view_all_count: "查看全部 {n} 家 →",
   card_live: "● 已上线",
   card_coming_soon: "即将上线",
@@ -358,20 +388,20 @@ const zhCN: Dict = {
   // Value props
   value_for_agents_badge: "面向销售代理",
   value_for_agents:
-    "一个账号,覆盖所有新西兰运营商。获得可验证的徽章,展示在 LinkedIn 和邮件签名中。",
-  value_for_operators_badge: "面向运营商",
+    "一个账号,覆盖所有新西兰旅游产品。获得可验证的徽章,展示在 LinkedIn 和邮件签名中。",
+  value_for_operators_badge: "面向供应商",
   value_for_operators:
     "上传现有的 PDF 和演示文稿 — 我们自动提取、结构化,转换为可培训的课程。",
   value_ai_badge: "AI 原生",
   value_ai:
-    "代理可用任意语言提问产品细节。回答均标注运营商原文出处。",
+    "代理可用任意语言提问产品细节。回答均标注产品原文出处。",
 
   // /learn
   learn_label: "/学习",
   learn_welcome: "欢迎,{name}。",
   learn_anonymous: "你好",
   learn_summary:
-    "{operators} 家运营商共发布了 {courses} 门课程。",
+    "{operators} 个产品共发布了 {courses} 门课程。",
   learn_empty: "暂无已发布的课程。",
 
   // Course detail
@@ -407,9 +437,9 @@ const zhCN: Dict = {
   verify_label: "已验证徽章",
   verify_authentic: "真实有效",
   verify_subtitle:
-    "本徽章由 Libretour 代表下列运营商颁发。",
+    "本徽章由 Libretour 代表下列产品/供应商颁发。",
   verify_course: "课程",
-  verify_operator: "运营商",
+  verify_operator: "产品",
   verify_learner: "学员",
   verify_awarded: "颁发日期",
   verify_code_label: "验证码",
@@ -417,33 +447,59 @@ const zhCN: Dict = {
     "任何人通过该链接均可验证徽章真伪。可分享至 LinkedIn 或邮件签名:",
 
   // Footer
-  footer_build: "Libretour · d5 构建 · 已上线 {operators} 家运营商 / {courses} 门课程",
+  footer_build: "Libretour · d5 构建 · 已上线 {operators} 个产品 / {courses} 门课程",
 
   // ===== /verify/[code] =====
   verify_chrome_label: "已验证徽章",
   verify_chrome_title: "真实有效",
-  verify_chrome_subtitle: "本徽章由 Libretour 代表下列运营商颁发。",
+  verify_chrome_subtitle: "本徽章由 Libretour 代表下列产品/供应商颁发。",
   verify_field_course: "课程",
-  verify_field_operator: "运营商",
+  verify_field_operator: "产品",
   verify_field_learner: "学员",
   verify_field_awarded: "颁发日期",
   verify_field_code: "验证码",
   verify_share_lead:
     "任何人通过该链接均可验证徽章真伪。可分享至 LinkedIn 或邮件签名:",
 
-  // ===== /operator (picker) =====
-  op_picker_label: "/运营商",
-  op_picker_title_admin: "全部运营商",
-  op_picker_title_user: "你管理的运营商",
-  op_picker_empty_blurb: "暂无可管理的运营商。",
-  op_picker_admin_blurb: "作为平台管理员,你可管理以下 {n} 家运营商。",
-  op_picker_user_blurb_one: "你拥有 {n} 个运营商权限。选择一家进入后台。",
-  op_picker_user_blurb_many: "你拥有 {n} 个运营商权限。选择一家进入后台。",
-  op_picker_none_title: "尚无运营商权限",
+  // ===== /operator (picker — user-facing "产品") =====
+  op_picker_label: "/产品",
+  op_picker_title_admin: "全部产品",
+  op_picker_title_user: "你的产品",
+  op_picker_empty_blurb: "暂无可管理的产品。",
+  op_picker_admin_blurb: "作为平台管理员,你可管理以下 {n} 个产品。",
+  op_picker_user_blurb_one: "你拥有 {n} 个产品。点击进入后台。",
+  op_picker_user_blurb_many: "你拥有 {n} 个产品。选择一个进入后台。",
+  op_picker_none_title: "尚无产品权限",
   op_picker_none_body:
-    "你目前是学员身份。如需管理运营商内容,请联系平台管理员将你加入 operator_memberships 表。",
+    "你目前是学员身份。如需管理产品内容,请联系所属供应商管理员或平台管理员开通。",
   op_picker_card_published: "{n} 门已发布",
   op_picker_card_cta: "进入后台 →",
+
+  // ===== /supplier (picker) =====
+  sup_picker_label: "/供应商",
+  sup_picker_title_admin: "全部供应商",
+  sup_picker_title_user: "你的供应商",
+  sup_picker_empty_blurb: "暂无可管理的供应商。",
+  sup_picker_admin_blurb: "作为平台管理员,你可管理以下 {n} 家供应商。",
+  sup_picker_user_blurb: "你拥有 {n} 家供应商权限。选择一家查看汇总。",
+  sup_picker_none_title: "尚无供应商权限",
+  sup_picker_none_body:
+    "供应商权限可让你查看其名下所有产品(例如 SkyCity)的汇总。请联系供应商管理员开通。",
+  sup_picker_card_products: "{n} 个产品",
+  sup_picker_card_published: "{n} 门已发布",
+  sup_picker_card_cta: "查看面板 →",
+
+  // ===== /supplier/[slug] dashboard =====
+  sup_d_chrome_label: "/供应商",
+  sup_d_kpi_products: "产品数",
+  sup_d_kpi_courses: "已发布课程",
+  sup_d_kpi_learners: "学员总数",
+  sup_d_kpi_badges: "颁发徽章",
+  sup_d_products_heading: "产品 ({n})",
+  sup_d_mini_courses: "课程",
+  sup_d_mini_learners: "学员",
+  sup_d_mini_badges: "徽章",
+  sup_d_card_cta: "进入产品后台 →",
 
   // ===== /operator/[slug] dashboard =====
   op_d_chrome_label: "/运营商",

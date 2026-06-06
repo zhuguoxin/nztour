@@ -241,7 +241,7 @@ export function AskAI({
           <button
             onClick={() => ask(input)}
             disabled={pending || !input.trim()}
-            className="self-stretch px-3 sm:px-5 rounded-md bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-[13px] sm:text-[14px]"
+            className="self-stretch px-3 sm:px-5 rounded-md bg-[#04241e] text-white font-semibold hover:bg-[#0a3a2f] disabled:opacity-50 disabled:cursor-not-allowed text-[13px] sm:text-[14px]"
           >
             {pending ? "…" : askLabel}
           </button>

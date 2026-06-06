@@ -39,7 +39,7 @@ export function LocaleSwitcher({ current, compact = false, label }: Props) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={isPending}
-        className={`rounded-md text-slate-600 hover:bg-slate-100 inline-flex items-center disabled:opacity-50 ${
+        className={`rounded-md text-[#c4e9d3] hover:bg-white/[.06] inline-flex items-center disabled:opacity-50 ${
           compact ? "px-1.5 py-1.5 text-[12px] gap-1" : "px-3 py-2 text-[13px] gap-1.5"
         }`}
         aria-label={label ?? "Change language"}
@@ -59,7 +59,7 @@ export function LocaleSwitcher({ current, compact = false, label }: Props) {
       {open ? (
         <div
           role="listbox"
-          className="absolute right-0 top-full mt-1 z-30 min-w-[160px] rounded-md bg-white border border-slate-200 shadow-[0_8px_28px_rgba(15,23,42,.12)] overflow-hidden"
+          className="absolute right-0 top-full mt-1 z-30 min-w-[160px] rounded-md bg-[#062b22] border border-white/[.10] shadow-[0_8px_28px_rgba(0,0,0,.4)] overflow-hidden"
         >
           {SUPPORTED.map((code) => (
             <button
@@ -71,15 +71,15 @@ export function LocaleSwitcher({ current, compact = false, label }: Props) {
                 if (code === current) return;
                 startTransition(() => setLocale(code));
               }}
-              className={`w-full text-left px-3 py-2 text-[13px] flex items-center justify-between hover:bg-slate-50 ${
-                code === current ? "text-emerald-700 font-medium" : "text-slate-700"
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center justify-between hover:bg-white/[.05] ${
+                code === current ? "text-emerald-300" : "text-[#d8f0e1]"
               }`}
             >
               <span>{LANG_LABELS[code]}</span>
-              <span className="text-[11px] text-slate-400 font-mono">{code}</span>
+              <span className="text-[11px] text-[#86b69a] font-mono">{code}</span>
             </button>
           ))}
-          <div className="px-3 py-1.5 text-[10px] text-slate-400 border-t border-slate-200 font-mono">
+          <div className="px-3 py-1.5 text-[10px] text-[#5d9279] border-t border-white/[.06] font-mono">
             More languages coming soon
           </div>
         </div>
