@@ -4,7 +4,12 @@ import { TopBar } from "../../../../../_components/top-bar";
 import { requireOperatorMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { updateCourse, deleteCourse, createModule } from "../../actions";
-import { EditorModules, type BlockData, type ModuleData } from "./editor-modules";
+import {
+  EditorModules,
+  type BlockData,
+  type ModuleData,
+  type QuizQuestionData,
+} from "./editor-modules";
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
 import { TranslationsPanel } from "./translations-panel";
 
@@ -99,6 +104,29 @@ export default async function EditCoursePage({
     )
     .bind(course.id)
     .all<AttachmentRow>();
+
+  // Quiz pool per module — one query joining on course.
+  const quizByModule: Record<string, QuizQuestionData[]> = {};
+  if (moduleIds.length > 0) {
+    const ph2 = moduleIds.map(() => "?").join(",");
+    const { results: qs = [] } = await db()
+      .prepare(
+        `SELECT id, module_id, prompt, choices_json, correct_idx, explanation, position
+         FROM quiz_questions WHERE module_id IN (${ph2}) ORDER BY module_id, position`,
+      )
+      .bind(...moduleIds)
+      .all<QuizQuestionData & { module_id: string }>();
+    for (const q of qs) {
+      (quizByModule[q.module_id] ??= []).push({
+        id: q.id,
+        prompt: q.prompt,
+        choices_json: q.choices_json,
+        correct_idx: q.correct_idx,
+        explanation: q.explanation,
+        position: q.position,
+      });
+    }
+  }
 
   // Voices available to this product: every platform stock voice + every
   // cloned voice owned by the parent supplier.
@@ -269,6 +297,7 @@ export default async function EditCoursePage({
             voices={voices ?? []}
             modules={modules ?? []}
             blocksByModuleId={blocksByModule}
+            quizByModuleId={quizByModule}
           />
 
           {/* New-module form */}

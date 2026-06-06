@@ -12,6 +12,7 @@ import { ModuleReader } from "./module-reader";
 import { completeModuleAction } from "./actions";
 import { TopBar } from "../../../_components/top-bar";
 import { AskAI } from "../../../_components/ask-ai";
+import { FeedbackWidget } from "./feedback-widget";
 import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -59,17 +60,58 @@ export default async function CoursePage({ params, searchParams }: Props) {
   });
   await ensureEnrollment(userId, course.id);
 
+  // Best-effort: snapshot the learner's last_seen_version to suppress the
+  // "Updated" chip next time they land here. Per-call, not per-render.
+  const { markCourseSeenAction } = await import("../../actions");
+  await markCourseSeenAction({ courseId: course.id }).catch(() => {});
+
   const progressMap = await getModuleProgress(userId, course.id);
 
+  // Chapter gating: the "current" module is the FIRST uncompleted one in
+  // order. Modules after `current` are locked; modules at or before it
+  // are navigable. This also means jumping to ?m=<future-slug> is silently
+  // redirected to the current module — no skip-ahead.
+  const currentIdx = (() => {
+    const i = modules.findIndex((m) => !progressMap.get(m.id)?.completed_at);
+    return i === -1 ? modules.length - 1 : i;
+  })();
+  const currentModule = modules[currentIdx] ?? modules[0];
+  const requestedIdx = modules.findIndex((m) => m.slug === moduleSlug);
   const active =
-    modules.find((m) => m.slug === moduleSlug) ??
-    modules.find((m) => !progressMap.get(m.id)?.completed_at) ??
-    modules[0];
+    requestedIdx >= 0 && requestedIdx <= currentIdx ? modules[requestedIdx] : currentModule;
+  const lockedFromIdx = currentIdx + 1; // every module at index ≥ this is locked
   const blocks = await getModuleBlocks(active.id);
 
   const completedCount = modules.filter((m) => progressMap.get(m.id)?.completed_at).length;
   const progressPct = Math.round((completedCount / modules.length) * 100);
   const tr = await t();
+
+  // End-of-chapter quiz: pull up to QUIZ_N random questions from the active
+  // module's pool. Empty pool → ModuleReader falls back to dwell+click flow.
+  const QUIZ_N = 3;
+  const { results: quizPool = [] } = await (await import("@/lib/db")).db()
+    .prepare(
+      `SELECT id, prompt, choices_json FROM quiz_questions WHERE module_id = ?`,
+    )
+    .bind(active.id)
+    .all<{ id: string; prompt: string; choices_json: string }>();
+  // Fisher-Yates shuffle deterministic per request (no Math.random concerns
+  // here — server-side, fine).
+  const shuffled = quizPool.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const quizQuestions = shuffled.slice(0, QUIZ_N).map((q) => {
+    let choices: string[] = [];
+    try {
+      const parsed = JSON.parse(q.choices_json);
+      if (Array.isArray(parsed)) choices = parsed.map((c) => String(c));
+    } catch {
+      // skip malformed
+    }
+    return { id: q.id, prompt: q.prompt, choices };
+  });
 
   // Multi-language: pick the chosen lang from ?lang= when it's in the
   // available_langs set; otherwise fall back to primary.
@@ -215,6 +257,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
             completedLabel={tr.completed_chip}
             langQuery={chosenLang !== course.primary_lang ? chosenLang : null}
             isPreview={isPreview}
+            lockedFromIdx={lockedFromIdx}
           />
         </aside>
 
@@ -225,6 +268,8 @@ export default async function CoursePage({ params, searchParams }: Props) {
           courseSlug={courseSlug}
           operatorSlug={operatorSlug}
           modules={localizedModules}
+          courseId={course.id}
+          quizQuestions={quizQuestions}
           isCompleted={!!progressMap.get(active.id)?.completed_at}
           onComplete={onComplete}
           tr={{
@@ -253,24 +298,27 @@ export default async function CoursePage({ params, searchParams }: Props) {
         {/* AI sidebar — scoped to this course */}
         <aside
           id="course-ai"
-          className="border-t lg:border-t-0 lg:border-l border-white/[.06] lg:min-h-[calc(100vh-65px)] lg:max-h-[calc(100vh-65px)] scroll-mt-16"
+          className="border-t lg:border-t-0 lg:border-l border-white/[.06] lg:min-h-[calc(100vh-65px)] lg:max-h-[calc(100vh-65px)] scroll-mt-16 flex flex-col"
         >
-          <AskAI
-            variant="sidebar"
-            scope={{ operator_id: operator.id, course_id: course.id }}
-            sidebarTitle={tr.ai_sidebar_title}
-            sidebarSubtitle={tr.ai_sidebar_subtitle}
-            emptyState={tr.ai_empty_state}
-            thinkingText={tr.ai_thinking}
-            noAnswerWarning={tr.ai_no_answer}
-            askLabel={tr.ai_ask_button_inline}
-            placeholder={fmt(tr.ai_sidebar_placeholder, { title: course.title })}
-            examples={
-              parseAiExamples(course.ai_examples_json).slice(0, 4).length > 0
-                ? parseAiExamples(course.ai_examples_json).slice(0, 4)
-                : [tr.hero_example_1, tr.hero_example_3, tr.hero_example_2]
-            }
-          />
+          <div className="flex-1 min-h-0">
+            <AskAI
+              variant="sidebar"
+              scope={{ operator_id: operator.id, course_id: course.id }}
+              sidebarTitle={tr.ai_sidebar_title}
+              sidebarSubtitle={tr.ai_sidebar_subtitle}
+              emptyState={tr.ai_empty_state}
+              thinkingText={tr.ai_thinking}
+              noAnswerWarning={tr.ai_no_answer}
+              askLabel={tr.ai_ask_button_inline}
+              placeholder={fmt(tr.ai_sidebar_placeholder, { title: course.title })}
+              examples={
+                parseAiExamples(course.ai_examples_json).slice(0, 4).length > 0
+                  ? parseAiExamples(course.ai_examples_json).slice(0, 4)
+                  : [tr.hero_example_1, tr.hero_example_3, tr.hero_example_2]
+              }
+            />
+          </div>
+          <FeedbackWidget courseId={course.id} moduleId={active.id} />
         </aside>
       </div>
     </div>
@@ -285,6 +333,7 @@ function ModuleList({
   completedLabel,
   langQuery,
   isPreview,
+  lockedFromIdx,
 }: {
   modules: ModuleRow[];
   active: ModuleRow;
@@ -293,17 +342,52 @@ function ModuleList({
   completedLabel: string;
   langQuery: string | null;
   isPreview: boolean;
+  lockedFromIdx: number;
 }) {
   return (
     <div className="space-y-1">
-      {modules.map((m) => {
+      {modules.map((m, idx) => {
         const done = !!progressMap.get(m.id)?.completed_at;
         const isActive = m.id === active.id;
+        const locked = idx >= lockedFromIdx;
         const dot = done
           ? "bg-emerald-300"
           : isActive
             ? "bg-emerald-400"
-            : "bg-white/15";
+            : locked
+              ? "bg-white/10"
+              : "bg-white/15";
+        const labelExtras = locked
+          ? " · 🔒 locked"
+          : done
+            ? ` · ${completedLabel}`
+            : "";
+        const rowClass = `flex items-start gap-3 px-3 py-2.5 rounded-lg ${
+          isActive
+            ? "bg-emerald-400/10 border border-emerald-400/30"
+            : "border border-transparent hover:bg-white/[.04]"
+        } ${locked ? "opacity-50 cursor-not-allowed" : ""}`;
+        const inner = (
+          <>
+            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot}`} />
+            <div className="flex-1 min-w-0">
+              <div className={`text-[14px] ${isActive ? "font-medium text-white" : "text-[#d8f0e1]"}`}>
+                {m.title}
+              </div>
+              <div className="text-[11px] text-[#86b69a]">
+                {m.est_minutes ? `${m.est_minutes} min` : ""}
+                {labelExtras}
+              </div>
+            </div>
+          </>
+        );
+        if (locked) {
+          return (
+            <div key={m.id} className={rowClass} title="Complete the previous module's quiz to unlock">
+              {inner}
+            </div>
+          );
+        }
         return (
           <Link
             key={m.id}
@@ -312,22 +396,9 @@ function ModuleList({
               ...(langQuery ? { lang: langQuery } : {}),
               ...(isPreview ? { preview: "1" } : {}),
             }).toString()}`}
-            className={`flex items-start gap-3 px-3 py-2.5 rounded-lg ${
-              isActive
-                ? "bg-emerald-400/10 border border-emerald-400/30"
-                : "border border-transparent hover:bg-white/[.04]"
-            }`}
+            className={rowClass}
           >
-            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot}`} />
-            <div className="flex-1 min-w-0">
-              <div className={`text-[14px] ${isActive ? "font-medium text-white" : "text-[#d8f0e1]"}`}>
-                {m.title}
-              </div>
-              <div className="text-[11px] text-[#86b69a]">
-                {m.est_minutes ? `${m.est_minutes} min` : ""}
-                {done ? ` · ${completedLabel}` : ""}
-              </div>
-            </div>
+            {inner}
           </Link>
         );
       })}

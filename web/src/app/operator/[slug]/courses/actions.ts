@@ -523,6 +523,179 @@ export async function clearBlockAudio(form: FormData) {
 }
 
 // =========================================================================
+//  QUIZ AUTHORING (per-module question pool)
+// =========================================================================
+
+export async function createQuizQuestion(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const moduleId = String(form.get("module_id") ?? "");
+  await authModule(operatorSlug, courseSlug, moduleId);
+  const prompt = String(form.get("prompt") ?? "").trim().slice(0, 500);
+  const choices = JSON.parse(String(form.get("choices_json") ?? "[]"));
+  const correct = parseInt(String(form.get("correct_idx") ?? "0"), 10);
+  const explanation = String(form.get("explanation") ?? "").trim().slice(0, 1000) || null;
+  if (!prompt) throw new Error("prompt required");
+  if (!Array.isArray(choices) || choices.length < 2 || choices.length > 6) {
+    throw new Error("2-6 choices required");
+  }
+  if (!Number.isInteger(correct) || correct < 0 || correct >= choices.length) {
+    throw new Error("correct_idx out of range");
+  }
+  const id = shortId("q");
+  const next = await db()
+    .prepare(`SELECT COALESCE(MAX(position), -1) + 1 AS n FROM quiz_questions WHERE module_id = ?`)
+    .bind(moduleId)
+    .first<{ n: number }>();
+  await db()
+    .prepare(
+      `INSERT INTO quiz_questions
+         (id, module_id, prompt, choices_json, correct_idx, explanation, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(id, moduleId, prompt, JSON.stringify(choices), correct, explanation, next?.n ?? 0)
+    .run();
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+}
+
+export async function deleteQuizQuestion(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const moduleId = String(form.get("module_id") ?? "");
+  const id = String(form.get("question_id") ?? "");
+  await authModule(operatorSlug, courseSlug, moduleId);
+  await db()
+    .prepare(`DELETE FROM quiz_questions WHERE id = ? AND module_id = ?`)
+    .bind(id, moduleId)
+    .run();
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+}
+
+/**
+ * AI-generate N quiz questions for a module from its block content. Uses
+ * Claude to produce structured JSON, then bulk-inserts. Existing questions
+ * are NOT touched — generator appends so operators can review/curate.
+ */
+export async function generateModuleQuiz(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const moduleId = String(form.get("module_id") ?? "");
+  const count = Math.max(1, Math.min(10, parseInt(String(form.get("count") ?? "5"), 10) || 5));
+  await authModule(operatorSlug, courseSlug, moduleId);
+
+  // Pull the module + all training-visibility text blocks as the source.
+  const mod = await db()
+    .prepare(`SELECT title, summary FROM modules WHERE id = ?`)
+    .bind(moduleId)
+    .first<{ title: string; summary: string | null }>();
+  if (!mod) throw new Error("module not found");
+
+  const { results: blocks = [] } = await db()
+    .prepare(
+      `SELECT kind, text_md, caption FROM content_blocks
+       WHERE module_id = ? AND visibility = 'training' AND text_md IS NOT NULL
+       ORDER BY position`,
+    )
+    .bind(moduleId)
+    .all<{ kind: string; text_md: string | null; caption: string | null }>();
+  const source = [
+    `# ${mod.title}`,
+    mod.summary ?? "",
+    ...blocks.flatMap((b) => [b.text_md ?? "", b.caption ?? ""]),
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 8000);
+  if (source.length < 100) {
+    throw new Error("Module has too little text content to generate a quiz from.");
+  }
+
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const { default: Anthropic } = await import("@anthropic-ai/sdk");
+  const { env } = getCloudflareContext();
+  if (!env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY missing");
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+  const resp = await client.messages.create({
+    model: "claude-sonnet-4-5-20250929",
+    max_tokens: 4096,
+    system: `You write end-of-chapter quiz questions for B2B travel-trade training content.
+
+Rules:
+- Each question tests a SPECIFIC, factual detail from the source (price tier, time window, lift name, what to recommend for X customer type, etc.). No generic "what is the main idea" filler.
+- 4 plausible multiple-choice answers per question. Distractors should be the kind of mistake a hurried agent would actually make — close-but-wrong, not silly.
+- Mix difficulty: ~half should be answerable directly from one sentence; half should require synthesis across two facts.
+- Avoid trick questions, negations ("which is NOT"), and "all of the above" / "none of the above".
+- Explanation: one sentence pointing back to where in the source the answer lives.
+- Output ONLY valid JSON, no markdown fences, no preamble.`,
+    messages: [
+      {
+        role: "user",
+        content: `Write ${count} multiple-choice questions from the source below.
+
+Output: a JSON array of ${count} objects, each shaped:
+  { "prompt": string, "choices": [string, string, string, string], "correct_idx": 0-3, "explanation": string }
+
+Make the correct_idx vary across the set (not all 0 or all 1).
+
+SOURCE:
+${source}`,
+      },
+    ],
+  });
+  const text = resp.content
+    .filter((b) => b.type === "text")
+    .map((b) => (b as { text: string }).text)
+    .join("");
+  const cleaned = text.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+  type GeneratedQ = { prompt: string; choices: string[]; correct_idx: number; explanation?: string };
+  let parsed: GeneratedQ[];
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    throw new Error("Quiz generator returned invalid JSON");
+  }
+  if (!Array.isArray(parsed)) throw new Error("expected JSON array");
+
+  const baseRow = await db()
+    .prepare(`SELECT COALESCE(MAX(position), -1) AS n FROM quiz_questions WHERE module_id = ?`)
+    .bind(moduleId)
+    .first<{ n: number }>();
+  let pos = (baseRow?.n ?? -1) + 1;
+  const stmts = parsed
+    .filter(
+      (q) =>
+        q &&
+        typeof q.prompt === "string" &&
+        Array.isArray(q.choices) &&
+        q.choices.length >= 2 &&
+        q.choices.length <= 6 &&
+        Number.isInteger(q.correct_idx) &&
+        q.correct_idx >= 0 &&
+        q.correct_idx < q.choices.length,
+    )
+    .map((q) =>
+      db()
+        .prepare(
+          `INSERT INTO quiz_questions
+             (id, module_id, prompt, choices_json, correct_idx, explanation, position)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          shortId("q"),
+          moduleId,
+          q.prompt.slice(0, 500),
+          JSON.stringify(q.choices.map((c) => String(c).slice(0, 200))),
+          q.correct_idx,
+          (q.explanation ?? "").slice(0, 1000) || null,
+          pos++,
+        ),
+    );
+  if (stmts.length > 0) await db().batch(stmts);
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+}
+
+// =========================================================================
 //  MULTI-LANGUAGE TRANSLATION (Claude)
 // =========================================================================
 

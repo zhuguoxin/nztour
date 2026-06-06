@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ModuleRow, BlockRow } from "@/lib/db";
+import { QuizPanel, type QuizQuestion } from "./quiz-panel";
 
 const DWELL_REQUIRED_SECONDS = 30;
 
@@ -35,9 +36,13 @@ interface Props {
   modules: ModuleRow[];
   operatorSlug: string;
   courseSlug: string;
+  courseId: string;
   isCompleted: boolean;
   onComplete: (dwellSeconds: number) => Promise<{ verifyCode?: string }>;
   tr: ModuleReaderStrings;
+  /** Pre-shuffled questions for this attempt. Empty = no quiz configured;
+   *  the legacy 30-second-dwell + button flow is used in that case. */
+  quizQuestions: QuizQuestion[];
 }
 
 export function ModuleReader({
@@ -46,9 +51,11 @@ export function ModuleReader({
   modules,
   operatorSlug,
   courseSlug,
+  courseId,
   isCompleted,
   onComplete,
   tr,
+  quizQuestions,
 }: Props) {
   const router = useRouter();
   const [dwell, setDwell] = useState(0);
@@ -68,8 +75,11 @@ export function ModuleReader({
     return () => clearInterval(i);
   }, [module.id]);
 
+  const hasQuiz = quizQuestions.length > 0;
   const remaining = Math.max(0, DWELL_REQUIRED_SECONDS - dwell);
-  const canComplete = isCompleted || remaining === 0;
+  // When a quiz is configured, the quiz IS the completion gate — the
+  // legacy 30s-dwell + click flow is suppressed.
+  const canComplete = isCompleted || (!hasQuiz && remaining === 0);
 
   const idx = modules.findIndex((m) => m.id === module.id);
   const prev = idx > 0 ? modules[idx - 1] : null;
@@ -151,7 +161,20 @@ export function ModuleReader({
         </div>
       ) : null}
 
-      <div className="mt-10 flex items-center justify-between gap-3 flex-wrap">
+      {/* End-of-chapter quiz (if authored). Passing marks the module
+          complete server-side and refreshes; the nav button below stays
+          disabled with a "Pass the quiz to continue" hint while the quiz
+          is outstanding. */}
+      <div className="mt-8">
+        <QuizPanel
+          moduleId={module.id}
+          courseId={courseId}
+          questions={quizQuestions}
+          isCompleted={isCompleted}
+        />
+      </div>
+
+      <div className="mt-6 flex items-center justify-between gap-3 flex-wrap">
         <button
           disabled={!prev}
           onClick={() => prev && router.push(`/learn/${operatorSlug}/${courseSlug}?m=${prev.slug}`)}
@@ -163,6 +186,8 @@ export function ModuleReader({
         <div className="text-[12px] text-[#86b69a] text-center order-3 sm:order-2 w-full sm:w-auto">
           {isCompleted ? (
             <span className="text-lime-300">{tr.already_completed}</span>
+          ) : hasQuiz ? (
+            <span className="text-amber-300">Pass the quiz above to continue.</span>
           ) : remaining > 0 ? (
             <>
               {tr.stay_to_complete_a}{" "}

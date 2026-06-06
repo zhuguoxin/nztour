@@ -11,6 +11,9 @@ import {
   clearBlockAudio,
   reorderModulesBulk,
   reorderBlocksBulk,
+  createQuizQuestion,
+  deleteQuizQuestion,
+  generateModuleQuiz,
 } from "../../actions";
 import { SortableList, GrabHandle, type DragHandleProps } from "./sortable-list";
 import { langLabel } from "@/lib/translate";
@@ -22,6 +25,15 @@ export interface VoiceOption {
   kind: string;
   gender: string | null;
   status: string;
+}
+
+export interface QuizQuestionData {
+  id: string;
+  prompt: string;
+  choices_json: string;
+  correct_idx: number;
+  explanation: string | null;
+  position: number;
 }
 
 export interface ModuleData {
@@ -70,6 +82,7 @@ export function EditorModules({
   voices,
   modules,
   blocksByModuleId,
+  quizByModuleId,
 }: {
   operatorSlug: string;
   courseSlug: string;
@@ -78,6 +91,7 @@ export function EditorModules({
   voices: VoiceOption[];
   modules: ModuleData[];
   blocksByModuleId: Record<string, BlockData[]>;
+  quizByModuleId: Record<string, QuizQuestionData[]>;
 }) {
   return (
     <SortableList
@@ -95,6 +109,7 @@ export function EditorModules({
           module={m}
           handle={handle}
           blocks={blocksByModuleId[m.id] ?? []}
+          quiz={quizByModuleId[m.id] ?? []}
           operatorSlug={operatorSlug}
           courseSlug={courseSlug}
           primaryLang={primaryLang}
@@ -110,6 +125,7 @@ function ModuleEditor({
   module,
   handle,
   blocks,
+  quiz,
   operatorSlug,
   courseSlug,
   primaryLang,
@@ -119,6 +135,7 @@ function ModuleEditor({
   module: ModuleData;
   handle: DragHandleProps;
   blocks: BlockData[];
+  quiz: QuizQuestionData[];
   operatorSlug: string;
   courseSlug: string;
   primaryLang: string;
@@ -239,8 +256,216 @@ function ModuleEditor({
             </form>
           ))}
         </div>
+
+        {/* End-of-chapter quiz authoring */}
+        <ModuleQuizAuthor
+          moduleId={module.id}
+          questions={quiz}
+          operatorSlug={operatorSlug}
+          courseSlug={courseSlug}
+        />
       </div>
     </details>
+  );
+}
+
+function ModuleQuizAuthor({
+  moduleId,
+  questions,
+  operatorSlug,
+  courseSlug,
+}: {
+  moduleId: string;
+  questions: QuizQuestionData[];
+  operatorSlug: string;
+  courseSlug: string;
+}) {
+  return (
+    <section className="rounded-lg border border-amber-400/20 bg-amber-400/[.04] p-3">
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="text-[12px] font-semibold text-amber-300">
+          End-of-chapter quiz
+          <span className="ml-1.5 text-[10px] text-[#86b69a] font-normal">
+            ({questions.length} question{questions.length === 1 ? "" : "s"} · learner sees 3 random)
+          </span>
+        </div>
+        <form action={generateModuleQuiz} className="inline-flex">
+          <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+          <input type="hidden" name="module_id" value={moduleId} />
+          <input type="hidden" name="count" value="5" />
+          <button
+            type="submit"
+            className="px-2.5 py-1 rounded border border-amber-400/40 text-amber-200 hover:bg-amber-400/10 text-[11px]"
+            title="AI-generates 5 multi-choice questions from this module's text content"
+          >
+            ✨ Generate 5 from content
+          </button>
+        </form>
+      </div>
+
+      {questions.length === 0 ? (
+        <div className="text-[11.5px] text-[#86b69a] mb-2">
+          No questions yet — learners will use the default 30-second-dwell completion until you add some.
+        </div>
+      ) : (
+        <ol className="space-y-1.5 mb-2">
+          {questions.map((q) => {
+            let choices: string[] = [];
+            try {
+              choices = JSON.parse(q.choices_json);
+            } catch {
+              // skip
+            }
+            return (
+              <li
+                key={q.id}
+                className="bg-black/20 rounded border border-white/[.05] px-2.5 py-1.5 flex items-start gap-2"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12.5px] text-white truncate">{q.prompt}</div>
+                  <div className="text-[10.5px] text-[#86b69a] truncate">
+                    {choices.map((c, i) => (
+                      <span key={i} className={i === q.correct_idx ? "text-emerald-300" : ""}>
+                        {i === q.correct_idx ? "✓ " : ""}
+                        {c}
+                        {i < choices.length - 1 ? " · " : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <form action={deleteQuizQuestion} className="inline-flex">
+                  <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+                  <input type="hidden" name="module_id" value={moduleId} />
+                  <input type="hidden" name="question_id" value={q.id} />
+                  <button
+                    type="submit"
+                    className="px-1.5 py-0.5 rounded text-rose-300/80 hover:bg-rose-400/10 text-[10px]"
+                    title="Delete question"
+                  >
+                    ✕
+                  </button>
+                </form>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      <NewQuestionForm
+        moduleId={moduleId}
+        operatorSlug={operatorSlug}
+        courseSlug={courseSlug}
+      />
+    </section>
+  );
+}
+
+function NewQuestionForm({
+  moduleId,
+  operatorSlug,
+  courseSlug,
+}: {
+  moduleId: string;
+  operatorSlug: string;
+  courseSlug: string;
+}) {
+  return (
+    <form
+      action={createQuizQuestion}
+      className="grid grid-cols-1 gap-1.5 text-[12px] mt-2"
+    >
+      <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+      <input type="hidden" name="module_id" value={moduleId} />
+      <input
+        type="text"
+        name="prompt"
+        required
+        maxLength={500}
+        placeholder="Question…"
+        className={inputClass + " text-[12.5px]"}
+      />
+      <div className="grid grid-cols-[1fr_1fr] gap-1.5">
+        <input
+          type="text"
+          name="c0"
+          required
+          placeholder="Choice A"
+          className={inputClass + " text-[12.5px]"}
+        />
+        <input
+          type="text"
+          name="c1"
+          required
+          placeholder="Choice B"
+          className={inputClass + " text-[12.5px]"}
+        />
+      </div>
+      <div className="grid grid-cols-[1fr_1fr] gap-1.5">
+        <input
+          type="text"
+          name="c2"
+          placeholder="Choice C (optional)"
+          className={inputClass + " text-[12.5px]"}
+        />
+        <input
+          type="text"
+          name="c3"
+          placeholder="Choice D (optional)"
+          className={inputClass + " text-[12.5px]"}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="text-[11px] text-[#a7d4b6]">Correct:</label>
+        <select name="correct_idx" defaultValue="0" className={inputClass + " w-20 text-[12px]"}>
+          <option value="0">A</option>
+          <option value="1">B</option>
+          <option value="2">C</option>
+          <option value="3">D</option>
+        </select>
+        <input
+          type="text"
+          name="explanation"
+          placeholder="Explanation (optional)"
+          maxLength={1000}
+          className={inputClass + " flex-1 text-[12px]"}
+        />
+        <SubmitChoicesAsJson />
+        <button
+          type="submit"
+          className="px-3 py-1.5 rounded bg-amber-400 text-[#04241e] font-semibold text-[12px] hover:bg-amber-300 shrink-0"
+        >
+          + Add
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Bundle c0..c3 inputs into choices_json before form submit. The server
+ *  action expects a single `choices_json` field; we pack non-empty choices
+ *  on the client via a tiny render-time hidden input. */
+function SubmitChoicesAsJson() {
+  return (
+    <input
+      type="hidden"
+      name="choices_json"
+      defaultValue=""
+      ref={(node) => {
+        if (!node) return;
+        const form = node.form;
+        if (!form) return;
+        form.addEventListener(
+          "submit",
+          () => {
+            const choices = (["c0", "c1", "c2", "c3"] as const)
+              .map((n) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? "")
+              .filter((s) => s.length > 0);
+            node.value = JSON.stringify(choices);
+          },
+          { once: true },
+        );
+      }}
+    />
   );
 }
 
