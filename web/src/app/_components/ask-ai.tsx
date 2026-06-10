@@ -241,7 +241,7 @@ export function AskAI({
           <button
             onClick={() => ask(input)}
             disabled={pending || !input.trim()}
-            className="self-stretch px-3 sm:px-5 rounded-md bg-[#04241e] text-white font-semibold hover:bg-[#0a3a2f] disabled:opacity-50 disabled:cursor-not-allowed text-[13px] sm:text-[14px]"
+            className="self-stretch px-3 sm:px-5 rounded-md font-semibold text-[13px] sm:text-[14px] bg-[#04241e] text-white hover:bg-[#0a3a2f] disabled:cursor-not-allowed"
           >
             {pending ? "…" : askLabel}
           </button>
@@ -253,7 +253,7 @@ export function AskAI({
                 key={ex}
                 onClick={() => ask(ex)}
                 disabled={pending}
-                className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[11px] sm:text-[12px] hover:bg-slate-100"
+                className="px-3 py-1.5 rounded-full bg-[#04241e]/[.06] border border-[#04241e]/20 text-[#04241e] text-[12px] sm:text-[13px] hover:bg-[#04241e]/[.12]"
               >
                 {ex}
               </button>
@@ -274,6 +274,7 @@ export function AskAI({
             streaming={pending}
             thinkingText={thinkingText}
             noAnswerWarning={noAnswerWarning}
+            lightTheme
           />
         </div>
       ) : null}
@@ -286,11 +287,15 @@ function ConversationTurn({
   streaming = false,
   thinkingText = "Thinking…",
   noAnswerWarning = "⚠ Not found in operator content. Answer is from general knowledge.",
+  lightTheme = false,
 }: {
   item: AskAIResult;
   streaming?: boolean;
   thinkingText?: string;
   noAnswerWarning?: string;
+  /** Render bare text (non-bubble) for the light/white parent context.
+   *  Sidebar (dark parent) keeps the amber palette. */
+  lightTheme?: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -309,7 +314,11 @@ function ConversationTurn({
       {item.citations.length > 0 ? (
         <div className="flex flex-col gap-1.5 max-w-[92%]">
           {item.source_kind === "web" ? (
-            <div className="text-[11px] text-amber-300/90 inline-flex items-center gap-1">
+            <div
+              className={`text-[12px] inline-flex items-center gap-1 ${
+                lightTheme ? "text-slate-800 font-medium" : "text-amber-300/90"
+              }`}
+            >
               <span>🌐</span>
               <span>Answer is from the public web — not verified Libretour content.</span>
             </div>
@@ -345,7 +354,13 @@ function ConversationTurn({
           </div>
         </div>
       ) : item.source_kind === "no_answer" ? (
-        <div className="text-[11px] text-amber-300/80">{noAnswerWarning}</div>
+        <div
+          className={`text-[12px] ${
+            lightTheme ? "text-slate-800 font-medium" : "text-amber-300/80"
+          }`}
+        >
+          {noAnswerWarning}
+        </div>
       ) : null}
     </div>
   );

@@ -113,19 +113,33 @@ export default async function CoursePage({ params, searchParams }: Props) {
     return { id: q.id, prompt: q.prompt, choices };
   });
 
-  // Multi-language: pick the chosen lang from ?lang= when it's in the
-  // available_langs set; otherwise fall back to primary.
+  // Multi-language: pick the chosen lang via this priority:
+  //   1. explicit ?lang= URL param (lets a learner override per-tab)
+  //   2. the user's UI locale cookie (set by the TopBar LANG switcher) —
+  //      this is the "if you read the rest of the site in 中文, default
+  //      the course to 中文 too" behavior
+  //   3. course.primary_lang as the final fallback
+  // In every case the chosen lang must be in available_langs; otherwise
+  // we fall through to the next option.
   const { pickLocalized } = await import("@/lib/translate");
+  const { getLocale } = await import("@/lib/i18n");
   const availableLangs: string[] = (() => {
     try {
       const a = JSON.parse(course.available_langs ?? "[]");
-      return Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [];
+      const arr = Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [];
+      // Ensure primary_lang is always in the set so the source-lang chip
+      // shows even if available_langs was never updated by a translate run.
+      return arr.includes(course.primary_lang) ? arr : [course.primary_lang, ...arr];
     } catch {
-      return [];
+      return [course.primary_lang];
     }
   })();
-  const chosenLang =
-    langParam && availableLangs.includes(langParam) ? langParam : course.primary_lang;
+  const uiLocale = await getLocale();
+  const chosenLang = ((): string => {
+    if (langParam && availableLangs.includes(langParam)) return langParam;
+    if (uiLocale && availableLangs.includes(uiLocale)) return uiLocale;
+    return course.primary_lang;
+  })();
 
   // Localize titles/summaries for header + module list. Per-block text/audio
   // localization happens inside ModuleReader.
@@ -187,9 +201,23 @@ export default async function CoursePage({ params, searchParams }: Props) {
           <span className="flex items-center gap-2 min-w-0">
             <Link href="/learn" className="hover:text-white shrink-0">{tr.nav_my_learning}</Link>
             <span className="text-white/20 shrink-0">/</span>
-            <span className="shrink-0">{operator.name}</span>
+            <Link
+              href={`/learn?q=${encodeURIComponent(operator.name)}`}
+              className="shrink-0 hover:text-white"
+              title={`Browse ${operator.name} courses`}
+            >
+              {operator.name}
+            </Link>
             <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{courseTitleLocal}</span>
+            <Link
+              href={`/learn/${operatorSlug}/${courseSlug}${
+                chosenLang !== course.primary_lang ? `?lang=${chosenLang}` : ""
+              }`}
+              className="text-white truncate hover:underline"
+              title="Back to course start"
+            >
+              {courseTitleLocal}
+            </Link>
           </span>
         }
       />

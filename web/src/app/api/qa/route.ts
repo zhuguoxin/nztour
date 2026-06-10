@@ -35,15 +35,25 @@ const MODEL = "claude-sonnet-4-5-20250929"; // current as of MVP build; update w
 
 export async function POST(req: Request) {
   const start = Date.now();
+  // Anonymous users can ask on the homepage marketing hero. Signed-in users
+  // get their qa logged for the operator analytics view; anon users get the
+  // answer streamed back but no log row.
   const { userId } = await auth();
-  if (!userId) {
-    return Response.json({ ok: false, error: "unauthorised" }, { status: 401 });
-  }
 
   const body = (await req.json().catch(() => ({}))) as QARequest;
   const question = (body.question ?? "").trim();
   if (!question || question.length > 1000) {
     return Response.json({ ok: false, error: "invalid_question" }, { status: 400 });
+  }
+  // For anonymous users, refuse scoped queries (course/operator content is
+  // for signed-in learners only) and shorten the cap a bit to keep cost
+  // bounded against scraping.
+  const isAnon = !userId;
+  if (isAnon && (body.scope?.course_id || body.scope?.operator_id)) {
+    return Response.json({ ok: false, error: "sign_in_required_for_scope" }, { status: 401 });
+  }
+  if (isAnon && question.length > 300) {
+    return Response.json({ ok: false, error: "anon_question_too_long" }, { status: 400 });
   }
   const scope = body.scope ?? {};
 
@@ -145,6 +155,10 @@ export async function POST(req: Request) {
       controller.close();
 
       // Best-effort log; don't fail the response on db hiccup.
+      // Anonymous queries (no userId) are NOT logged — we don't want
+      // marketing-page traffic polluting operator analytics or creating
+      // FK-failing rows.
+      if (!userId) return;
       try {
         const logId = `qa_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
         await env.DB.prepare(
