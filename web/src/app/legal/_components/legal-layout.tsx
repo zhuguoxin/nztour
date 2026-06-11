@@ -1,0 +1,204 @@
+import Link from "next/link";
+import { TopBar } from "../../_components/top-bar";
+
+/**
+ * Shared shell for every legal page (Terms of Service, Privacy Policy,
+ * Acceptable Use Policy, Cookies Policy). Three columns on desktop:
+ *
+ *   [ left:  legal nav     |  centre:  document body  |  right:  TOC ]
+ *
+ * Mobile collapses to a single column with the legal nav at the top.
+ *
+ * Pages pass in their full document body as children plus a `meta`
+ * object with the title, effective date, and TOC (heading anchors).
+ */
+export interface LegalDocMeta {
+  title: string;
+  /** Effective date in human form, e.g. "1 January 2026" */
+  effectiveDate: string;
+  /** Last updated, same format. May equal effectiveDate. */
+  lastUpdated: string;
+  /** Document version, e.g. "v1.0" */
+  version: string;
+  /** Anchor → label list for the right-side TOC */
+  toc: Array<{ id: string; label: string }>;
+  /** Slug of the current page for the left nav highlight ("terms", "privacy", etc.) */
+  activeSlug: LegalSlug;
+}
+
+export type LegalSlug =
+  | "terms"
+  | "privacy"
+  | "acceptable-use"
+  | "cookies";
+
+const LEGAL_NAV: Array<{ slug: LegalSlug; label: string }> = [
+  { slug: "terms", label: "Terms of Service" },
+  { slug: "privacy", label: "Privacy Policy" },
+  { slug: "acceptable-use", label: "Acceptable Use Policy" },
+  { slug: "cookies", label: "Cookies Policy" },
+];
+
+export function LegalLayout({
+  meta,
+  children,
+}: {
+  meta: LegalDocMeta;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+      <TopBar
+        breadcrumb={
+          <span className="flex items-center gap-2 min-w-0">
+            <Link href="/" className="hover:text-white shrink-0">Home</Link>
+            <span className="text-white/20 shrink-0">/</span>
+            <Link href="/legal/terms" className="hover:text-white shrink-0">Legal</Link>
+            <span className="text-white/20 shrink-0">/</span>
+            <span className="text-white truncate">{meta.title}</span>
+          </span>
+        }
+      />
+
+      <main className="px-5 sm:px-8 py-8 sm:py-12 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_220px] gap-8 lg:gap-12">
+          {/* Left nav */}
+          <aside className="lg:sticky lg:top-20 lg:self-start order-1">
+            <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
+              LEGAL
+            </div>
+            <nav className="space-y-0.5">
+              {LEGAL_NAV.map((n) => {
+                const active = n.slug === meta.activeSlug;
+                return (
+                  <Link
+                    key={n.slug}
+                    href={`/legal/${n.slug}`}
+                    className={`block px-2 py-1.5 rounded text-[13.5px] ${
+                      active
+                        ? "bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-medium"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    {n.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+
+          {/* Document body */}
+          <article className="order-3 lg:order-2 prose-legal min-w-0">
+            <header className="mb-8 pb-5 border-b border-slate-200">
+              <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-1.5">
+                {meta.activeSlug.toUpperCase().replace("-", " ")}
+              </div>
+              <h1 className="text-[30px] sm:text-[34px] font-semibold tracking-tight text-slate-900">
+                {meta.title}
+              </h1>
+              <div className="mt-3 flex items-center gap-3 text-[12.5px] text-slate-500 flex-wrap">
+                <span>
+                  <span className="text-slate-400">Effective</span>{" "}
+                  <span className="font-mono">{meta.effectiveDate}</span>
+                </span>
+                <span className="text-slate-300">·</span>
+                <span>
+                  <span className="text-slate-400">Last updated</span>{" "}
+                  <span className="font-mono">{meta.lastUpdated}</span>
+                </span>
+                <span className="text-slate-300">·</span>
+                <span className="font-mono text-slate-400">{meta.version}</span>
+              </div>
+              <div className="mt-4 px-3 py-2 rounded border border-amber-200 bg-amber-50 text-[12.5px] text-amber-900">
+                <strong>Draft for legal review.</strong> This document was drafted by
+                Libretour Limited as an initial release and has not yet been reviewed by
+                an external solicitor. It is provided in good faith and should be
+                understood as the company&apos;s current position. We will publish a
+                signed-off version following independent legal review.
+              </div>
+            </header>
+
+            {children}
+
+            <footer className="mt-12 pt-6 border-t border-slate-200 text-[12.5px] text-slate-500 space-y-2">
+              <p>
+                Questions about this document? Contact us at{" "}
+                <a className="text-emerald-700 hover:underline" href="mailto:legal@libretour.com">
+                  legal@libretour.com
+                </a>
+                .
+              </p>
+              <p>
+                Libretour Limited, NZBN [TBD-NZBN], registered office [TBD-registered-address],
+                New Zealand.
+              </p>
+            </footer>
+          </article>
+
+          {/* Right TOC */}
+          <aside className="hidden lg:block order-2 lg:order-3 lg:sticky lg:top-20 lg:self-start">
+            <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
+              ON THIS PAGE
+            </div>
+            <nav className="space-y-1">
+              {meta.toc.map((t) => (
+                <a
+                  key={t.id}
+                  href={`#${t.id}`}
+                  className="block text-[12.5px] text-slate-500 hover:text-slate-900 py-0.5 leading-snug"
+                >
+                  {t.label}
+                </a>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/**
+ * Section heading helper used by every legal doc. Renders an anchored
+ * `<h2>` that matches the TOC entry, plus an optional leading section
+ * number for visual rhythm.
+ */
+export function LegalSection({
+  id,
+  number,
+  title,
+  children,
+}: {
+  id: string;
+  number: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="mt-8 scroll-mt-20">
+      <h2 className="text-[19px] sm:text-[21px] font-semibold tracking-tight text-slate-900 mb-3">
+        <span className="font-mono text-emerald-700 mr-2 text-[16px]">{number}</span>
+        {title}
+      </h2>
+      <div className="space-y-3 text-[14.5px] text-slate-700 leading-[1.7]">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/** Numbered sub-list (a), (b), (c)... — common in legal copy. */
+export function LegalList({ items }: { items: React.ReactNode[] }) {
+  return (
+    <ol className="ml-5 space-y-2 list-[lower-alpha] marker:text-emerald-700 marker:font-mono">
+      {items.map((it, i) => (
+        <li key={i} className="pl-1">{it}</li>
+      ))}
+    </ol>
+  );
+}
+
+/** Defined-term inline emphasis, e.g. (each a "Learner"). */
+export function Term({ children }: { children: React.ReactNode }) {
+  return <strong className="text-slate-900 font-semibold">{children}</strong>;
+}

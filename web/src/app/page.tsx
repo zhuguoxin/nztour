@@ -127,8 +127,54 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 px-8 py-7 text-center text-[12px] font-mono text-slate-400">
-        {fmt(tr.footer_build, { operators: operators.length, courses: totalCourses })}
+      <footer className="border-t border-slate-200 px-5 sm:px-8 py-8 mt-12">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-[12.5px]">
+          <div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">PLATFORM</div>
+            <ul className="space-y-1.5 text-slate-600">
+              <li><Link href="/learn" className="hover:text-slate-900">Browse training</Link></li>
+              <li><Link href="/about" className="hover:text-slate-900">About</Link></li>
+              <li><Link href="/contact" className="hover:text-slate-900">Contact</Link></li>
+            </ul>
+          </div>
+          <div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">LEGAL</div>
+            <ul className="space-y-1.5 text-slate-600">
+              <li><Link href="/legal/terms" className="hover:text-slate-900">Terms of Service</Link></li>
+              <li><Link href="/legal/privacy" className="hover:text-slate-900">Privacy Policy</Link></li>
+              <li><Link href="/legal/acceptable-use" className="hover:text-slate-900">Acceptable Use</Link></li>
+              <li><Link href="/legal/cookies" className="hover:text-slate-900">Cookies</Link></li>
+            </ul>
+          </div>
+          <div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">CONTACT</div>
+            <ul className="space-y-1.5 text-slate-600">
+              <li><a href="mailto:hello@libretour.com" className="hover:text-slate-900">hello@libretour.com</a></li>
+              <li><a href="mailto:support@libretour.com" className="hover:text-slate-900">support@libretour.com</a></li>
+              <li><a href="mailto:privacy@libretour.com" className="hover:text-slate-900">privacy@libretour.com</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">COMPANY</div>
+            <p className="text-slate-600 leading-relaxed">
+              Libretour Limited
+              <br />
+              <span className="text-slate-400">NZBN [TBD-NZBN]</span>
+              <br />
+              <span className="text-slate-400">[TBD-registered-address]</span>
+              <br />
+              New Zealand
+            </p>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto mt-8 pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-[11px] font-mono text-slate-400">
+            {fmt(tr.footer_build, { operators: operators.length, courses: totalCourses })}
+          </div>
+          <div className="text-[11px] font-mono text-slate-400">
+            © {new Date().getFullYear()} Libretour Limited
+          </div>
+        </div>
       </footer>
     </div>
   );
