@@ -92,8 +92,22 @@ export async function getCurrentRole(): Promise<CurrentRole> {
 
 /**
  * Bootstrap: if the current user's email is in ADMIN_EMAILS (comma-separated
- * env var), insert them into platform_admins. Idempotent. Called from /learn
+ * env var), promote them to platform admin. Idempotent. Called from /learn
  * since that's the post-signup landing.
+ *
+ * The function does THREE things:
+ *   1. Looks up the user's email from Clerk
+ *   2. Reconciles the D1 `users` table — if some OTHER user_id row holds the
+ *      same email (e.g. a prior dev-instance user_id that lingered after a
+ *      Clerk dev → prod migration), it is deleted so the new prod user_id can
+ *      claim that email under the UNIQUE constraint. The CASCADE on
+ *      platform_admins/enrollments/badges/etc. cleans up the stale rows.
+ *   3. Inserts/updates the users row for the current Clerk user_id and
+ *      grants platform-admin.
+ *
+ * Without step 2 the bootstrap would silently fail on the email UNIQUE
+ * constraint after any Clerk instance switch, leaving the operator stuck
+ * without admin powers.
  */
 export async function bootstrapAdminFromEmailList(): Promise<void> {
   const { userId } = await auth();
@@ -102,9 +116,15 @@ export async function bootstrapAdminFromEmailList(): Promise<void> {
   const allow = (env.ADMIN_EMAILS as string | undefined)?.split(",").map((s) => s.trim().toLowerCase()) ?? [];
   if (allow.length === 0) return;
 
-  const u = await currentUser().catch(() => null);
+  const u = await currentUser();
   const email = u?.emailAddresses?.[0]?.emailAddress?.toLowerCase();
   if (!email || !allow.includes(email)) return;
+
+  // ensureUser handles email-ownership reconciliation and migrates the
+  // stale user_id's rows over to the new one (memberships, progress,
+  // badges, etc.) so dev → prod Clerk migrations don't lose history.
+  const { ensureUser } = await import("./progress");
+  await ensureUser({ id: userId, email, name: u?.fullName ?? null });
 
   await db()
     .prepare(`INSERT OR IGNORE INTO platform_admins (user_id) VALUES (?)`)

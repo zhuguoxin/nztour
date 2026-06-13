@@ -44,13 +44,33 @@ export default async function LearnHome({
 }: {
   searchParams: Promise<{ tab?: string; q?: string }>;
 }) {
+  // bootstrapAdminFromEmailList reconciles users + platform_admins on first
+  // sign-in. Letting failures bubble surfaces them via the /learn error
+  // boundary so we don't silently lose admin promotion again.
   await bootstrapAdminFromEmailList();
-  const [{ tab: tabParam, q: rawQ }, user, { userId }, tr] = await Promise.all([
+  const [paramsResult, userResult, authResult, trResult] = await Promise.allSettled([
     searchParams,
     currentUser(),
     auth(),
     t(),
   ]);
+  for (const [name, r] of [
+    ["searchParams", paramsResult],
+    ["currentUser", userResult],
+    ["auth", authResult],
+    ["t", trResult],
+  ] as const) {
+    if (r.status === "rejected") {
+      console.error(`[/learn] ${name}() rejected:`, r.reason instanceof Error ? r.reason.message : r.reason);
+    }
+  }
+  const { tab: tabParam, q: rawQ } = paramsResult.status === "fulfilled" ? paramsResult.value : { tab: undefined, q: undefined };
+  const user = userResult.status === "fulfilled" ? userResult.value : null;
+  const { userId } = authResult.status === "fulfilled" ? authResult.value : { userId: null };
+  const tr = trResult.status === "fulfilled" ? trResult.value : null;
+  if (!tr) {
+    throw new Error("[/learn] i18n strings failed to load");
+  }
   const tab: Tab = (TABS.find((t) => t.id === tabParam)?.id ?? "in_progress") as Tab;
   const q = (rawQ ?? "").trim().slice(0, 80);
 
@@ -64,7 +84,9 @@ export default async function LearnHome({
   if (userId) {
     // Single query gets everything we need: every published course, with
     // per-user enrollment + favorites + progress aggregates folded in.
-    const { results = [] } = await db()
+    let results: Array<CourseWithOperator & { published_version: number; last_seen_version: number | null; module_count: number; completed_modules: number; is_favorite: number }> = [];
+    try {
+      const r = await db()
       .prepare(
         `SELECT c.id, c.slug, c.operator_id, c.title, c.summary, c.cover_color, c.emoji,
                 c.primary_lang, c.status, c.est_minutes, c.ai_examples_json, c.published_version,
@@ -93,6 +115,11 @@ export default async function LearnHome({
           is_favorite: number;
         }
       >();
+      results = r.results ?? [];
+    } catch (e) {
+      console.error("[/learn] cards query threw:", e instanceof Error ? e.message : e, e instanceof Error ? e.stack : "");
+      results = [];
+    }
     cards = results.map((r) => {
       const enrolled = r.last_seen_version !== null;
       return {
