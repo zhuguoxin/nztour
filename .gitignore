@@ -39,3 +39,9 @@ pnpm-debug.log*
 # Cloudflare
 .mf/
 wrangler.local.toml
+
+# Brand source files (raw exports, kept locally only — variants in web/public/brand/ are the canonical web assets)
+Logos/
+# Stray screenshots from chat / WeChat
+微信图片*.png
+
