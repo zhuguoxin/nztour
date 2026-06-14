@@ -32,43 +32,8 @@ export interface VoiceRow {
  * The "Clone a voice" CTA is disabled if `hasXIKey=false`.
  */
 
-// language code → display label (each language shown in its own script so the
-// grouping reads naturally regardless of the UI locale).
-const LANG_LABEL: Record<string, string> = {
-  en: "English",
-  "zh-CN": "中文",
-  "zh-TW": "中文",
-  zh: "中文",
-  ja: "日本語",
-  ko: "한국어",
-  es: "Español",
-  fr: "Français",
-  de: "Deutsch",
-  pt: "Português",
-};
-// stable display order for the language groups
-const LANG_ORDER = ["en", "zh", "ja", "ko", "es", "fr", "de", "pt"];
-
-function firstLang(row: VoiceRow): string | null {
-  if (!row.langs) return null;
-  try {
-    const arr = JSON.parse(row.langs) as string[];
-    return arr[0] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// canonical group key (collapse zh-CN / zh-TW into "zh")
-function langGroup(code: string | null): string {
-  if (!code) return "all";
-  if (code.startsWith("zh")) return "zh";
-  return code;
-}
-
-// Hide the provider/model from the customer-facing label and drop the trailing
-// "(EN, m)" parenthetical (language is shown by the group, gender by its own
-// chip). "MiniMax · Calm Woman (EN, f)" → "Calm Woman".
+// Hide the provider/model from the customer-facing label and drop any trailing
+// "(EN, m)" parenthetical. "MiniMax · Calm Woman (EN, f)" → "Calm Woman".
 function cleanName(name: string): string {
   return name
     .replace(/^[^·]*·\s*/, "") // strip "MiniMax · " / "ElevenLabs · " prefix
@@ -85,29 +50,17 @@ export function VoicesPanel({
   voices: VoiceRow[];
   hasXIKey: boolean;
 }) {
-  const stock = voices.filter((v) => v.kind === "stock");
+  // Only cloned voices are listed — the model's stock voices are available
+  // automatically when generating audio and don't need to crowd this panel.
   const cloned = voices.filter((v) => v.kind === "cloned");
-
-  // bucket stock voices by language group
-  const groups = new Map<string, VoiceRow[]>();
-  for (const v of stock) {
-    const g = langGroup(firstLang(v));
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g)!.push(v);
-  }
-  const orderedKeys = [
-    ...LANG_ORDER.filter((k) => groups.has(k)),
-    ...[...groups.keys()].filter((k) => k !== "all" && !LANG_ORDER.includes(k)),
-    ...(groups.has("all") ? ["all"] : []),
-  ];
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white">
       <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <div>
-          <div className="font-semibold text-[14px] text-slate-900">Voices</div>
+          <div className="font-semibold text-[14px] text-slate-900">Cloned voices</div>
           <div className="text-[12.5px] text-slate-500 mt-0.5">
-            Stock voices are free for everyone. Cloned voices are private to this supplier.
+            Record a sample to clone a voice that&apos;s private to this supplier.
           </div>
         </div>
         {!hasXIKey ? (
@@ -120,41 +73,8 @@ export function VoicesPanel({
         ) : null}
       </header>
 
-      {/* Stock voices (read-only), grouped by language */}
-      <div className="px-5 py-4 border-b border-slate-200 space-y-3">
-        {orderedKeys.length === 0 ? (
-          <span className="text-[12px] text-slate-500">No stock voices configured.</span>
-        ) : (
-          orderedKeys.map((key) => (
-            <div key={key}>
-              <div className="text-[11px] tracking-wide font-mono text-slate-500 mb-1.5">
-                {key === "all" ? "Any language" : LANG_LABEL[key] ?? key.toUpperCase()}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {groups.get(key)!.map((v) => (
-                  <span
-                    key={v.id}
-                    className="px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-[12.5px] text-slate-700"
-                  >
-                    {cleanName(v.name)}
-                    {v.gender ? (
-                      <span className="ml-1.5 text-[10px] text-slate-400 uppercase font-mono">
-                        {v.gender}
-                      </span>
-                    ) : null}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
       {/* Cloned voices */}
       <div className="px-5 py-4">
-        <div className="text-[11px] tracking-widest font-mono text-slate-500 mb-2">
-          CLONED VOICES — {cloned.length}
-        </div>
         {cloned.length === 0 ? (
           <div className="text-[12.5px] text-slate-500 py-2">
             No cloned voices yet — record a 10-second to 3-minute sample below to clone a sales
@@ -392,51 +312,32 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
 
   return (
     <div className="mt-4 space-y-2.5">
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
+      {/* Name + gender + start recording on one row */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <input
           type="text"
           placeholder="Voice name e.g. Maya — sales lead"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
-          disabled={disabled || pending}
-          className="px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+          disabled={disabled || pending || recState !== "idle"}
+          className="flex-1 min-w-0 px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
         />
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value)}
-          disabled={disabled || pending}
-          className="px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+          disabled={disabled || pending || recState !== "idle"}
+          className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
         >
           <option value="neutral">neutral</option>
           <option value="male">male</option>
           <option value="female">female</option>
         </select>
-      </div>
-
-      {/* Recorder */}
-      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
-        {recState === "idle" ? (
-          <button
-            type="button"
-            onClick={startRecording}
-            disabled={disabled || pending || !name.trim()}
-            className={`px-4 py-2 rounded-md font-semibold text-[13px] text-white ${
-              disabled || pending || !name.trim()
-                ? "bg-slate-400 cursor-not-allowed"
-                : "bg-rose-600 hover:bg-rose-500"
-            }`}
-            title={!name.trim() ? "Enter a voice name first" : undefined}
-          >
-            ● Start recording
-          </button>
-        ) : null}
-
         {recState === "recording" ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-rose-600">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
-              Recording… {mmss}
+              {mmss}
             </span>
             <button
               type="button"
@@ -445,11 +346,27 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
             >
               ■ Stop
             </button>
-            <span className="text-[11px] text-slate-500">max {MAX_SECONDS / 60} min</span>
           </div>
-        ) : null}
+        ) : (
+          <button
+            type="button"
+            onClick={startRecording}
+            disabled={disabled || pending || !name.trim() || recState === "recorded"}
+            className={`shrink-0 px-4 py-2 rounded-md font-semibold text-[13px] text-white ${
+              disabled || pending || !name.trim() || recState === "recorded"
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-rose-600 hover:bg-rose-500"
+            }`}
+            title={!name.trim() ? "Enter a voice name first" : undefined}
+          >
+            ● Start recording
+          </button>
+        )}
+      </div>
 
-        {recState === "recorded" && previewUrl ? (
+      {/* Recorded preview */}
+      {recState === "recorded" && previewUrl ? (
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
           <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
               <audio controls src={previewUrl} className="h-9" />
@@ -481,10 +398,10 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
               </div>
             ) : null}
           </div>
-        ) : null}
+        </div>
+      ) : null}
 
-        {err ? <div className="text-[11px] text-rose-700 mt-2">{err}</div> : null}
-      </div>
+      {err ? <div className="text-[11px] text-rose-700">{err}</div> : null}
 
       <div className="text-[11px] text-slate-500">
         Record <strong>10 seconds–3 minutes</strong>, single speaker, clear Mandarin or English, no
