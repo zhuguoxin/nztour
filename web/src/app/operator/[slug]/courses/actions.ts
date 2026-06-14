@@ -380,6 +380,24 @@ export async function generateBlockAudioAction(input: {
   blockId: string;
   lang: string;
   voiceId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await generateBlockAudioCore(input);
+    return { ok: true };
+  } catch (e) {
+    // Return the real error as DATA so it isn't redacted by Next's production
+    // server-error masking — the editor displays it inline.
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+async function generateBlockAudioCore(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+  blockId: string;
+  lang: string;
+  voiceId: string;
 }) {
   const operatorSlug = input.operatorSlug;
   const courseSlug = input.courseSlug;

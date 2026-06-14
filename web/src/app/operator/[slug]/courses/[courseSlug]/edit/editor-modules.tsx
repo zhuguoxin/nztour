@@ -741,8 +741,16 @@ function AudioLangRow({
     setErr(null);
     startTransition(async () => {
       try {
-        await generateBlockAudioAction({ operatorSlug, courseSlug, moduleId, blockId, lang, voiceId });
-        router.refresh();
+        const res = await generateBlockAudioAction({
+          operatorSlug,
+          courseSlug,
+          moduleId,
+          blockId,
+          lang,
+          voiceId,
+        });
+        if (res.ok) router.refresh();
+        else setErr(res.error ?? "Generation failed");
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Generation failed");
       }

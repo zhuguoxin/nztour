@@ -75,4 +75,4 @@ VALUES
   ('voice_stock_female',  NULL, 'Bella (stock female)', 'elevenlabs', 'EXAVITQu4vr4xnSDxMaL', 'stock', 'female',  'active'),
   ('voice_stock_neutral', NULL, 'Antoni (stock neutral)','elevenlabs','ErXwobaYiN019PkySvjV', 'stock', 'neutral', 'active'),
   -- Workers AI melotts fallback (free, lower quality, hard-coded language presets)
-  ('voice_melotts_auto',  NULL, 'Melotts (auto, free)', 'workers_ai_melotts', NULL,           'stock', 'neutral', 'active');
+  ('voice_melotts_auto',  NULL, 'Melotts (auto)', 'workers_ai_melotts', NULL,           'stock', 'neutral', 'active');
