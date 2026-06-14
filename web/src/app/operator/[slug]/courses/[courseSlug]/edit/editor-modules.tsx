@@ -258,6 +258,13 @@ function ModuleEditor({
             </form>
           ))}
         </div>
+        <p className="text-[11px] text-[#86b69a] leading-relaxed">
+          💡 Write each <span className="text-[#d8f0e1]">text</span> block as one coherent paragraph
+          (2–5 sentences) — it reads better and keeps voice-over narration natural. Use a{" "}
+          <span className="text-[#d8f0e1]">callout</span> for a single highlight, and a separate
+          block per distinct item (e.g. each pricing tier). One sentence per block makes the audio
+          choppy.
+        </p>
 
         {/* End-of-chapter quiz authoring */}
         <ModuleQuizAuthor
