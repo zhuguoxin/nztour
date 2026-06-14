@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TopBar } from "../../_components/top-bar";
+import { getLocale } from "@/lib/i18n";
 
 /**
  * Shared shell for every legal page (Terms of Service, Privacy Policy,
@@ -32,28 +33,30 @@ export type LegalSlug =
   | "acceptable-use"
   | "cookies";
 
-const LEGAL_NAV: Array<{ slug: LegalSlug; label: string }> = [
-  { slug: "terms", label: "Terms of Service" },
-  { slug: "privacy", label: "Privacy Policy" },
-  { slug: "acceptable-use", label: "Acceptable Use Policy" },
-  { slug: "cookies", label: "Cookies Policy" },
+const LEGAL_NAV: Array<{ slug: LegalSlug; label: string; labelZh: string }> = [
+  { slug: "terms", label: "Terms of Service", labelZh: "服务条款" },
+  { slug: "privacy", label: "Privacy Policy", labelZh: "隐私政策" },
+  { slug: "acceptable-use", label: "Acceptable Use Policy", labelZh: "可接受使用政策" },
+  { slug: "cookies", label: "Cookies Policy", labelZh: "Cookie 政策" },
 ];
 
-export function LegalLayout({
+export async function LegalLayout({
   meta,
   children,
 }: {
   meta: LegalDocMeta;
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const zh = locale === "zh-CN";
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="hover:text-white shrink-0">Home</Link>
+            <Link href="/" className="hover:text-white shrink-0">{zh ? "首页" : "Home"}</Link>
             <span className="text-white/20 shrink-0">/</span>
-            <Link href="/legal/terms" className="hover:text-white shrink-0">Legal</Link>
+            <Link href="/legal/terms" className="hover:text-white shrink-0">{zh ? "法律" : "Legal"}</Link>
             <span className="text-white/20 shrink-0">/</span>
             <span className="text-white truncate">{meta.title}</span>
           </span>
@@ -65,7 +68,7 @@ export function LegalLayout({
           {/* Left nav */}
           <aside className="lg:sticky lg:top-20 lg:self-start order-1">
             <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
-              LEGAL
+              {zh ? "法律" : "LEGAL"}
             </div>
             <nav className="space-y-0.5">
               {LEGAL_NAV.map((n) => {
@@ -80,7 +83,7 @@ export function LegalLayout({
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    {n.label}
+                    {zh ? n.labelZh : n.label}
                   </Link>
                 );
               })}
@@ -98,23 +101,31 @@ export function LegalLayout({
               </h1>
               <div className="mt-3 flex items-center gap-3 text-[12.5px] text-slate-500 flex-wrap">
                 <span>
-                  <span className="text-slate-400">Effective</span>{" "}
+                  <span className="text-slate-400">{zh ? "生效日期" : "Effective"}</span>{" "}
                   <span className="font-mono">{meta.effectiveDate}</span>
                 </span>
                 <span className="text-slate-300">·</span>
                 <span>
-                  <span className="text-slate-400">Last updated</span>{" "}
+                  <span className="text-slate-400">{zh ? "最近更新" : "Last updated"}</span>{" "}
                   <span className="font-mono">{meta.lastUpdated}</span>
                 </span>
                 <span className="text-slate-300">·</span>
                 <span className="font-mono text-slate-400">{meta.version}</span>
               </div>
               <div className="mt-4 px-3 py-2 rounded border border-amber-200 bg-amber-50 text-[12.5px] text-amber-900">
-                <strong>Draft for legal review.</strong> This document was drafted by
+                <strong>{zh ? "供法律审查的草稿。" : "Draft for legal review."}</strong>{" "}
+                {zh
+                  ? "本文件由 Libretour Limited 作为初始发布版本起草，尚未经外部律师审阅。本文件系本着诚信原则提供，应理解为公司当前的立场。我们将在完成独立法律审查后发布经签署确认的版本。"
+                  : <>This document was drafted by
                 Libretour Limited as an initial release and has not yet been reviewed by
                 an external solicitor. It is provided in good faith and should be
                 understood as the company&apos;s current position. We will publish a
-                signed-off version following independent legal review.
+                signed-off version following independent legal review.</>}
+                {zh && (
+                  <div className="mt-1.5">
+                    本中文译本仅供参考;如中英文版本存在任何歧义,以英文版本为准。
+                  </div>
+                )}
               </div>
             </header>
 
@@ -122,15 +133,16 @@ export function LegalLayout({
 
             <footer className="mt-12 pt-6 border-t border-slate-200 text-[12.5px] text-slate-500 space-y-2">
               <p>
-                Questions about this document? Contact us at{" "}
+                {zh ? "对本文件有疑问?请通过 " : "Questions about this document? Contact us at "}
                 <a className="text-emerald-700 hover:underline" href="mailto:legal@libretour.com">
                   legal@libretour.com
                 </a>
-                .
+                {zh ? " 与我们联系。" : "."}
               </p>
               <p>
-                Libretour Limited, NZBN [TBD-NZBN], registered office [TBD-registered-address],
-                New Zealand.
+                {zh
+                  ? "Libretour Limited，NZBN [TBD-NZBN]，注册办公地址 [TBD-registered-address]，新西兰。"
+                  : "Libretour Limited, NZBN [TBD-NZBN], registered office [TBD-registered-address], New Zealand."}
               </p>
             </footer>
           </article>
@@ -138,7 +150,7 @@ export function LegalLayout({
           {/* Right TOC */}
           <aside className="hidden lg:block order-2 lg:order-3 lg:sticky lg:top-20 lg:self-start">
             <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
-              ON THIS PAGE
+              {zh ? "本页内容" : "ON THIS PAGE"}
             </div>
             <nav className="space-y-1">
               {meta.toc.map((t) => (
