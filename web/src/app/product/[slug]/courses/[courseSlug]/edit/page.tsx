@@ -326,9 +326,9 @@ export default async function EditCoursePage({
             </div>
             {op.supplier_slug ? (
               <Link
-                href={`/supplier/${op.supplier_slug}`}
+                href={`/supplier/${op.supplier_slug}/voices`}
                 className="text-[12px] text-emerald-300 hover:underline shrink-0"
-                title="Stock voices work for every language. Clone a sales rep's own voice on the Supplier dashboard."
+                title="Clone a sales rep's own voice — it works in every language across your products."
               >
                 🎙️ Manage &amp; clone voices →
               </Link>

@@ -60,9 +60,11 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
 
   const operator = await db()
     .prepare(
-      `SELECT id, slug, name, display_name, country,
-              theme_bg, theme_panel, theme_accent, theme_ink, theme_logo_r2_key
-       FROM operators WHERE slug = ?`,
+      `SELECT o.id, o.slug, o.name, o.display_name, o.country,
+              o.theme_bg, o.theme_panel, o.theme_accent, o.theme_ink, o.theme_logo_r2_key,
+              s.slug AS supplier_slug
+       FROM operators o LEFT JOIN suppliers s ON s.id = o.supplier_id
+       WHERE o.slug = ?`,
     )
     .bind(slug)
     .first<{
@@ -76,6 +78,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
       theme_accent: string | null;
       theme_ink: string | null;
       theme_logo_r2_key: string | null;
+      supplier_slug: string | null;
     }>();
   if (!operator) notFound();
 
@@ -154,12 +157,23 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             </div>
             <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">{tr.op_d_blurb}</p>
           </div>
-          <Link
-            href={`/product/${slug}/courses/new`}
-            className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
-          >
-            {tr.op_d_new_course}
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            {operator.supplier_slug ? (
+              <Link
+                href={`/supplier/${operator.supplier_slug}/voices`}
+                className="px-3 py-2 rounded-md border border-white/[.12] text-[#d8f0e1] text-[13px] hover:bg-white/[.06]"
+                title="Clone a sales rep's voice (works across every language)"
+              >
+                🎙️ Voices
+              </Link>
+            ) : null}
+            <Link
+              href={`/product/${slug}/courses/new`}
+              className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
+            >
+              {tr.op_d_new_course}
+            </Link>
+          </div>
         </div>
 
         {/* Date range + CSV export */}
