@@ -45,6 +45,17 @@ function slugify(s: string): string {
   );
 }
 
+/** Map whatever language code Claude returns (e.g. "en-NZ", "zh", "zh-Hant")
+ *  to one of our supported codes; default to English. */
+function normalizeLang(raw: unknown): string {
+  const c = String(raw ?? "").toLowerCase();
+  if (c.startsWith("zh")) return c.includes("tw") || c.includes("hant") ? "zh-TW" : "zh-CN";
+  const base = c.split("-")[0];
+  if (isSupportedLang(base)) return base;
+  if (isSupportedLang(c)) return c;
+  return "en";
+}
+
 function toBase64(bytes: Uint8Array): string {
   let bin = "";
   const chunk = 0x8000;
@@ -203,8 +214,7 @@ export async function POST(req: Request) {
   const title = (String(obj.title || titleHint || "Untitled course").trim() || "Untitled course").slice(0, 200);
   const summary = obj.summary ? String(obj.summary).trim().slice(0, 1000) : null;
   const emoji = obj.emoji ? String(obj.emoji).trim().slice(0, 8) : null;
-  const primaryLang =
-    obj.primary_lang && isSupportedLang(String(obj.primary_lang)) ? String(obj.primary_lang) : "en";
+  const primaryLang = normalizeLang(obj.primary_lang);
   const est =
     typeof obj.est_minutes === "number" && Number.isFinite(obj.est_minutes)
       ? Math.min(600, Math.max(1, Math.round(obj.est_minutes)))
