@@ -4,7 +4,7 @@ import { TopBar } from "../../_components/top-bar";
 import { requireSupplierMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
-import { hasElevenLabsKey } from "@/lib/elevenlabs";
+import { hasMiniMaxKey } from "@/lib/minimax";
 import { VoicesPanel, type VoiceRow } from "./voices-panel";
 
 export const dynamic = "force-dynamic";
@@ -110,7 +110,7 @@ export default async function SupplierDashboard({ params }: Props) {
     )
     .bind(supplier.id)
     .all<VoiceRow>();
-  const xiKey = hasElevenLabsKey();
+  const cloneEnabled = hasMiniMaxKey();
 
   // Aggregate KPIs.
   const totalProducts = products.length;
@@ -214,7 +214,7 @@ export default async function SupplierDashboard({ params }: Props) {
           ))}
         </div>
 
-        <VoicesPanel supplierSlug={supplier.slug} voices={voices ?? []} hasXIKey={xiKey} />
+        <VoicesPanel supplierSlug={supplier.slug} voices={voices ?? []} hasXIKey={cloneEnabled} />
       </main>
     </div>
   );

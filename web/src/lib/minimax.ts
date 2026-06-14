@@ -74,6 +74,102 @@ export async function synthesizeMiniMax(opts: {
   return { bytes: hexToBytes(hex) };
 }
 
+// ===========================================================================
+//  VOICE CLONING
+// ===========================================================================
+
+const FILES_URL = "https://api.minimaxi.chat/v1/files/upload";
+const CLONE_URL = "https://api.minimaxi.chat/v1/voice_clone";
+
+function getKey(): string {
+  const { env } = getCloudflareContext();
+  const key = (env as unknown as { MINIMAX_API_KEY?: string }).MINIMAX_API_KEY;
+  if (!key) {
+    throw new Error(
+      "MINIMAX_API_KEY not configured — set it via `wrangler secret put MINIMAX_API_KEY`.",
+    );
+  }
+  return key;
+}
+
+/**
+ * Generate a MiniMax-compliant custom voice id: must be ≥ 8 chars, start with a
+ * letter, and contain at least one letter and one digit. We prefix with "lt"
+ * (Libretour) so cloned ids are identifiable in the MiniMax dashboard.
+ */
+export function newMiniMaxVoiceId(seed: string): string {
+  const cleaned = seed.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+  const rand = Math.abs(hashString(seed + cleaned)).toString(36).slice(0, 6);
+  return `lt${cleaned}${rand}9`.slice(0, 24);
+}
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
+  return h;
+}
+
+/**
+ * Upload a voice sample to MiniMax for cloning. Returns the file_id used by
+ * the clone step. Sample requirements: 10 s–5 min of clean single-speaker
+ * audio, mp3/wav/m4a, ≤ 20 MB.
+ */
+export async function uploadCloneSample(opts: {
+  bytes: Uint8Array;
+  filename: string;
+  mime: string;
+}): Promise<{ fileId: number }> {
+  const key = getKey();
+  const fd = new FormData();
+  fd.append("purpose", "voice_clone");
+  const ab = opts.bytes.buffer.slice(
+    opts.bytes.byteOffset,
+    opts.bytes.byteOffset + opts.bytes.byteLength,
+  );
+  fd.append("file", new File([ab as ArrayBuffer], opts.filename, { type: opts.mime }));
+
+  const r = await fetch(FILES_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}` },
+    body: fd,
+  });
+  if (!r.ok) {
+    const detail = await r.text().catch(() => "");
+    throw new Error(`MiniMax file upload failed (${r.status}): ${detail.slice(0, 200)}`);
+  }
+  const json = (await r.json()) as {
+    file?: { file_id?: number };
+    base_resp?: { status_code?: number; status_msg?: string };
+  };
+  if (json.base_resp?.status_code !== 0) {
+    throw new Error(`MiniMax upload error: ${json.base_resp?.status_msg ?? "unknown"}`);
+  }
+  const fileId = json.file?.file_id;
+  if (!fileId) throw new Error("MiniMax upload returned no file_id");
+  return { fileId };
+}
+
+/**
+ * Clone a voice from an uploaded sample. `voiceId` is the custom id (see
+ * newMiniMaxVoiceId) that subsequent t2a calls will reference. Idempotent on
+ * the MiniMax side for a given (file_id, voice_id).
+ */
+export async function cloneVoice(opts: { fileId: number; voiceId: string }): Promise<void> {
+  const key = getKey();
+  const r = await fetch(CLONE_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ file_id: opts.fileId, voice_id: opts.voiceId }),
+  });
+  if (!r.ok) {
+    const detail = await r.text().catch(() => "");
+    throw new Error(`MiniMax voice_clone failed (${r.status}): ${detail.slice(0, 200)}`);
+  }
+  const json = (await r.json()) as { base_resp?: { status_code?: number; status_msg?: string } };
+  if (json.base_resp?.status_code !== 0) {
+    throw new Error(`MiniMax clone error: ${json.base_resp?.status_msg ?? "unknown"}`);
+  }
+}
+
 /** Decode a hex string ("a1b2…") into a byte array. */
 function hexToBytes(hex: string): Uint8Array {
   const clean = hex.trim();

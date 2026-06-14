@@ -53,9 +53,9 @@ export function VoicesPanel({
         {!hasXIKey ? (
           <span
             className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md"
-            title="Set XI_API_KEY via `wrangler secret put XI_API_KEY` to enable voice cloning"
+            title="Set MINIMAX_API_KEY via `wrangler secret put MINIMAX_API_KEY` to enable voice cloning"
           >
-            Cloning disabled — XI key not set
+            Cloning disabled — MiniMax key not set
           </span>
         ) : null}
       </header>
@@ -195,14 +195,15 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
         <input
           name="file"
           type="file"
-          accept="audio/wav,audio/mpeg,audio/mp3,audio/mp4,audio/m4a,audio/webm,audio/ogg"
+          accept="audio/wav,audio/mpeg,audio/mp3,audio/mp4,audio/m4a,audio/x-m4a"
           disabled={disabled || pending || !name.trim()}
           className="hidden"
         />
       </label>
       <div className="sm:col-span-3 text-[11px] text-slate-500">
-        Best results: 30-90 seconds, single speaker, no music, no background noise. WAV / MP3 / M4A
-        ≤ 12 MB.
+        Cloned with MiniMax. Best results: <strong>10 seconds–5 minutes</strong>, single speaker,
+        clear Mandarin or English, no music or background noise. WAV / MP3 / M4A ≤ 20 MB. A cloned
+        voice can narrate any language.
       </div>
     </form>
   );
