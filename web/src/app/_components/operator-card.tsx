@@ -32,7 +32,7 @@ export function OperatorCard({
 
   return (
     <article className="rounded-2xl overflow-hidden bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition h-full relative">
-      <div className="h-32 relative overflow-hidden" style={{ background: cover }}>
+      <div className="h-48 relative overflow-hidden" style={{ background: cover }}>
         {op.cover_image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

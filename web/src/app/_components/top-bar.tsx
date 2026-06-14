@@ -43,7 +43,8 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
           ? `/product/${role.operators[0].operator_slug}`
           : null;
   return (
-    <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/95 backdrop-blur-md px-4 sm:px-8 py-3">
+    <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/95 backdrop-blur-md py-3">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
       {/* === Mobile row 1: Logo + Lang + Sign in + Get certified === */}
       <div className="flex items-center justify-between gap-2 md:hidden">
         <Logo compact />
@@ -166,6 +167,7 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             <UserButton appearance={{ variables: { colorPrimary: "#34d399" } }} />
           </Show>
         </div>
+      </div>
       </div>
     </header>
   );
