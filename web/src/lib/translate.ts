@@ -84,40 +84,28 @@ export async function translateBatch(
   const { env } = getCloudflareContext();
   const fromName = TRANSLATE_LANGS.find((l) => l.code === fromLang)?.label ?? fromLang;
   const toName = TRANSLATE_LANGS.find((l) => l.code === toLang)?.label ?? toLang;
-
-  // We use a structured JSON-mode prompt for batch translation: input is a
-  // numbered list, output must be the same number of items in order.
-  const userMessage = [
-    `Translate the following ${nonEmpty.length} fragment(s) from ${fromName} to ${toName}.`,
-    `Reply with a JSON array of ${nonEmpty.length} strings, in the same order. No other text.`,
-    "",
-    "FRAGMENTS:",
-    ...nonEmpty.map((i, idx) => `[${idx + 1}] ${i.text}`),
-  ].join("\n");
+  const fragments = nonEmpty.map((i) => i.text);
 
   // Provider routing: Chinese (zh-CN / zh-TW) reads more naturally — and costs
   // far less — from DeepSeek, so use it whenever DEEPSEEK_API_KEY is set.
   // Every other language uses Claude. If the DeepSeek key is missing we fall
-  // back to Claude so Chinese still works.
+  // back to Claude so Chinese still works. Each provider builds its own prompt
+  // and returns the parsed string array.
   const deepseekKey = (env as unknown as { DEEPSEEK_API_KEY?: string }).DEEPSEEK_API_KEY;
   const useDeepseek = toLang.startsWith("zh") && !!deepseekKey;
 
-  let raw: string;
+  let parsed: unknown[];
   if (useDeepseek) {
-    raw = await callDeepSeek(deepseekKey as string, SYSTEM_PROMPT, userMessage);
+    parsed = await callDeepSeek(deepseekKey as string, fromName, toName, fragments);
   } else {
     if (!env.ANTHROPIC_API_KEY) {
       throw new Error(
         "ANTHROPIC_API_KEY not configured — translation unavailable until the secret is set.",
       );
     }
-    raw = await callClaude(env.ANTHROPIC_API_KEY, SYSTEM_PROMPT, userMessage);
+    parsed = await callClaude(env.ANTHROPIC_API_KEY, fromName, toName, fragments);
   }
 
-  const parsed = parseJsonArray(raw);
-  if (!Array.isArray(parsed)) {
-    throw new Error(`Translator returned non-JSON output: ${raw.slice(0, 160)}`);
-  }
   if (parsed.length !== nonEmpty.length) {
     throw new Error(`Translator returned ${parsed.length} items, expected ${nonEmpty.length}`);
   }
@@ -139,17 +127,53 @@ function apiError(provider: string, e: unknown): Error {
 const TRUNCATED =
   "Translation was truncated (too long) — split the course into smaller blocks.";
 
+/** Shared user message. INPUT is itself a JSON array so the model never
+ *  confuses our "[1]" numbering with the JSON-array output it should produce. */
+function buildUserMessage(
+  fromName: string,
+  toName: string,
+  fragments: string[],
+  wantObject: boolean,
+): string {
+  const shape = wantObject
+    ? `a JSON object of the form {"translations": [...]} whose "translations" is a JSON array of exactly ${fragments.length} translated strings, in the same order`
+    : `a JSON array of exactly ${fragments.length} translated strings, in the same order`;
+  return [
+    `Translate each string in the INPUT JSON array from ${fromName} to ${toName}.`,
+    `Reply with ${shape}. Output valid JSON only — no markdown fences, no commentary.`,
+    `INPUT: ${JSON.stringify(fragments)}`,
+  ].join("\n");
+}
+
+/** Pull the string array out of a model reply (array, {translations:[…]}, or
+ *  the first array value of an object). */
+function extractArray(obj: unknown): unknown[] | null {
+  if (Array.isArray(obj)) return obj;
+  if (obj && typeof obj === "object") {
+    const o = obj as Record<string, unknown>;
+    if (Array.isArray(o.translations)) return o.translations;
+    const firstArr = Object.values(o).find((v) => Array.isArray(v));
+    if (firstArr) return firstArr as unknown[];
+  }
+  return null;
+}
+
 /** Claude with an assistant "[" prefill so it must emit a bare JSON array. */
-async function callClaude(apiKey: string, system: string, userMessage: string): Promise<string> {
+async function callClaude(
+  apiKey: string,
+  fromName: string,
+  toName: string,
+  fragments: string[],
+): Promise<unknown[]> {
   const client = new Anthropic({ apiKey });
   let resp;
   try {
     resp = await client.messages.create({
       model: MODEL,
       max_tokens: 8192,
-      system,
+      system: SYSTEM_PROMPT,
       messages: [
-        { role: "user", content: userMessage },
+        { role: "user", content: buildUserMessage(fromName, toName, fragments, false) },
         { role: "assistant", content: "[" },
       ],
     });
@@ -161,28 +185,32 @@ async function callClaude(apiKey: string, system: string, userMessage: string): 
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
     .join("");
-  return "[" + text; // re-attach the prefill (not echoed in the response)
+  const arr = parseJsonArray("[" + text); // re-attach the prefill
+  if (!arr) throw new Error(`Translator returned non-JSON output: ${text.slice(0, 160)}`);
+  return arr;
 }
 
-/** DeepSeek V3 (deepseek-chat) via its OpenAI-compatible beta endpoint, using
- *  chat-prefix completion ("[" prefix) for the same bare-array guarantee. */
+/** DeepSeek V3 (deepseek-chat) using its JSON-output mode. We ask for an object
+ *  ({"translations":[…]}) because json_object mode guarantees valid JSON and
+ *  avoids the model echoing our "[n]" markers as a numbered list. */
 async function callDeepSeek(
   apiKey: string,
-  system: string,
-  userMessage: string,
-): Promise<string> {
+  fromName: string,
+  toName: string,
+  fragments: string[],
+): Promise<unknown[]> {
   let resp: Response;
   try {
-    resp = await fetch("https://api.deepseek.com/beta/chat/completions", {
+    resp = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: "deepseek-chat",
         max_tokens: 8192,
+        response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: system },
-          { role: "user", content: userMessage },
-          { role: "assistant", content: "[", prefix: true },
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: buildUserMessage(fromName, toName, fragments, true) },
         ],
       }),
     });
@@ -199,7 +227,15 @@ async function callDeepSeek(
   const choice = data.choices?.[0];
   if (choice?.finish_reason === "length") throw new Error(TRUNCATED);
   const content = choice?.message?.content ?? "";
-  return content.startsWith("[") ? content : "[" + content;
+  let obj: unknown;
+  try {
+    obj = JSON.parse(content);
+  } catch {
+    throw new Error(`Translator returned non-JSON output: ${content.slice(0, 160)}`);
+  }
+  const arr = extractArray(obj);
+  if (!arr) throw new Error(`Translator returned non-array output: ${content.slice(0, 160)}`);
+  return arr;
 }
 
 /** Tolerant JSON-array extraction: direct parse, else a first-[-to-last-]
