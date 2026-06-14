@@ -138,17 +138,15 @@ export default async function EditCoursePage({
   // cloned voice owned by the parent supplier.
   const { results: voices = [] } = await db()
     .prepare(
-      `SELECT v.id, v.name, v.provider, v.kind, v.gender, v.status
+      `SELECT v.id, v.name, v.provider, v.kind, v.gender, v.langs, v.status
        FROM voice_profiles v
        LEFT JOIN operators o ON o.supplier_id = v.supplier_id
        WHERE v.status = 'active'
          AND (v.supplier_id IS NULL OR o.slug = ?)
        GROUP BY v.id
-       -- Cloned (supplier-owned) voices first, then ElevenLabs stock voices
-       -- (which handle every language well), then the free melotts fallback.
-       ORDER BY (v.kind = 'cloned') DESC,
-                (v.provider = 'elevenlabs') DESC,
-                v.created_at DESC`,
+       -- Cloned (supplier-owned) voices first, then the rest. Per-language
+       -- filtering + default selection happens client-side in AudioLangRow.
+       ORDER BY (v.kind = 'cloned') DESC, v.created_at DESC`,
     )
     .bind(slug)
     .all<{
@@ -157,6 +155,7 @@ export default async function EditCoursePage({
       provider: string;
       kind: string;
       gender: string | null;
+      langs: string | null;
       status: string;
     }>();
 

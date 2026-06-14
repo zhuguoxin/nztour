@@ -25,7 +25,41 @@ export interface VoiceOption {
   provider: string;
   kind: string;
   gender: string | null;
+  /** JSON array of BCP-47 codes this voice is native for; null = universal. */
+  langs: string | null;
   status: string;
+}
+
+/** Voices applicable to a given language: those native for it (langs includes
+ *  the lang or its base code) plus universal (langs null — e.g. a cloned voice).
+ *  Cloned/universal voices always show so suppliers can use a cloned voice in
+ *  any language. */
+function voicesForLang(voices: VoiceOption[], lang: string): VoiceOption[] {
+  const base = lang.split("-")[0];
+  return voices.filter((v) => {
+    if (!v.langs) return true;
+    try {
+      const arr = JSON.parse(v.langs);
+      return Array.isArray(arr) && (arr.includes(lang) || arr.includes(base));
+    } catch {
+      return true;
+    }
+  });
+}
+
+/** Default voice for a language: the existing entry's voice if set; else for
+ *  English the ElevenLabs premade stock voice; else the free MeloTTS voice
+ *  (works on any tier) so generation succeeds out of the box. Premium native
+ *  ElevenLabs library voices remain selectable but aren't the default. */
+function defaultVoiceFor(applicable: VoiceOption[], lang: string, existing?: string): string {
+  if (existing) return existing;
+  if (lang.startsWith("en")) {
+    const premade = applicable.find((v) => v.provider === "elevenlabs" && v.kind === "stock");
+    if (premade) return premade.id;
+  }
+  const melotts = applicable.find((v) => v.provider === "workers_ai_melotts");
+  if (melotts) return melotts.id;
+  return applicable[0]?.id ?? "voice_melotts_auto";
 }
 
 export interface QuizQuestionData {
@@ -694,7 +728,9 @@ function AudioLangRow({
   const has = !!entry;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [voiceId, setVoiceId] = useState(entry?.voice_id ?? voices[0]?.id ?? "voice_melotts_auto");
+  // Only voices native for this language (plus universal/cloned ones).
+  const applicableVoices = voicesForLang(voices, lang);
+  const [voiceId, setVoiceId] = useState(defaultVoiceFor(applicableVoices, lang, entry?.voice_id));
   const [err, setErr] = useState<string | null>(null);
 
   function generate() {
@@ -743,9 +779,9 @@ function AudioLangRow({
           disabled={pending}
           className={inputClass + " flex-1 text-[11.5px] py-1"}
         >
-          {voices.map((v) => (
+          {applicableVoices.map((v) => (
             <option key={v.id} value={v.id}>
-              {v.name} {v.gender ? `· ${v.gender}` : ""}
+              {v.name}
               {v.kind === "cloned" ? " · cloned" : ""}
             </option>
           ))}
