@@ -52,8 +52,10 @@ function requireKey(): string {
  * returned from createVoiceFromSample.
  *
  * `lang` is the BCP-47 language code — multilingual_v2 handles it implicitly
- * from the text content; we pass it via the language_code param to nudge
- * pronunciation when text is ambiguous.
+ * from the text content. NOTE: eleven_multilingual_v2 auto-detects the
+ * language from the text and does NOT accept a `language_code` parameter
+ * (only the turbo/flash models do) — passing one makes the API reject the
+ * request, so `lang` is accepted for signature compatibility but not sent.
  */
 export async function synthesizeWithVoice(opts: {
   text: string;
@@ -67,7 +69,7 @@ export async function synthesizeWithVoice(opts: {
     model_id: MODEL_ID,
     voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.0, use_speaker_boost: true },
   };
-  if (opts.lang) body.language_code = opts.lang;
+  // language_code intentionally omitted — multilingual_v2 auto-detects.
 
   const r = await fetch(url, {
     method: "POST",

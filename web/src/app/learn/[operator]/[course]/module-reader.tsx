@@ -386,7 +386,14 @@ function VideoBlock({
  */
 function AudioPlayer({ block, compact = false }: { block: BlockRow; compact?: boolean }) {
   if (!block.audio_r2_key) return null;
-  const src = `/api/audio?id=${block.id}&t=${block.audio_generated_at ?? 0}`;
+  // When viewing a non-primary language, the page sets _audio_lang_query so we
+  // request the localised audio (/api/audio?lang=…) instead of the primary
+  // column. Without it the player would serve the wrong language (or 404 when
+  // the primary audio doesn't exist but a translated one does).
+  const langQ = (block as BlockRow & { _audio_lang_query?: string })._audio_lang_query;
+  const src = `/api/audio?id=${block.id}${
+    langQ ? `&lang=${encodeURIComponent(langQ)}` : ""
+  }&t=${block.audio_generated_at ?? 0}`;
   return (
     <div
       className={`mt-3 flex items-center gap-2 ${
