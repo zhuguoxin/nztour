@@ -15,10 +15,13 @@ export const runtime = "experimental-edge";
 
 const isProtected = createRouteMatcher([
   "/learn(.*)",
-  "/product(.*)",
-  "/operator(.*)", // legacy — redirected to /product, kept protected during the move
-  "/supplier(.*)",
-  "/admin(.*)",
+  // NB: use "/product(/.*)?" not "/product(.*)" — the latter also matches the
+  // PUBLIC "/products" directory pages, which would wrongly gate them behind
+  // Clerk auth. This matches only "/product" and "/product/<slug>/...".
+  "/product(/.*)?",
+  "/operator(/.*)?", // legacy — redirected to /product, kept protected during the move
+  "/supplier(/.*)?",
+  "/admin(/.*)?",
   "/api/qa(.*)",
 ]);
 
