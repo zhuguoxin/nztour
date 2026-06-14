@@ -208,8 +208,8 @@ const en = {
   sup_d_mini_badges: "badges",
   sup_d_card_cta: "Open product console →",
 
-  // ===== /operator/[slug] dashboard =====
-  op_d_chrome_label: "/OPERATOR",
+  // ===== /product/[slug] dashboard =====
+  op_d_chrome_label: "/PRODUCT",
   op_d_view_as_admin: "viewing as admin",
   op_d_blurb:
     "Manage your courses, watch what agents are learning, and see the questions they're asking — all in one place.",
@@ -501,8 +501,8 @@ const zhCN: Dict = {
   sup_d_mini_badges: "徽章",
   sup_d_card_cta: "进入产品后台 →",
 
-  // ===== /operator/[slug] dashboard =====
-  op_d_chrome_label: "/运营商",
+  // ===== /product/[slug] dashboard =====
+  op_d_chrome_label: "/产品",
   op_d_view_as_admin: "以管理员身份查看",
   op_d_blurb:
     "在一个面板里管理课程、查看学员动态、洞察代理实际提问的问题。",

@@ -32,7 +32,7 @@ export default async function OperatorIndex() {
   if (!role.userId) redirect("/sign-in");
 
   if (role.operators.length === 1 && !role.isAdmin) {
-    redirect(`/operator/${role.operators[0].operator_slug}`);
+    redirect(`/product/${role.operators[0].operator_slug}`);
   }
 
   // Build the operator list to show:
@@ -100,7 +100,7 @@ export default async function OperatorIndex() {
             {cards.map((o) => (
               <Link
                 key={o.id}
-                href={`/operator/${o.slug}`}
+                href={`/product/${o.slug}`}
                 className="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition"
               >
                 <div

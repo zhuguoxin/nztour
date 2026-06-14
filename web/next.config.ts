@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // The product dashboard moved from /operator/* to /product/*. 301-redirect
+  // the old paths so existing bookmarks / links keep working.
+  async redirects() {
+    return [
+      { source: "/operator", destination: "/product", permanent: true },
+      { source: "/operator/:path*", destination: "/product/:path*", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

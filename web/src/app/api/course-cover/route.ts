@@ -95,8 +95,8 @@ export async function POST(req: Request) {
       .prepare(`UPDATE courses SET cover_r2_key = NULL, updated_at = unixepoch() WHERE id = ?`)
       .bind(course.id)
       .run();
-    revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
-    revalidatePath(`/operator/${operatorSlug}`);
+    revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+    revalidatePath(`/product/${operatorSlug}`);
     return Response.json({ ok: true, removed: true });
   }
 
@@ -119,8 +119,8 @@ export async function POST(req: Request) {
     .bind(key, course.id)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
-  revalidatePath(`/operator/${operatorSlug}`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}`);
   revalidatePath(`/learn`);
   return Response.json({ ok: true, key });
 }

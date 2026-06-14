@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       .prepare(`UPDATE operators SET theme_logo_r2_key = NULL WHERE id = ?`)
       .bind(access.operatorId)
       .run();
-    revalidatePath(`/operator/${operatorSlug}`);
+    revalidatePath(`/product/${operatorSlug}`);
     revalidatePath(`/learn/${operatorSlug}`, "layout");
     return Response.json({ ok: true, removed: true });
   }
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     .bind(key, access.operatorId)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}`);
+  revalidatePath(`/product/${operatorSlug}`);
   revalidatePath(`/learn/${operatorSlug}`, "layout");
   return Response.json({ ok: true, key });
 }

@@ -83,7 +83,7 @@ export function OperatorSwitcher({
               return (
                 <Link
                   key={o.slug}
-                  href={`/operator/${o.slug}`}
+                  href={`/product/${o.slug}`}
                   className={`flex items-center justify-between px-3 py-2.5 text-[13.5px] border-b border-white/[.04] last:border-b-0 ${
                     isCurrent
                       ? "bg-emerald-400/[.06] text-white"
@@ -105,7 +105,7 @@ export function OperatorSwitcher({
             })}
           </div>
           <Link
-            href="/operator"
+            href="/product"
             className="block px-3 py-2.5 text-[12px] text-emerald-300 hover:bg-white/[.04] border-t border-white/[.06]"
             onClick={() => setOpen(false)}
           >

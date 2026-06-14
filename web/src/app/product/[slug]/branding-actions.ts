@@ -37,7 +37,7 @@ export async function updateOperatorTheme(form: FormData) {
     .run();
 
   // Every surface that reads operator.theme_*.
-  revalidatePath(`/operator/${slug}`);
+  revalidatePath(`/product/${slug}`);
   revalidatePath(`/learn/${slug}`, "layout");
 }
 
@@ -53,6 +53,6 @@ export async function resetOperatorTheme(form: FormData) {
     )
     .bind(access.operatorId)
     .run();
-  revalidatePath(`/operator/${slug}`);
+  revalidatePath(`/product/${slug}`);
   revalidatePath(`/learn/${slug}`, "layout");
 }

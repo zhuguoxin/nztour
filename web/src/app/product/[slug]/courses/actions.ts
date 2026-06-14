@@ -54,8 +54,8 @@ export async function createCourse(form: FormData) {
     .bind(id, access.operatorId, slug, title, summary, emoji, lang, est)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}`);
-  redirect(`/operator/${operatorSlug}/courses/${slug}/edit`);
+  revalidatePath(`/product/${operatorSlug}`);
+  redirect(`/product/${operatorSlug}/courses/${slug}/edit`);
 }
 
 export async function updateCourse(form: FormData) {
@@ -85,8 +85,8 @@ export async function updateCourse(form: FormData) {
     .bind(title, summary, emoji, status, est, course.id)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}`);
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
@@ -98,8 +98,8 @@ export async function deleteCourse(form: FormData) {
     .prepare(`DELETE FROM courses WHERE operator_id = ? AND slug = ?`)
     .bind(access.operatorId, courseSlug)
     .run();
-  revalidatePath(`/operator/${operatorSlug}`);
-  redirect(`/operator/${operatorSlug}`);
+  revalidatePath(`/product/${operatorSlug}`);
+  redirect(`/product/${operatorSlug}`);
 }
 
 // =========================================================================
@@ -144,7 +144,7 @@ export async function createModule(form: FormData) {
     .bind(id, courseId, slug, title, next?.n ?? 1)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 export async function updateModule(form: FormData) {
@@ -164,7 +164,7 @@ export async function updateModule(form: FormData) {
     )
     .bind(title, summary, est, moduleId, courseId)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 export async function deleteModule(form: FormData) {
@@ -176,7 +176,7 @@ export async function deleteModule(form: FormData) {
     .prepare(`DELETE FROM modules WHERE id = ? AND course_id = ?`)
     .bind(moduleId, courseId)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 export async function reorderModule(form: FormData) {
@@ -203,7 +203,7 @@ export async function reorderModule(form: FormData) {
       db().prepare(`UPDATE modules SET position = ? WHERE id = ?`).bind(b.position, a.id),
       db().prepare(`UPDATE modules SET position = ? WHERE id = ?`).bind(a.position, b.id),
     ]);
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 /**
@@ -232,7 +232,7 @@ export async function reorderModulesBulk(input: {
     db().prepare(`UPDATE modules SET position = ? WHERE id = ? AND course_id = ?`).bind(i + 1, id, courseId),
   );
   if (stmts.length > 0) await db().batch(stmts);
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 /**
@@ -261,7 +261,7 @@ export async function reorderBlocksBulk(input: {
     db().prepare(`UPDATE content_blocks SET position = ? WHERE id = ? AND module_id = ?`).bind(i, id, moduleId),
   );
   if (stmts.length > 0) await db().batch(stmts);
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 // =========================================================================
@@ -305,7 +305,7 @@ export async function createBlock(form: FormData) {
     )
     .bind(id, moduleId, next?.n ?? 0, kind, text, videoUid, caption)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 export async function updateBlock(form: FormData) {
@@ -334,7 +334,7 @@ export async function updateBlock(form: FormData) {
     )
     .bind(text, videoUid, caption, visibility, duration, blockId, moduleId)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 // =========================================================================
@@ -557,7 +557,7 @@ async function generateBlockAudioCore(input: {
       .run();
   }
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
@@ -588,7 +588,7 @@ export async function clearBlockAudio(form: FormData) {
     )
     .bind(blockId, moduleId)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
@@ -625,7 +625,7 @@ export async function createQuizQuestion(form: FormData) {
     )
     .bind(id, moduleId, prompt, JSON.stringify(choices), correct, explanation, next?.n ?? 0)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 export async function deleteQuizQuestion(form: FormData) {
@@ -638,7 +638,7 @@ export async function deleteQuizQuestion(form: FormData) {
     .prepare(`DELETE FROM quiz_questions WHERE id = ? AND module_id = ?`)
     .bind(id, moduleId)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 /**
@@ -762,7 +762,7 @@ ${source}`,
         ),
     );
   if (stmts.length > 0) await db().batch(stmts);
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 // =========================================================================
@@ -913,7 +913,7 @@ export async function translateCourse(form: FormData): Promise<void> {
     .bind(writeI18nMap(titleMap), writeI18nMap(summaryMap), JSON.stringify(avail), courseId)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
@@ -993,7 +993,7 @@ export async function setCourseLanguageEnabled(form: FormData): Promise<void> {
       .run();
   }
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
@@ -1085,7 +1085,7 @@ export async function removeCourseLanguage(form: FormData): Promise<void> {
     );
   }
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
@@ -1113,7 +1113,7 @@ export async function deleteCourseAttachment(form: FormData) {
     .bind(attachmentId, courseId)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
 export async function deleteBlock(form: FormData) {
@@ -1126,5 +1126,5 @@ export async function deleteBlock(form: FormData) {
     .prepare(`DELETE FROM content_blocks WHERE id = ? AND module_id = ?`)
     .bind(blockId, moduleId)
     .run();
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }

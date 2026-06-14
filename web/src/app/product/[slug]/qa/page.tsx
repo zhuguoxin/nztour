@@ -41,7 +41,7 @@ function parseDate(s: string | undefined, endOfDay = false): number | null {
 }
 
 /**
- * /operator/<slug>/qa — full AI Q&A archive for the operator.
+ * /product/<slug>/qa — full AI Q&A archive for the operator.
  *
  * Default view: theme list (left) + recent Q&A pairs (right) for the
  * window, with drill-down: click a theme to filter; click a row to expand
@@ -144,7 +144,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0 text-[14px]">
-            <Link href={`/operator/${slug}`} className="hover:text-white">
+            <Link href={`/product/${slug}`} className="hover:text-white">
               {operator.name}
             </Link>
             <span className="text-white/20">/</span>
@@ -158,7 +158,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
         <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] px-4 py-3 mb-5 flex items-center gap-3 flex-wrap">
           <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">REPORTING WINDOW</div>
           <div className="font-mono text-[12.5px] text-white">{fromIso} → {toIso}</div>
-          <form action={`/operator/${slug}/qa`} className="flex items-center gap-1 ml-1">
+          <form action={`/product/${slug}/qa`} className="flex items-center gap-1 ml-1">
             <input
               type="date"
               name="from"
@@ -205,7 +205,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
               THEMES — {themes.results?.length ?? 0}
             </div>
             <Link
-              href={`/operator/${slug}/qa?${baseQuery({ theme: undefined })}`}
+              href={`/product/${slug}/qa?${baseQuery({ theme: undefined })}`}
               className={`block px-2 py-1.5 rounded text-[13px] mb-1 ${
                 themeFilter === null
                   ? "bg-emerald-400/15 text-white border border-emerald-400/30"
@@ -223,7 +223,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                 return (
                   <li key={t.id}>
                     <Link
-                      href={`/operator/${slug}/qa?${baseQuery({ theme: t.id })}`}
+                      href={`/product/${slug}/qa?${baseQuery({ theme: t.id })}`}
                       className={`block px-2 py-1.5 rounded text-[13px] ${
                         active
                           ? "bg-emerald-400/15 text-white border border-emerald-400/30"
@@ -258,7 +258,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                   {qaRows.results?.length ?? 0} shown · 200 max
                 </span>
               </div>
-              <form action={`/operator/${slug}/qa`} className="ml-auto">
+              <form action={`/product/${slug}/qa`} className="ml-auto">
                 <input type="hidden" name="from" value={fromIso} />
                 <input type="hidden" name="to" value={toIso} />
                 {themeFilter ? <input type="hidden" name="theme" value={themeFilter} /> : null}

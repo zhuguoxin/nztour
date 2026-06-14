@@ -176,7 +176,7 @@ export default async function AdminPage() {
             {operators.map((o) => (
               <Link
                 key={o.id}
-                href={`/operator/${o.slug}`}
+                href={`/product/${o.slug}`}
                 className="px-3 py-2.5 rounded-md border border-slate-200 hover:border-emerald-300 text-[13px] text-slate-900 flex items-center justify-between"
               >
                 <span>{o.name}</span>

@@ -19,15 +19,15 @@ import { LocaleSwitcher } from "./locale-switcher";
  * (used on /learn/* pages to show "Libretour / NZSki / Coronet Peak 2026").
  *
  * Role-aware: operators see an "Operator console" pill linking to
- * /operator/<first-slug>; platform admins see "Admin" linking to /admin.
+ * /product/<first-slug>; platform admins see "Admin" linking to /admin.
  */
 export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   const [role, locale, tr] = await Promise.all([getCurrentRole(), getLocale(), t()]);
   const operatorHref =
     role.isAdmin || role.operators.length > 1
-      ? "/operator"
+      ? "/product"
       : role.operators.length === 1
-        ? `/operator/${role.operators[0].operator_slug}`
+        ? `/product/${role.operators[0].operator_slug}`
         : null;
   // Supplier pill: only show if user has explicit supplier_memberships
   // (admin doesn't auto-trigger this — admins use /admin). Same picker-or-direct

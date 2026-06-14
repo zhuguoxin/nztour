@@ -1,6 +1,6 @@
 /**
  * Operator-side analytics queries. All scoped by operator_id.
- * Used by /operator/[slug] dashboard.
+ * Used by /product/[slug] dashboard.
  */
 import { db } from "./db";
 

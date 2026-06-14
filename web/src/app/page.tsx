@@ -224,7 +224,7 @@ function OperatorCard({
         </div>
         {canManage ? (
           <Link
-            href={`/operator/${op.slug}`}
+            href={`/product/${op.slug}`}
             className="absolute top-3.5 right-3.5 z-10 px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 shadow"
           >
             ⚙ Manage

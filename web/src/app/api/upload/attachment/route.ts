@@ -103,6 +103,6 @@ export async function POST(req: Request) {
     // Swallow — consumer may not be deployed yet; row state is recoverable.
   }
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   return Response.json({ ok: true, id });
 }

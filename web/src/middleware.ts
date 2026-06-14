@@ -15,7 +15,9 @@ export const runtime = "experimental-edge";
 
 const isProtected = createRouteMatcher([
   "/learn(.*)",
-  "/operator(.*)",
+  "/product(.*)",
+  "/operator(.*)", // legacy — redirected to /product, kept protected during the move
+  "/supplier(.*)",
   "/admin(.*)",
   "/api/qa(.*)",
 ]);

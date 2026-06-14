@@ -25,7 +25,7 @@ export default async function NewCoursePage({ params }: { params: Promise<{ slug
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0 text-[14px]">
-            <Link href={`/operator/${slug}`} className="hover:text-white">
+            <Link href={`/product/${slug}`} className="hover:text-white">
               {op.name}
             </Link>
             <span className="text-white/20">/</span>
@@ -110,7 +110,7 @@ export default async function NewCoursePage({ params }: { params: Promise<{ slug
               Create course →
             </button>
             <Link
-              href={`/operator/${slug}`}
+              href={`/product/${slug}`}
               className="px-4 py-2.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[13px] hover:bg-white/[.06]"
             >
               Cancel

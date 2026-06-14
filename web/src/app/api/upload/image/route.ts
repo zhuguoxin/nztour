@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     .bind(key, blockId)
     .run();
 
-  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 
   return Response.json({ ok: true, key });

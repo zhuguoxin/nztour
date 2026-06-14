@@ -45,7 +45,7 @@ interface ProductKpiRow {
  *   1. Supplier identity strip — name, legal name, website, plan tier
  *   2. Roll-up KPIs across every owned product (learners, completions, badges,
  *      published courses)
- *   3. Per-product cards with mini KPI strip; click → /operator/<slug>
+ *   3. Per-product cards with mini KPI strip; click → /product/<slug>
  *
  * If supplier owns exactly one product, we redirect straight to the product
  * dashboard — no point making the user click twice.
@@ -96,7 +96,7 @@ export default async function SupplierDashboard({ params }: Props) {
 
   // Single-product supplier → fold this layer away.
   if (products.length === 1) {
-    redirect(`/operator/${products[0].slug}`);
+    redirect(`/product/${products[0].slug}`);
   }
 
   // Voices owned by this supplier OR platform stock (supplier_id IS NULL).
@@ -190,7 +190,7 @@ export default async function SupplierDashboard({ params }: Props) {
           {products.map((p) => (
             <Link
               key={p.id}
-              href={`/operator/${p.slug}`}
+              href={`/product/${p.slug}`}
               className="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition"
             >
               <div

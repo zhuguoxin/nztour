@@ -183,7 +183,7 @@ export default async function EditCoursePage({
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0 text-[14px]">
-            <Link href={`/operator/${slug}`} className="hover:text-white">
+            <Link href={`/product/${slug}`} className="hover:text-white">
               {op.name}
             </Link>
             <span className="text-white/20">/</span>

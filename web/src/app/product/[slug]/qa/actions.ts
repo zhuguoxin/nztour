@@ -207,7 +207,7 @@ Assignments MUST be in the same order as input, one per question, using the exac
     .all<{ n: number }>();
   const remainingCount = rem[0]?.n ?? 0;
 
-  revalidatePath(`/operator/${input.operatorSlug}/qa`);
-  revalidatePath(`/operator/${input.operatorSlug}`);
+  revalidatePath(`/product/${input.operatorSlug}/qa`);
+  revalidatePath(`/product/${input.operatorSlug}`);
   return { processed, new_themes: newThemesCreated, remaining: remainingCount };
 }

@@ -155,7 +155,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">{tr.op_d_blurb}</p>
           </div>
           <Link
-            href={`/operator/${slug}/courses/new`}
+            href={`/product/${slug}/courses/new`}
             className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
           >
             {tr.op_d_new_course}
@@ -240,7 +240,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                     className="px-5 py-4 flex items-center gap-4 border-b border-white/[.04] last:border-b-0"
                   >
                     <Link
-                      href={`/operator/${operator.slug}/courses/${c.slug}/edit`}
+                      href={`/product/${operator.slug}/courses/${c.slug}/edit`}
                       className="flex items-center gap-4 flex-1 min-w-0 group"
                       title={tr.op_d_action_edit}
                     >
@@ -290,7 +290,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                     </span>
                     <StatusPill status={c.status} labels={{ published: tr.op_d_status_published, draft: tr.op_d_status_draft }} />
                     <Link
-                      href={`/operator/${operator.slug}/courses/${c.slug}/edit`}
+                      href={`/product/${operator.slug}/courses/${c.slug}/edit`}
                       className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
                     >
                       {tr.op_d_action_edit}
@@ -625,7 +625,7 @@ function DateRangeBar({
           return (
             <Link
               key={p.days}
-              href={`/operator/${slug}?${params.toString()}`}
+              href={`/product/${slug}?${params.toString()}`}
               className="px-2 py-1 rounded border border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06] text-[11.5px]"
             >
               {p.label}
@@ -634,7 +634,7 @@ function DateRangeBar({
         })}
       </div>
 
-      <form action={`/operator/${slug}`} className="flex items-center gap-1 ml-1">
+      <form action={`/product/${slug}`} className="flex items-center gap-1 ml-1">
         <input
           type="date"
           name="from"
@@ -667,7 +667,7 @@ function DateRangeBar({
           ⬇ Learners CSV
         </a>
         <Link
-          href={`/operator/${slug}/qa?from=${fromIso}&to=${toIso}`}
+          href={`/product/${slug}/qa?from=${fromIso}&to=${toIso}`}
           className="px-2.5 py-1 rounded border border-white/[.10] text-emerald-300 hover:bg-white/[.06] text-[12px]"
         >
           View Q&amp;A archive →
