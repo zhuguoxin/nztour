@@ -13,8 +13,8 @@
  * Flow:
  *   1. Validate + upload sample to R2 under voices/<voice_id>/sample.<ext>
  *   2. Insert voice_profiles row provider='minimax', kind='cloned',
- *      langs=NULL (universal — a cloned voice can narrate any language),
- *      status='pending'
+ *      langs=<the languages the supplier picked> (so it only surfaces in those
+ *      languages' voice dropdowns), status='pending'
  *   3. Upload sample to MiniMax → file_id; clone → custom MiniMax voice_id
  *   4. Update row external_id=<minimax voice_id>, status='active'
  *   5. On failure: status='failed' with status_detail
@@ -70,6 +70,26 @@ export async function POST(req: Request) {
   if (!supplierSlug || !name || !(file instanceof Blob)) {
     return new Response("missing required fields", { status: 400 });
   }
+  // Languages this cloned voice may narrate. Stored as a JSON array so it only
+  // surfaces in those languages' voice dropdowns. "zh" covers both zh-CN and
+  // zh-TW via the editor's base-code match. Empty/absent → universal (NULL).
+  const ALLOWED_LANGS = new Set(["en", "zh", "ja", "ko", "es", "fr", "de", "pt"]);
+  let langsJson: string | null = null;
+  const rawLangs = form.get("langs");
+  if (typeof rawLangs === "string" && rawLangs.trim()) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawLangs);
+    } catch {
+      return new Response("invalid langs", { status: 400 });
+    }
+    if (!Array.isArray(parsed)) return new Response("invalid langs", { status: 400 });
+    const clean = [...new Set(parsed.map(String))].filter((c) => ALLOWED_LANGS.has(c));
+    if (clean.length === 0) return new Response("pick at least one language", { status: 400 });
+    langsJson = JSON.stringify(clean);
+  } else {
+    return new Response("pick at least one language", { status: 400 });
+  }
   if (file.size > MAX_BYTES) {
     return new Response(`file exceeds ${MAX_BYTES} bytes`, { status: 413 });
   }
@@ -93,14 +113,15 @@ export async function POST(req: Request) {
   // 1) Stash the sample in R2 so we keep the original for re-cloning.
   await env.ASSETS_BUCKET.put(sampleKey, bytes, { httpMetadata: { contentType: mime } });
 
-  // 2) Pending row (langs NULL = universal: usable in any language).
+  // 2) Pending row. langs restricts which language dropdowns this voice shows
+  //    in (the supplier picked them at clone time).
   await db()
     .prepare(
       `INSERT INTO voice_profiles
-         (id, supplier_id, name, provider, kind, gender, sample_r2_key, status, created_by)
-       VALUES (?, ?, ?, 'minimax', 'cloned', ?, ?, 'pending', ?)`,
+         (id, supplier_id, name, provider, kind, gender, langs, sample_r2_key, status, created_by)
+       VALUES (?, ?, ?, 'minimax', 'cloned', ?, ?, ?, 'pending', ?)`,
     )
-    .bind(voiceRowId, access.supplierId, name, gender, sampleKey, access.userId)
+    .bind(voiceRowId, access.supplierId, name, gender, langsJson, sampleKey, access.userId)
     .run();
 
   // 3) Upload to MiniMax + clone.

@@ -32,6 +32,31 @@ export interface VoiceRow {
  * The "Clone a voice" CTA is disabled if `hasXIKey=false`.
  */
 
+// code → human label for the cloned-voice language chips. "zh" collapses both
+// Chinese variants. Falls back to the raw code for anything unmapped.
+const LANG_DISPLAY: Record<string, string> = {
+  en: "English",
+  zh: "中文",
+  "zh-CN": "中文",
+  "zh-TW": "中文",
+  ja: "日本語",
+  ko: "한국어",
+  es: "Español",
+  fr: "Français",
+  de: "Deutsch",
+  pt: "Português",
+};
+
+function langLabels(langs: string | null): string[] {
+  if (!langs) return [];
+  try {
+    const arr = JSON.parse(langs) as string[];
+    return [...new Set(arr.map((c) => LANG_DISPLAY[c] ?? c))];
+  } catch {
+    return [];
+  }
+}
+
 // Hide the provider/model from the customer-facing label and drop any trailing
 // "(EN, m)" parenthetical. "MiniMax · Calm Woman (EN, f)" → "Calm Woman".
 function cleanName(name: string): string {
@@ -90,9 +115,17 @@ export function VoicesPanel({
                 <span className="text-[18px]">🎤</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13.5px] text-slate-900 truncate">{cleanName(v.name)}</div>
-                  <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
                     {v.gender ? <span className="uppercase font-mono">{v.gender}</span> : null}
                     <StatusBadge status={v.status} detail={v.status_detail} />
+                    {langLabels(v.langs).map((lbl) => (
+                      <span
+                        key={lbl}
+                        className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600"
+                      >
+                        {lbl}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </li>
@@ -182,9 +215,23 @@ function downsample(input: Float32Array, from: number, to: number): Float32Array
 
 type RecState = "idle" | "recording" | "recorded";
 
+// Languages a cloned voice can be assigned to. "zh" covers both zh-CN and
+// zh-TW (the editor matches on the base code), so one "中文" chip is enough.
+const CLONE_LANGS: Array<{ code: string; label: string }> = [
+  { code: "en", label: "English" },
+  { code: "zh", label: "中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "pt", label: "Português" },
+];
+
 function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled: boolean }) {
   const [name, setName] = useState("");
   const [gender, setGender] = useState("neutral");
+  const [langs, setLangs] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
 
   const [recState, setRecState] = useState<RecState>("idle");
@@ -289,13 +336,18 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
     setErr(null);
   }
 
+  function toggleLang(code: string) {
+    setLangs((cur) => (cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code]));
+  }
+
   function save() {
-    if (!blob || !name.trim()) return;
+    if (!blob || !name.trim() || langs.length === 0) return;
     const fd = new FormData();
     fd.append("file", blob, "sample.wav");
     fd.append("supplier_slug", supplierSlug);
     fd.append("name", name.trim());
     fd.append("gender", gender);
+    fd.append("langs", JSON.stringify(langs));
     startTransition(async () => {
       const r = await fetch("/api/voice/clone", { method: "POST", body: fd });
       if (r.ok) {
@@ -309,9 +361,34 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
 
   const mmss = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
   const tooShort = recState === "recorded" && seconds < 10;
+  const canRecord = !disabled && !pending && name.trim() !== "" && langs.length > 0;
 
   return (
     <div className="mt-4 space-y-2.5">
+      {/* Language multi-select — the cloned voice only appears in these
+          languages' dropdowns. */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[12px] text-slate-500 mr-1">Languages:</span>
+        {CLONE_LANGS.map((l) => {
+          const on = langs.includes(l.code);
+          return (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => toggleLang(l.code)}
+              disabled={disabled || pending || recState !== "idle"}
+              className={`px-2.5 py-1 rounded-full border text-[12px] transition disabled:opacity-50 ${
+                on
+                  ? "bg-[#04241e] border-[#04241e] text-white"
+                  : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
+              }`}
+            >
+              {l.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Name + gender + start recording on one row */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <input
@@ -351,13 +428,19 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
           <button
             type="button"
             onClick={startRecording}
-            disabled={disabled || pending || !name.trim() || recState === "recorded"}
+            disabled={!canRecord || recState === "recorded"}
             className={`shrink-0 px-4 py-2 rounded-md font-semibold text-[13px] text-white ${
-              disabled || pending || !name.trim() || recState === "recorded"
+              !canRecord || recState === "recorded"
                 ? "bg-slate-400 cursor-not-allowed"
                 : "bg-rose-600 hover:bg-rose-500"
             }`}
-            title={!name.trim() ? "Enter a voice name first" : undefined}
+            title={
+              !name.trim()
+                ? "Enter a voice name first"
+                : langs.length === 0
+                  ? "Pick at least one language"
+                  : undefined
+            }
           >
             ● Start recording
           </button>
