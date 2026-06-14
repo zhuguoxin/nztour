@@ -128,7 +128,7 @@ export default async function Home() {
       </section>
 
       <footer className="border-t border-slate-200 px-5 sm:px-8 py-8 mt-12">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-[12.5px]">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-6 text-[12.5px]">
           <div>
             <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_platform}</div>
             <ul className="space-y-1.5 text-slate-600">
@@ -149,22 +149,8 @@ export default async function Home() {
           <div>
             <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_contact_head}</div>
             <ul className="space-y-1.5 text-slate-600">
-              <li><a href="mailto:hello@libretour.com" className="hover:text-slate-900">hello@libretour.com</a></li>
-              <li><a href="mailto:support@libretour.com" className="hover:text-slate-900">support@libretour.com</a></li>
-              <li><a href="mailto:privacy@libretour.com" className="hover:text-slate-900">privacy@libretour.com</a></li>
+              <li><a href="mailto:kiaora@libretour.com" className="hover:text-slate-900">kiaora@libretour.com</a></li>
             </ul>
-          </div>
-          <div>
-            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_company}</div>
-            <p className="text-slate-600 leading-relaxed">
-              Libretour Limited
-              <br />
-              <span className="text-slate-400">NZBN [TBD-NZBN]</span>
-              <br />
-              <span className="text-slate-400">[TBD-registered-address]</span>
-              <br />
-              {tr.fo_country}
-            </p>
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-8 pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
