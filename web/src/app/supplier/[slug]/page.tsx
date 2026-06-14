@@ -103,7 +103,7 @@ export default async function SupplierDashboard({ params }: Props) {
   // Stock first in the panel so customers see what's available out of the box.
   const { results: voices = [] } = await db()
     .prepare(
-      `SELECT id, name, provider, external_id, kind, gender, status, status_detail, created_at
+      `SELECT id, name, provider, external_id, kind, gender, langs, status, status_detail, created_at
        FROM voice_profiles
        WHERE supplier_id = ? OR supplier_id IS NULL
        ORDER BY (supplier_id IS NULL) DESC, created_at DESC`,
