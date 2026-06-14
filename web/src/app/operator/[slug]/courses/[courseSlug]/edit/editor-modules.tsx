@@ -200,16 +200,17 @@ function ModuleEditor({
             >
               Save module
             </button>
-            <form action={deleteModule} className="inline-flex">
-              <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-              <input type="hidden" name="module_id" value={module.id} />
-              <button
-                type="submit"
-                className="px-3 py-1.5 rounded-md border border-rose-400/30 text-rose-300 text-[12px] hover:bg-rose-400/10"
-              >
-                Delete module
-              </button>
-            </form>
+            {/* formAction overrides the form's action for this submit — avoids
+                a nested <form> (which corrupts hydration and breaks every form
+                in the module subtree). The shared hidden inputs above carry
+                operator_slug / course_slug / module_id for deleteModule too. */}
+            <button
+              type="submit"
+              formAction={deleteModule}
+              className="px-3 py-1.5 rounded-md border border-rose-400/30 text-rose-300 text-[12px] hover:bg-rose-400/10"
+            >
+              Delete module
+            </button>
           </div>
         </form>
 
