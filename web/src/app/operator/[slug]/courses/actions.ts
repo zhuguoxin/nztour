@@ -932,9 +932,74 @@ function removeAudioLang(json: string | null, lang: string): string {
 }
 
 /**
- * Remove a language from a course: drop it from available_langs and clear every
- * translation (titles, summaries, block text, captions) and audio reference for
- * that language across the course. Cannot remove the source/primary language.
+ * Enable or disable a language for a course (enable/disable model).
+ *
+ *   enable  + never translated  → translate the whole course, then enable
+ *   enable  + already translated → just enable (no re-translation; the
+ *                                   previously generated translation + audio
+ *                                   are reused)
+ *   disable                      → hide from learners; translation + audio are
+ *                                   KEPT so re-enabling is instant
+ *
+ * The source/primary language is always enabled and cannot be toggled.
+ */
+export async function setCourseLanguageEnabled(form: FormData): Promise<void> {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const lang = String(form.get("lang") ?? "");
+  const enabled = String(form.get("enabled") ?? "") === "1";
+  if (!isSupportedLang(lang)) throw new Error("unsupported language");
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
+
+  const course = await db()
+    .prepare(`SELECT id, primary_lang, title_i18n, available_langs FROM courses WHERE id = ?`)
+    .bind(courseId)
+    .first<{ id: string; primary_lang: string; title_i18n: string; available_langs: string }>();
+  if (!course) throw new Error("not_found");
+  if (lang === course.primary_lang) return; // source is always on
+
+  const avail = (() => {
+    try {
+      const a = JSON.parse(course.available_langs);
+      return Array.isArray(a) ? a.filter((l: unknown): l is string => typeof l === "string") : [];
+    } catch {
+      return [course.primary_lang];
+    }
+  })();
+  const alreadyTranslated = !!readI18nMap(course.title_i18n)[lang];
+
+  if (enabled) {
+    if (!alreadyTranslated) {
+      // Translate the whole course (this also adds the lang to available_langs).
+      const fd = new FormData();
+      fd.set("operator_slug", operatorSlug);
+      fd.set("course_slug", courseSlug);
+      fd.set("to_lang", lang);
+      await translateCourse(fd);
+      return;
+    }
+    // Already translated → just turn it back on, reusing existing content.
+    const next = Array.from(new Set([...avail, course.primary_lang, lang]));
+    await db()
+      .prepare(`UPDATE courses SET available_langs = ? WHERE id = ?`)
+      .bind(JSON.stringify(next), courseId)
+      .run();
+  } else {
+    // Disable: remove from available_langs but KEEP all translation + audio.
+    const next = avail.filter((l) => l !== lang);
+    await db()
+      .prepare(`UPDATE courses SET available_langs = ? WHERE id = ?`)
+      .bind(JSON.stringify(next), courseId)
+      .run();
+  }
+
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+/**
+ * Permanently delete a language's translation + audio from a course (the harder
+ * "forget" action, distinct from disable). Cannot remove the source language.
  */
 export async function removeCourseLanguage(form: FormData): Promise<void> {
   const operatorSlug = String(form.get("operator_slug") ?? "");

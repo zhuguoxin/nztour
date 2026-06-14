@@ -27,6 +27,7 @@ interface CourseEditRow {
   est_minutes: number | null;
   primary_lang: string;
   available_langs: string;
+  title_i18n: string | null;
 }
 
 type ModuleRow = ModuleData;
@@ -57,12 +58,13 @@ export default async function EditCoursePage({
 
   const course = await db()
     .prepare(
-      `SELECT id, slug, title, summary, emoji, cover_r2_key, status, est_minutes, primary_lang, available_langs
+      `SELECT id, slug, title, summary, emoji, cover_r2_key, status, est_minutes, primary_lang, available_langs, title_i18n
        FROM courses WHERE operator_id = ? AND slug = ?`,
     )
     .bind(op.id, courseSlug)
     .first<CourseEditRow>();
   if (!course) notFound();
+  // Enabled languages = shown to learners (available_langs).
   const availableLangs: string[] = (() => {
     try {
       const a = JSON.parse(course.available_langs);
@@ -70,6 +72,23 @@ export default async function EditCoursePage({
     } catch {
       return [course.primary_lang];
     }
+  })();
+  // Translated languages = ever translated (content present). Derived from the
+  // course title translation map + the primary language. A disabled language
+  // stays "translated" so re-enabling it doesn't re-translate.
+  const translatedLangs: string[] = (() => {
+    const set = new Set<string>([course.primary_lang]);
+    try {
+      const m = JSON.parse(course.title_i18n ?? "{}");
+      if (m && typeof m === "object") {
+        for (const k of Object.keys(m)) if (typeof m[k] === "string" && m[k]) set.add(k);
+      }
+    } catch {
+      /* ignore */
+    }
+    // Anything currently enabled is, by definition, translated.
+    for (const l of availableLangs) set.add(l);
+    return Array.from(set);
   })();
 
   const { results: modules } = await db()
@@ -188,7 +207,8 @@ export default async function EditCoursePage({
           operatorSlug={slug}
           courseSlug={course.slug}
           primaryLang={course.primary_lang}
-          availableLangs={availableLangs}
+          enabledLangs={availableLangs}
+          translatedLangs={translatedLangs}
         />
 
         {/* ============== Duration banner ============== */}
