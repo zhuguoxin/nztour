@@ -94,10 +94,10 @@ export default async function SupplierDashboard({ params }: Props) {
     .bind(supplier.id)
     .all<ProductKpiRow>();
 
-  // Single-product supplier → fold this layer away.
-  if (products.length === 1) {
-    redirect(`/product/${products[0].slug}`);
-  }
+  // The supplier panel is the back-office hub — it lists the supplier's
+  // products (click one to manage its courses) plus voices, even when the
+  // supplier owns a single product. (Previously it folded away to the product
+  // dashboard for single-product suppliers.)
 
   // Voices owned by this supplier OR platform stock (supplier_id IS NULL).
   // Stock first in the panel so customers see what's available out of the box.

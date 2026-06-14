@@ -23,21 +23,25 @@ import { LocaleSwitcher } from "./locale-switcher";
  */
 export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   const [role, locale, tr] = await Promise.all([getCurrentRole(), getLocale(), t()]);
-  const operatorHref =
-    role.isAdmin || role.operators.length > 1
-      ? "/product"
-      : role.operators.length === 1
-        ? `/product/${role.operators[0].operator_slug}`
-        : null;
-  // Supplier pill: only show if user has explicit supplier_memberships
-  // (admin doesn't auto-trigger this — admins use /admin). Same picker-or-direct
-  // logic as the operator pill.
+  // The Supplier panel is the back-office hub. Admins and supplier members get
+  // the supplier pill (picker when they manage more than one, direct otherwise).
   const supplierHref =
-    role.suppliers.length > 1
+    role.isAdmin || role.suppliers.length > 1
       ? "/supplier"
       : role.suppliers.length === 1
         ? `/supplier/${role.suppliers[0].supplier_slug}`
         : null;
+  // Product pill only for users who have product (operator) access WITHOUT any
+  // supplier access — they drill straight to their product(s). Anyone with
+  // supplier access manages products from inside the supplier panel.
+  const operatorHref =
+    supplierHref
+      ? null
+      : role.operators.length > 1
+        ? "/product"
+        : role.operators.length === 1
+          ? `/product/${role.operators[0].operator_slug}`
+          : null;
   return (
     <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/95 backdrop-blur-md px-4 sm:px-8 py-3">
       {/* === Mobile row 1: Logo + Lang + Sign in + Get certified === */}
