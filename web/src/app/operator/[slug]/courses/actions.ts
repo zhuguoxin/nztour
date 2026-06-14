@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireOperatorMembership } from "@/lib/roles";
 import { synthesizeAndStore, isValidLang } from "@/lib/tts";
-import { translateBatch, readI18nMap, writeI18nMap, isSupportedLang } from "@/lib/translate";
+import { translateBatch, translateOne, readI18nMap, writeI18nMap, isSupportedLang } from "@/lib/translate";
 
 function slugify(s: string): string {
   return s
@@ -433,11 +433,28 @@ async function generateBlockAudioCore(input: {
 
   // Pull the right source text for that target lang.
   const i18nMap = readI18nMap(block.text_md_i18n);
-  const sourceText =
+  let sourceText =
     targetLang === block.course_primary_lang ? block.text_md ?? "" : i18nMap[targetLang] ?? "";
+
+  // If this block lacks a translation for the target language but the primary
+  // text exists, auto-translate just this block on demand and persist it. This
+  // keeps "generate <lang> audio" working even when individual blocks were
+  // edited/added after the course was translated.
+  if (!sourceText.trim() && targetLang !== block.course_primary_lang && block.text_md?.trim()) {
+    const translated = await translateOne(block.course_primary_lang, targetLang, block.text_md);
+    if (translated.trim()) {
+      sourceText = translated;
+      const newMap = { ...i18nMap, [targetLang]: translated };
+      await db()
+        .prepare(`UPDATE content_blocks SET text_md_i18n = ? WHERE id = ? AND module_id = ?`)
+        .bind(writeI18nMap(newMap), blockId, moduleId)
+        .run();
+    }
+  }
+
   if (!sourceText.trim()) {
     throw new Error(
-      `Block has no text in ${targetLang}. Translate the course to ${targetLang} first.`,
+      `Block has no text to narrate in ${targetLang}.`,
     );
   }
 
