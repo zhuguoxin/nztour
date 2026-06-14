@@ -26,6 +26,12 @@
   // Apex + www both serve the Worker. custom_domain:true creates a Workers
   // Custom Domain (auto DNS, free TLS) rather than a route on an existing
   // hostname — so a CNAME pointing somewhere else is not required.
+  // Apex + www both serve the Worker as account-level Custom Domains.
+  // NOTE: deploying requires a token with Zone→Workers Routes permission to
+  // reconcile this block. The current deploy token is account-scoped only, so
+  // these domains are managed out-of-band (they're already bound and persist
+  // across script-only deploys). If a deploy 10000s on /zones/.../workers/
+  // routes, comment this block out, deploy, then restore it.
   "routes": [
     { "pattern": "libretour.com", "custom_domain": true },
     { "pattern": "www.libretour.com", "custom_domain": true }

@@ -121,9 +121,20 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2">
-            <Link href="/" className="hover:text-white">Home</Link>
+            <Link href="/" className="hover:text-white">{tr.nav_home}</Link>
             <span className="text-white/20">/</span>
-            <span className="text-white">Operator · {operator.name}</span>
+            {operator.supplier_slug ? (
+              <>
+                <Link
+                  href={`/supplier/${operator.supplier_slug}`}
+                  className="hover:text-white shrink-0"
+                >
+                  {tr.bc_supplier}
+                </Link>
+                <span className="text-white/20">/</span>
+              </>
+            ) : null}
+            <span className="text-white">{operator.name}</span>
             {access.isAdmin ? (
               <span className="ml-2 px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
                 {tr.op_d_view_as_admin}
