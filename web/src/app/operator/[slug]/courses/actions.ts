@@ -917,6 +917,113 @@ export async function translateCourse(form: FormData): Promise<void> {
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
+/** Strip one key from an audio_i18n JSON object ({lang: {…}}). */
+function removeAudioLang(json: string | null, lang: string): string {
+  try {
+    const v = JSON.parse(json ?? "{}");
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      delete (v as Record<string, unknown>)[lang];
+      return JSON.stringify(v);
+    }
+  } catch {
+    /* fall through */
+  }
+  return "{}";
+}
+
+/**
+ * Remove a language from a course: drop it from available_langs and clear every
+ * translation (titles, summaries, block text, captions) and audio reference for
+ * that language across the course. Cannot remove the source/primary language.
+ */
+export async function removeCourseLanguage(form: FormData): Promise<void> {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const lang = String(form.get("lang") ?? "");
+  if (!isSupportedLang(lang)) throw new Error("unsupported language");
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
+
+  const course = await db()
+    .prepare(
+      `SELECT id, primary_lang, title_i18n, summary_i18n, available_langs FROM courses WHERE id = ?`,
+    )
+    .bind(courseId)
+    .first<{
+      id: string;
+      primary_lang: string;
+      title_i18n: string;
+      summary_i18n: string;
+      available_langs: string;
+    }>();
+  if (!course) throw new Error("not_found");
+  if (lang === course.primary_lang) throw new Error("cannot remove the source language");
+
+  const avail = (() => {
+    try {
+      const a = JSON.parse(course.available_langs);
+      return Array.isArray(a) ? a.filter((l: unknown) => l !== lang && typeof l === "string") : [];
+    } catch {
+      return [course.primary_lang];
+    }
+  })();
+  const titleMap = readI18nMap(course.title_i18n);
+  delete titleMap[lang];
+  const summaryMap = readI18nMap(course.summary_i18n);
+  delete summaryMap[lang];
+  await db()
+    .prepare(
+      `UPDATE courses SET available_langs = ?, title_i18n = ?, summary_i18n = ?, updated_at = unixepoch() WHERE id = ?`,
+    )
+    .bind(JSON.stringify(avail), writeI18nMap(titleMap), writeI18nMap(summaryMap), courseId)
+    .run();
+
+  const { results: modules = [] } = await db()
+    .prepare(`SELECT id, title_i18n, summary_i18n FROM modules WHERE course_id = ?`)
+    .bind(courseId)
+    .all<{ id: string; title_i18n: string; summary_i18n: string }>();
+  if (modules.length > 0) {
+    await db().batch(
+      modules.map((m) => {
+        const tm = readI18nMap(m.title_i18n);
+        delete tm[lang];
+        const sm = readI18nMap(m.summary_i18n);
+        delete sm[lang];
+        return db()
+          .prepare(`UPDATE modules SET title_i18n = ?, summary_i18n = ? WHERE id = ?`)
+          .bind(writeI18nMap(tm), writeI18nMap(sm), m.id);
+      }),
+    );
+  }
+
+  const { results: blocks = [] } = await db()
+    .prepare(
+      `SELECT cb.id, cb.text_md_i18n, cb.caption_i18n, cb.audio_i18n
+       FROM content_blocks cb JOIN modules m ON m.id = cb.module_id
+       WHERE m.course_id = ?`,
+    )
+    .bind(courseId)
+    .all<{ id: string; text_md_i18n: string; caption_i18n: string; audio_i18n: string }>();
+  if (blocks.length > 0) {
+    await db().batch(
+      blocks.map((b) => {
+        const tx = readI18nMap(b.text_md_i18n);
+        delete tx[lang];
+        const cap = readI18nMap(b.caption_i18n);
+        delete cap[lang];
+        const audio = removeAudioLang(b.audio_i18n, lang);
+        return db()
+          .prepare(
+            `UPDATE content_blocks SET text_md_i18n = ?, caption_i18n = ?, audio_i18n = ? WHERE id = ?`,
+          )
+          .bind(writeI18nMap(tx), writeI18nMap(cap), audio, b.id);
+      }),
+    );
+  }
+
+  revalidatePath(`/operator/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
 // =========================================================================
 //  COURSE ATTACHMENTS (RAG-only supplementary materials)
 // =========================================================================

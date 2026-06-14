@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { translateCourse } from "../../actions";
+import { translateCourse, removeCourseLanguage } from "../../actions";
 import { TRANSLATE_LANGS } from "@/lib/translate";
 
 /**
@@ -44,6 +44,23 @@ export function TranslationsPanel({
         await translateCourse(fd);
       } catch (err) {
         alert(err instanceof Error ? err.message : "Translation failed");
+      }
+    });
+  }
+
+  function remove(lang: string, label: string) {
+    if (!confirm(`Remove ${label} from this course? Its translation and audio will be deleted.`)) {
+      return;
+    }
+    const fd = new FormData();
+    fd.append("operator_slug", operatorSlug);
+    fd.append("course_slug", courseSlug);
+    fd.append("lang", lang);
+    startTransition(async () => {
+      try {
+        await removeCourseLanguage(fd);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Remove failed");
       }
     });
   }
@@ -94,6 +111,15 @@ export function TranslationsPanel({
                   title="Re-translate (overwrites the existing translation)"
                 >
                   ↻
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(lang.code, lang.nativeLabel)}
+                  disabled={pending}
+                  className="px-2 py-1.5 rounded-md border border-rose-400/30 text-rose-300/80 hover:bg-rose-400/10 text-[11px] disabled:opacity-40"
+                  title={`Remove ${lang.label} from this course`}
+                >
+                  ✕
                 </button>
               </div>
             );
