@@ -13,6 +13,7 @@ import {
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
 import { TranslationsPanel } from "./translations-panel";
 import { CoverImageField } from "./cover-image-field";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,8 @@ export default async function EditCoursePage({
     .bind(slug)
     .first<{ id: string; name: string; supplier_slug: string | null }>();
   if (!op) notFound();
+
+  const tr = await t();
 
   const course = await db()
     .prepare(
@@ -183,10 +186,25 @@ export default async function EditCoursePage({
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0 text-[14px]">
-            <Link href={`/product/${slug}`} className="hover:text-white">
+            <Link href="/" className="hover:text-white shrink-0">
+              {tr.nav_home}
+            </Link>
+            <span className="text-white/20 shrink-0">/</span>
+            {op.supplier_slug ? (
+              <>
+                <Link
+                  href={`/supplier/${op.supplier_slug}`}
+                  className="hover:text-white shrink-0"
+                >
+                  {tr.bc_supplier}
+                </Link>
+                <span className="text-white/20 shrink-0">/</span>
+              </>
+            ) : null}
+            <Link href={`/product/${slug}`} className="hover:text-white shrink-0">
               {op.name}
             </Link>
-            <span className="text-white/20">/</span>
+            <span className="text-white/20 shrink-0">/</span>
             <span className="text-white truncate">{course.title}</span>
             <span
               className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium border ${
