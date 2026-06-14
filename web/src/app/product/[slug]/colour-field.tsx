@@ -17,11 +17,15 @@ export function ColourField({
   name,
   label,
   hint,
+  swatchLabel,
+  placeholder,
   defaultValue,
 }: {
   name: string;
   label: string;
   hint: string;
+  swatchLabel: string;
+  placeholder: string;
   defaultValue: string | null;
 }) {
   const initial = normaliseForPicker(defaultValue);
@@ -36,14 +40,14 @@ export function ColourField({
           type="color"
           value={value || "#000000"}
           onChange={(e) => setValue(e.target.value)}
-          aria-label={`${label} colour swatch`}
+          aria-label={swatchLabel}
           className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0"
         />
         <input
           name={name}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="#hex or blank to reset"
+          placeholder={placeholder}
           maxLength={7}
           spellCheck={false}
           className="flex-1 bg-transparent border-0 outline-none text-[13px] text-white font-mono"

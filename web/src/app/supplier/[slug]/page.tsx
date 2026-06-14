@@ -63,7 +63,7 @@ export default async function SupplierDashboard({ params }: Props) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
     if (msg === "not_found") notFound();
-    if (msg === "forbidden") return <NoAccess />;
+    if (msg === "forbidden") return await NoAccess();
     if (msg === "unauthorised") redirect("/sign-in");
     throw err;
   }
@@ -123,9 +123,9 @@ export default async function SupplierDashboard({ params }: Props) {
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2">
-            <Link href="/" className="hover:text-white">Home</Link>
+            <Link href="/" className="hover:text-white">{tr.nav_home}</Link>
             <span className="text-white/20">/</span>
-            <span className="text-white">Supplier · {supplier.name}</span>
+            <span className="text-white">{fmt(tr.sp_breadcrumb, { name: supplier.name })}</span>
             {access.isAdmin ? (
               <span className="ml-2 px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
                 {tr.op_d_view_as_admin}
@@ -238,23 +238,24 @@ function MiniKpi({ label, value }: { label: string; value: number }) {
   );
 }
 
-function NoAccess() {
+async function NoAccess() {
+  const tr = await t();
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
       <TopBar />
       <main className="px-5 sm:px-8 py-16 max-w-xl mx-auto text-center">
-        <div className="text-[11px] tracking-widest font-mono text-rose-700/70">/ NO ACCESS</div>
+        <div className="text-[11px] tracking-widest font-mono text-rose-700/70">{tr.sp_no_access_label}</div>
         <h1 className="text-[24px] font-semibold text-slate-900 mt-1">
-          You don&apos;t have supplier access to this account.
+          {tr.sp_no_access_title}
         </h1>
         <p className="text-[13.5px] text-slate-600 mt-2">
-          Ask your supplier owner to grant you a membership, or contact Libretour support.
+          {tr.sp_no_access_body}
         </p>
         <Link
           href="/"
           className="inline-block mt-6 px-4 py-2 rounded-md bg-[#04241e] text-white font-semibold hover:bg-[#0a3a2f] text-[14px]"
         >
-          Back to home
+          {tr.sp_back_home}
         </Link>
       </main>
     </div>

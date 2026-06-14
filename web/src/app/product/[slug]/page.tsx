@@ -13,7 +13,7 @@ import {
 import { UploadStub } from "./upload-stub";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
 import { ActivityChart } from "./activity-chart";
-import { t, fmt } from "@/lib/i18n";
+import { t, fmt, type Dict } from "@/lib/i18n";
 import { resolveTheme } from "@/lib/theme";
 import { updateOperatorTheme, resetOperatorTheme } from "./branding-actions";
 import { ColourField } from "./colour-field";
@@ -173,9 +173,9 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
               <Link
                 href={`/supplier/${operator.supplier_slug}/voices`}
                 className="px-3 py-2 rounded-md border border-white/[.12] text-[#d8f0e1] text-[13px] hover:bg-white/[.06]"
-                title="Clone a sales rep's voice (works across every language)"
+                title={tr.pd_voices_link_tooltip}
               >
-                🎙️ Voices
+                {tr.pd_voices_link}
               </Link>
             ) : null}
             <Link
@@ -193,6 +193,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
           toTs={toTs}
           windowDays={windowDays}
           slug={slug}
+          tr={tr}
         />
 
         {/* KPI cards */}
@@ -226,9 +227,9 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             tone="emerald"
           />
           <KpiCard
-            label="SATISFACTION"
+            label={tr.pd_kpi_satisfaction}
             value={kpis.satisfaction_avg > 0 ? `${kpis.satisfaction_avg.toFixed(1)} ★` : "—"}
-            sub={kpis.satisfaction_count > 0 ? `${kpis.satisfaction_count} ratings` : "no ratings yet"}
+            sub={kpis.satisfaction_count > 0 ? fmt(tr.pd_kpi_ratings, { n: kpis.satisfaction_count }) : tr.pd_kpi_no_ratings}
             tone="default"
           />
         </div>
@@ -294,7 +295,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                             { n: c.modules },
                           )}{" "}
                           ·{" "}
-                          {fmt(tr.op_d_course_updated, { rel: fmtRelative(c.updated_at) })}
+                          {fmt(tr.op_d_course_updated, { rel: fmtRelative(c.updated_at, tr) })}
                         </div>
                       </div>
                     </Link>
@@ -479,7 +480,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
         </div>
 
         {/* === Branding section === */}
-        <BrandingPanel operator={operator} />
+        <BrandingPanel operator={operator} tr={tr} />
       </main>
     </div>
   );
@@ -487,6 +488,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
 
 function BrandingPanel({
   operator,
+  tr,
 }: {
   operator: {
     slug: string;
@@ -496,15 +498,15 @@ function BrandingPanel({
     theme_ink: string | null;
     theme_logo_r2_key: string | null;
   };
+  tr: Dict;
 }) {
   const t = resolveTheme(operator);
   return (
     <section className="mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
       <header className="px-5 py-4 border-b border-white/[.06]">
-        <div className="font-semibold text-[14px] text-white">Branding</div>
+        <div className="font-semibold text-[14px] text-white">{tr.br_title}</div>
         <div className="text-[12px] text-[#86b69a] mt-0.5">
-          These colours and your logo decide how your courses look to agents. Save → every course
-          you publish shifts to match. Leave a colour blank to use the Libretour default.
+          {tr.br_blurb}
         </div>
       </header>
 
@@ -515,39 +517,47 @@ function BrandingPanel({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <ColourField
               name="theme_bg"
-              label="Page background"
-              hint="The main page surface behind everything"
+              label={tr.br_field_bg_label}
+              hint={tr.br_field_bg_hint}
+              swatchLabel={fmt(tr.br_colour_swatch, { label: tr.br_field_bg_label })}
+              placeholder={tr.br_colour_placeholder}
               defaultValue={operator.theme_bg}
             />
             <ColourField
               name="theme_panel"
-              label="Block background"
-              hint="Cards, modules and content blocks"
+              label={tr.br_field_panel_label}
+              hint={tr.br_field_panel_hint}
+              swatchLabel={fmt(tr.br_colour_swatch, { label: tr.br_field_panel_label })}
+              placeholder={tr.br_colour_placeholder}
               defaultValue={operator.theme_panel}
             />
             <ColourField
               name="theme_ink"
-              label="Text"
-              hint="Headlines and body copy"
+              label={tr.br_field_ink_label}
+              hint={tr.br_field_ink_hint}
+              swatchLabel={fmt(tr.br_colour_swatch, { label: tr.br_field_ink_label })}
+              placeholder={tr.br_colour_placeholder}
               defaultValue={operator.theme_ink}
             />
             <ColourField
               name="theme_accent"
-              label="Highlight"
-              hint="Buttons, progress bar and links"
+              label={tr.br_field_accent_label}
+              hint={tr.br_field_accent_hint}
+              swatchLabel={fmt(tr.br_colour_swatch, { label: tr.br_field_accent_label })}
+              placeholder={tr.br_colour_placeholder}
               defaultValue={operator.theme_accent}
             />
           </div>
 
           <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
             <div className="text-[11.5px] text-[#86b69a]">
-              After saving, refresh a course page to see the new theme applied everywhere.
+              {tr.br_save_hint}
             </div>
             <button
               type="submit"
               className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
             >
-              Save branding
+              {tr.br_save}
             </button>
           </div>
         </form>
@@ -555,14 +565,14 @@ function BrandingPanel({
         {/* Live preview of the four tokens as a learner would see them */}
         <div className="rounded-xl overflow-hidden border border-white/[.10]" style={{ background: t.bg }}>
           <div className="px-3 py-2 text-[10px] font-mono tracking-widest" style={{ color: t.inkMuted }}>
-            PREVIEW
+            {tr.br_preview}
           </div>
           <div className="m-3 mt-0 rounded-lg p-3" style={{ background: t.panel }}>
             <div className="text-[13px] font-semibold" style={{ color: t.ink }}>
-              Lifts &amp; terrain map
+              {tr.br_preview_module_title}
             </div>
             <div className="text-[11px] mt-0.5" style={{ color: t.inkMuted }}>
-              5 min · sample module
+              {tr.br_preview_module_sub}
             </div>
             <div className="h-1.5 rounded-full mt-2.5 overflow-hidden" style={{ background: "rgba(0,0,0,.3)" }}>
               <div className="h-full" style={{ width: "60%", background: t.accent }} />
@@ -571,7 +581,7 @@ function BrandingPanel({
               className="mt-3 inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold"
               style={{ background: t.accent, color: t.bg }}
             >
-              Continue
+              {tr.br_preview_continue}
             </div>
           </div>
         </div>
@@ -590,7 +600,7 @@ function BrandingPanel({
             type="submit"
             className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
           >
-            Reset to Libretour default
+            {tr.br_reset}
           </button>
         </form>
       </div>
@@ -617,24 +627,26 @@ function DateRangeBar({
   toTs,
   windowDays,
   slug,
+  tr,
 }: {
   fromTs: number;
   toTs: number;
   windowDays: number;
   slug: string;
+  tr: Dict;
 }) {
   const fmtIso = (t: number) => new Date(t * 1000).toISOString().slice(0, 10);
   const fromIso = fmtIso(fromTs);
   const toIso = fmtIso(toTs);
   const todayIso = fmtIso(Math.floor(Date.now() / 1000));
   const presets: Array<{ label: string; days: number }> = [
-    { label: "Last 7d", days: 7 },
-    { label: "Last 30d", days: 30 },
-    { label: "Last 90d", days: 90 },
+    { label: tr.pd_preset_7d, days: 7 },
+    { label: tr.pd_preset_30d, days: 30 },
+    { label: tr.pd_preset_90d, days: 90 },
   ];
   return (
     <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] px-4 py-3 mb-5 flex items-center gap-2 flex-wrap">
-      <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">REPORTING WINDOW</div>
+      <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">{tr.pd_reporting_window}</div>
       <div className="font-mono text-[12.5px] text-white">
         {fromIso} → {toIso}{" "}
         <span className="text-[#86b69a]">({windowDays}d)</span>
@@ -679,7 +691,7 @@ function DateRangeBar({
           type="submit"
           className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300"
         >
-          Apply
+          {tr.pd_apply}
         </button>
       </form>
 
@@ -687,15 +699,15 @@ function DateRangeBar({
         <a
           href={`/api/operator/learners.csv?slug=${encodeURIComponent(slug)}&from=${fromIso}&to=${toIso}`}
           className="px-2.5 py-1 rounded border border-white/[.10] text-emerald-300 hover:bg-white/[.06] text-[12px]"
-          title="Download every learner in this window as CSV"
+          title={tr.pd_learners_csv_tooltip}
         >
-          ⬇ Learners CSV
+          {tr.pd_learners_csv}
         </a>
         <Link
           href={`/product/${slug}/qa?from=${fromIso}&to=${toIso}`}
           className="px-2.5 py-1 rounded border border-white/[.10] text-emerald-300 hover:bg-white/[.06] text-[12px]"
         >
-          View Q&amp;A archive →
+          {tr.pd_qa_archive}
         </Link>
       </div>
     </section>
@@ -819,12 +831,12 @@ function sourceLabel(kind: string, labels: { rag: string; web: string; none: str
   }
 }
 
-function fmtRelative(unix: number): string {
+function fmtRelative(unix: number, tr: Dict): string {
   const now = Date.now() / 1000;
   const diff = now - unix;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 86400 * 30) return `${Math.floor(diff / 86400)}d ago`;
-  return `${Math.floor(diff / (86400 * 30))}mo ago`;
+  if (diff < 60) return tr.pd_rel_just_now;
+  if (diff < 3600) return fmt(tr.pd_rel_m_ago, { n: Math.floor(diff / 60) });
+  if (diff < 86400) return fmt(tr.pd_rel_h_ago, { n: Math.floor(diff / 3600) });
+  if (diff < 86400 * 30) return fmt(tr.pd_rel_d_ago, { n: Math.floor(diff / 86400) });
+  return fmt(tr.pd_rel_mo_ago, { n: Math.floor(diff / (86400 * 30)) });
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TopBar } from "../../../_components/top-bar";
 import { requireSupplierMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
+import { t, fmt } from "@/lib/i18n";
 import { hasMiniMaxKey } from "@/lib/minimax";
 import { VoicesPanel, type VoiceRow } from "../voices-panel";
 
@@ -47,26 +48,27 @@ export default async function SupplierVoices({
     .bind(supplier.id)
     .all<VoiceRow>();
 
+  const tr = await t();
+
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="hover:text-white shrink-0">Home</Link>
+            <Link href="/" className="hover:text-white shrink-0">{tr.nav_home}</Link>
             <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{supplier.name} · Voices</span>
+            <span className="text-white truncate">{fmt(tr.sp_voices_crumb, { name: supplier.name })}</span>
           </span>
         }
       />
       <main className="px-5 sm:px-8 py-8 sm:py-10 max-w-4xl mx-auto">
         <div className="mb-6">
-          <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">VOICES</div>
+          <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">{tr.sp_voices_label}</div>
           <h1 className="text-[26px] sm:text-[30px] font-semibold tracking-tight text-slate-900 mt-1">
             {supplier.name}
           </h1>
           <p className="text-[13.5px] text-slate-600 mt-1.5">
-            Clone a sales rep&apos;s voice (MiniMax) — it becomes available in every course your
-            products publish, in any language. Stock voices are listed for reference.
+            {tr.sp_voices_blurb}
           </p>
         </div>
         <VoicesPanel

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTr } from "@/lib/i18n-provider";
 
 /**
  * Operator logo uploader. Posts a PNG/SVG/JPEG/WebP to /api/operator-logo,
@@ -21,6 +22,7 @@ export function LogoUploader({
   themeBg: string;
 }) {
   const [pending, startTransition] = useTransition();
+  const tr = useTr();
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -32,7 +34,7 @@ export function LogoUploader({
       const r = await fetch("/api/operator-logo", { method: "POST", body: fd });
       if (r.ok) window.location.reload();
       else {
-        const msg = await r.text().catch(() => "Upload failed");
+        const msg = await r.text().catch(() => tr.br_logo_upload_failed);
         alert(msg.slice(0, 300));
       }
     });
@@ -58,16 +60,16 @@ export function LogoUploader({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/api/operator-logo?slug=${encodeURIComponent(operatorSlug)}`}
-            alt="Operator logo"
+            alt={tr.br_logo_alt}
             className="max-h-7 max-w-[140px] object-contain"
           />
         </span>
       ) : (
-        <span className="text-[12px] text-[#86b69a]">No logo yet</span>
+        <span className="text-[12px] text-[#86b69a]">{tr.br_logo_none}</span>
       )}
       <label className="cursor-pointer">
         <span className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.10]">
-          {pending ? "Uploading…" : hasLogo ? "Replace logo" : "Upload logo"}
+          {pending ? tr.br_logo_uploading : hasLogo ? tr.br_logo_replace : tr.br_logo_upload}
         </span>
         <input
           type="file"
@@ -84,10 +86,10 @@ export function LogoUploader({
           disabled={pending}
           className="text-[11px] text-rose-300/80 hover:underline"
         >
-          remove
+          {tr.br_logo_remove}
         </button>
       ) : null}
-      <span className="text-[10.5px] text-[#5d9279]">PNG / SVG · transparent · ≤ 1 MB</span>
+      <span className="text-[10.5px] text-[#5d9279]">{tr.br_logo_hint}</span>
     </div>
   );
 }
