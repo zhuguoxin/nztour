@@ -65,6 +65,16 @@ export async function ensureUser(opts: {
   // wipe out the legitimate history).
   const oldId = stale.id;
 
+  // 0. Release the email from the stale row FIRST. users.email is UNIQUE, so
+  //    inserting the new row with the real email while the stale row still
+  //    holds it fails with "UNIQUE constraint failed: users.email" (this is
+  //    what crashed the learner page render). The stale row is deleted at the
+  //    end of this function regardless, so the temporary value is short-lived.
+  await db()
+    .prepare(`UPDATE users SET email = ? WHERE id = ?`)
+    .bind(`__migrating__:${newId}`, oldId)
+    .run();
+
   // 1. Ensure the new users row exists so FK references resolve. We do
   //    this as a standalone statement because the migration batch below
   //    inserts FK-referencing rows.
