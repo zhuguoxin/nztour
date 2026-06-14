@@ -779,7 +779,7 @@ ${source}`,
  * If target == primary lang we skip (would be a no-op). Adds `toLang` to
  * `courses.available_langs` so the learner picker shows it.
  */
-export async function translateCourse(form: FormData): Promise<void> {
+async function translateCourseCore(form: FormData): Promise<void> {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
   const toLang = String(form.get("to_lang") ?? "");
@@ -917,6 +917,23 @@ export async function translateCourse(form: FormData): Promise<void> {
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
+/**
+ * Public translate action. Returns the error as DATA (never throws) so the real
+ * message reaches the client — Next redacts thrown server-action errors in prod
+ * ("An error occurred in the Server Components render…").
+ */
+export async function translateCourse(
+  form: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await translateCourseCore(form);
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "translation failed";
+    return { ok: false, error: msg.slice(0, 500) };
+  }
+}
+
 /** Strip one key from an audio_i18n JSON object ({lang: {…}}). */
 function removeAudioLang(json: string | null, lang: string): string {
   try {
@@ -943,58 +960,66 @@ function removeAudioLang(json: string | null, lang: string): string {
  *
  * The source/primary language is always enabled and cannot be toggled.
  */
-export async function setCourseLanguageEnabled(form: FormData): Promise<void> {
-  const operatorSlug = String(form.get("operator_slug") ?? "");
-  const courseSlug = String(form.get("course_slug") ?? "");
-  const lang = String(form.get("lang") ?? "");
-  const enabled = String(form.get("enabled") ?? "") === "1";
-  if (!isSupportedLang(lang)) throw new Error("unsupported language");
-  const { courseId } = await authCourse(operatorSlug, courseSlug);
+export async function setCourseLanguageEnabled(
+  form: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const operatorSlug = String(form.get("operator_slug") ?? "");
+    const courseSlug = String(form.get("course_slug") ?? "");
+    const lang = String(form.get("lang") ?? "");
+    const enabled = String(form.get("enabled") ?? "") === "1";
+    if (!isSupportedLang(lang)) throw new Error("unsupported language");
+    const { courseId } = await authCourse(operatorSlug, courseSlug);
 
-  const course = await db()
-    .prepare(`SELECT id, primary_lang, title_i18n, available_langs FROM courses WHERE id = ?`)
-    .bind(courseId)
-    .first<{ id: string; primary_lang: string; title_i18n: string; available_langs: string }>();
-  if (!course) throw new Error("not_found");
-  if (lang === course.primary_lang) return; // source is always on
+    const course = await db()
+      .prepare(`SELECT id, primary_lang, title_i18n, available_langs FROM courses WHERE id = ?`)
+      .bind(courseId)
+      .first<{ id: string; primary_lang: string; title_i18n: string; available_langs: string }>();
+    if (!course) throw new Error("not_found");
+    if (lang === course.primary_lang) return { ok: true }; // source is always on
 
-  const avail = (() => {
-    try {
-      const a = JSON.parse(course.available_langs);
-      return Array.isArray(a) ? a.filter((l: unknown): l is string => typeof l === "string") : [];
-    } catch {
-      return [course.primary_lang];
+    const avail = (() => {
+      try {
+        const a = JSON.parse(course.available_langs);
+        return Array.isArray(a) ? a.filter((l: unknown): l is string => typeof l === "string") : [];
+      } catch {
+        return [course.primary_lang];
+      }
+    })();
+    const alreadyTranslated = !!readI18nMap(course.title_i18n)[lang];
+
+    if (enabled) {
+      if (!alreadyTranslated) {
+        // Translate the whole course (this also adds the lang to available_langs).
+        const fd = new FormData();
+        fd.set("operator_slug", operatorSlug);
+        fd.set("course_slug", courseSlug);
+        fd.set("to_lang", lang);
+        await translateCourseCore(fd);
+        return { ok: true };
+      }
+      // Already translated → just turn it back on, reusing existing content.
+      const next = Array.from(new Set([...avail, course.primary_lang, lang]));
+      await db()
+        .prepare(`UPDATE courses SET available_langs = ? WHERE id = ?`)
+        .bind(JSON.stringify(next), courseId)
+        .run();
+    } else {
+      // Disable: remove from available_langs but KEEP all translation + audio.
+      const next = avail.filter((l) => l !== lang);
+      await db()
+        .prepare(`UPDATE courses SET available_langs = ? WHERE id = ?`)
+        .bind(JSON.stringify(next), courseId)
+        .run();
     }
-  })();
-  const alreadyTranslated = !!readI18nMap(course.title_i18n)[lang];
 
-  if (enabled) {
-    if (!alreadyTranslated) {
-      // Translate the whole course (this also adds the lang to available_langs).
-      const fd = new FormData();
-      fd.set("operator_slug", operatorSlug);
-      fd.set("course_slug", courseSlug);
-      fd.set("to_lang", lang);
-      await translateCourse(fd);
-      return;
-    }
-    // Already translated → just turn it back on, reusing existing content.
-    const next = Array.from(new Set([...avail, course.primary_lang, lang]));
-    await db()
-      .prepare(`UPDATE courses SET available_langs = ? WHERE id = ?`)
-      .bind(JSON.stringify(next), courseId)
-      .run();
-  } else {
-    // Disable: remove from available_langs but KEEP all translation + audio.
-    const next = avail.filter((l) => l !== lang);
-    await db()
-      .prepare(`UPDATE courses SET available_langs = ? WHERE id = ?`)
-      .bind(JSON.stringify(next), courseId)
-      .run();
+    revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+    revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "failed";
+    return { ok: false, error: msg.slice(0, 500) };
   }
-
-  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
-  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
 /**

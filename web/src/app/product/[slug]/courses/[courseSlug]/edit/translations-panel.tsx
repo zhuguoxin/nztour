@@ -31,11 +31,13 @@ export function TranslationsPanel({
 }) {
   const [pending, startTransition] = useTransition();
   const [busyLang, setBusyLang] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const enabled = new Set(enabledLangs);
   const translated = new Set(translatedLangs);
 
   function toggle(lang: string, enable: boolean, willTranslate: boolean) {
     setBusyLang(willTranslate ? lang : null);
+    setError(null);
     const fd = new FormData();
     fd.append("operator_slug", operatorSlug);
     fd.append("course_slug", courseSlug);
@@ -43,9 +45,10 @@ export function TranslationsPanel({
     fd.append("enabled", enable ? "1" : "0");
     startTransition(async () => {
       try {
-        await setCourseLanguageEnabled(fd);
+        const res = await setCourseLanguageEnabled(fd);
+        if (res && !res.ok) setError(res.error ?? "Failed");
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Failed");
+        setError(err instanceof Error ? err.message : "Failed");
       } finally {
         setBusyLang(null);
       }
@@ -54,15 +57,17 @@ export function TranslationsPanel({
 
   function retranslate(lang: string) {
     setBusyLang(lang);
+    setError(null);
     const fd = new FormData();
     fd.append("operator_slug", operatorSlug);
     fd.append("course_slug", courseSlug);
     fd.append("to_lang", lang);
     startTransition(async () => {
       try {
-        await translateCourse(fd);
+        const res = await translateCourse(fd);
+        if (res && !res.ok) setError(res.error ?? "Translation failed");
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Translation failed");
+        setError(err instanceof Error ? err.message : "Translation failed");
       } finally {
         setBusyLang(null);
       }
@@ -167,6 +172,13 @@ export function TranslationsPanel({
         <div className="px-5 pb-4 text-[12px] text-amber-300 flex items-center gap-2">
           <span className="inline-block w-3 h-3 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
           Translating with Claude — usually 10–30 seconds for a typical course.
+        </div>
+      ) : null}
+      {error ? (
+        <div className="px-5 pb-4">
+          <div className="text-[12px] text-rose-200 bg-rose-500/10 border border-rose-400/30 rounded-md px-3 py-2 break-words">
+            {error}
+          </div>
         </div>
       ) : null}
     </section>

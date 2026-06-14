@@ -102,12 +102,21 @@ export async function translateBatch(
     ...nonEmpty.map((i, idx) => `[${idx + 1}] ${i.text}`),
   ].join("\n");
 
-  const resp = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
+  let resp;
+  try {
+    resp = await client.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
+  } catch (e) {
+    // Surface the upstream status/message so the caller can show something
+    // actionable instead of an opaque failure.
+    const status = (e as { status?: number })?.status;
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Translation API error${status ? ` (${status})` : ""}: ${msg}`);
+  }
 
   const text = resp.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
