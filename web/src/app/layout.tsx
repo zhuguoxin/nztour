@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { zhCN } from "@clerk/localizations";
 import "./globals.css";
-import { getLocale } from "@/lib/i18n";
+import { getLocale, dict } from "@/lib/i18n";
+import { I18nProvider } from "@/lib/i18n-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,7 +56,7 @@ export default async function RootLayout({
           <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          {children}
+          <I18nProvider tr={dict[locale]}>{children}</I18nProvider>
         </body>
       </html>
     </ClerkProvider>

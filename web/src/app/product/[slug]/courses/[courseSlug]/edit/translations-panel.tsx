@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { setCourseLanguageEnabled, translateCourse } from "../../actions";
 import { TRANSLATE_LANGS } from "@/lib/translate";
+import { useTr } from "@/lib/i18n-provider";
+import { fmt } from "@/lib/i18n-shared";
 
 /**
  * Language enable/disable for a course.
@@ -29,6 +31,7 @@ export function TranslationsPanel({
   enabledLangs: string[];
   translatedLangs: string[];
 }) {
+  const tr = useTr();
   const [pending, startTransition] = useTransition();
   const [busyLang, setBusyLang] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -77,11 +80,9 @@ export function TranslationsPanel({
   return (
     <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
       <header className="px-5 py-4 border-b border-white/[.06]">
-        <div className="font-semibold text-[14px] text-white">Languages</div>
+        <div className="font-semibold text-[14px] text-white">{tr.tp_title}</div>
         <div className="text-[12px] text-[#86b69a] mt-0.5">
-          Source language is <span className="font-mono text-emerald-300">{primaryLang}</span>.
-          Enable a language to translate the whole course; disable it to hide it from learners
-          without losing the translation or audio — re-enabling is instant.
+          {fmt(tr.tp_sub, { lang: primaryLang })}
         </div>
       </header>
       <div className="px-5 py-4 flex flex-wrap gap-2">
@@ -95,9 +96,9 @@ export function TranslationsPanel({
               <span
                 key={lang.code}
                 className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px]"
-                title="Source language — always on"
+                title={tr.tp_source}
               >
-                {lang.nativeLabel} · source
+                {lang.nativeLabel} · {tr.tp_source}
               </span>
             );
           }
@@ -111,7 +112,7 @@ export function TranslationsPanel({
                   onClick={() => toggle(lang.code, false, false)}
                   disabled={pending}
                   className="px-3 py-1.5 rounded-md border border-emerald-400/50 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/15 text-[12px] font-medium disabled:opacity-50"
-                  title="Enabled — click to disable (translation is kept)"
+                  title={tr.tp_enabled_title}
                 >
                   {lang.nativeLabel} ✓
                 </button>
@@ -120,7 +121,7 @@ export function TranslationsPanel({
                   target="_blank"
                   rel="noreferrer"
                   className="px-2 py-1.5 rounded-md border border-white/[.10] text-[#a7d4b6] hover:bg-white/[.06] text-[11px]"
-                  title={`Preview in ${lang.label}`}
+                  title={fmt(tr.tp_preview_title, { lang: lang.label })}
                 >
                   ↗
                 </a>
@@ -129,7 +130,7 @@ export function TranslationsPanel({
                   onClick={() => retranslate(lang.code)}
                   disabled={pending}
                   className="px-2 py-1.5 rounded-md border border-white/[.10] text-[#a7d4b6] hover:bg-white/[.06] text-[11px] disabled:opacity-40"
-                  title="Re-translate (overwrites the existing translation)"
+                  title={tr.tp_retranslate_title}
                 >
                   ↻
                 </button>
@@ -146,7 +147,7 @@ export function TranslationsPanel({
                 onClick={() => toggle(lang.code, true, false)}
                 disabled={pending}
                 className="px-3 py-1.5 rounded-md border border-white/[.12] text-[#86b69a] hover:bg-white/[.06] hover:text-[#d8f0e1] text-[12px] disabled:opacity-40"
-                title={`Disabled — click to enable (reuses the existing ${lang.label} translation)`}
+                title={fmt(tr.tp_disabled_title, { lang: lang.label })}
               >
                 {lang.nativeLabel} ○
               </button>
@@ -161,7 +162,7 @@ export function TranslationsPanel({
               onClick={() => toggle(lang.code, true, true)}
               disabled={pending}
               className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#a7d4b6] hover:bg-white/[.06] hover:text-white hover:border-emerald-400/40 text-[12px] disabled:opacity-40"
-              title={`Translate the whole course to ${lang.label} and enable it`}
+              title={fmt(tr.tp_translate_title, { lang: lang.label })}
             >
               + {lang.nativeLabel}
             </button>
@@ -171,7 +172,7 @@ export function TranslationsPanel({
       {pending && busyLang ? (
         <div className="px-5 pb-4 text-[12px] text-amber-300 flex items-center gap-2">
           <span className="inline-block w-3 h-3 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
-          Translating with Claude — usually 10–30 seconds for a typical course.
+          {tr.tp_translating}
         </div>
       ) : null}
       {error ? (

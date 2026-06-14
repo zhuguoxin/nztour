@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useTr } from "@/lib/i18n-provider";
+import { fmt } from "@/lib/i18n-shared";
 
 export interface VoiceRow {
   id: string;
@@ -98,6 +100,7 @@ export function VoicesPanel({
   voices: VoiceRow[];
   hasXIKey: boolean;
 }) {
+  const tr = useTr();
   // Only cloned voices are listed — the model's stock voices are available
   // automatically when generating audio and don't need to crowd this panel.
   const cloned = voices.filter((v) => v.kind === "cloned");
@@ -106,17 +109,15 @@ export function VoicesPanel({
     <section className="rounded-2xl border border-slate-200 bg-white">
       <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <div>
-          <div className="font-semibold text-[14px] text-slate-900">Cloned voices</div>
-          <div className="text-[12.5px] text-slate-500 mt-0.5">
-            Voices recorded for this supplier. Each can narrate only the languages you assign it.
-          </div>
+          <div className="font-semibold text-[14px] text-slate-900">{tr.voi_title}</div>
+          <div className="text-[12.5px] text-slate-500 mt-0.5">{tr.voi_sub}</div>
         </div>
         {!hasXIKey ? (
           <span
             className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md"
             title="Set MINIMAX_API_KEY via `wrangler secret put MINIMAX_API_KEY` to enable voice cloning"
           >
-            Cloning disabled — key not set
+            {tr.voi_disabled}
           </span>
         ) : null}
       </header>
@@ -124,9 +125,7 @@ export function VoicesPanel({
       {/* Existing cloned voices (editable) */}
       <div className="px-5 py-4">
         {cloned.length === 0 ? (
-          <div className="text-[12.5px] text-slate-500 py-1">
-            No cloned voices yet — record one below.
-          </div>
+          <div className="text-[12.5px] text-slate-500 py-1">{tr.voi_empty}</div>
         ) : (
           <ul className="space-y-2">
             {cloned.map((v) => (
@@ -143,7 +142,7 @@ export function VoicesPanel({
 
       {/* Add a new voice */}
       <div className="px-5 py-4 border-t border-slate-200 bg-slate-50/60 rounded-b-2xl">
-        <div className="font-semibold text-[13.5px] text-slate-900">Recording a new voice</div>
+        <div className="font-semibold text-[13.5px] text-slate-900">{tr.voi_new_heading}</div>
         <CloneForm supplierSlug={supplierSlug} disabled={!hasXIKey} />
       </div>
     </section>
@@ -227,6 +226,7 @@ type RecState = "idle" | "recording" | "recorded";
 
 /** Mic → WAV recorder. Shared by the new-voice form and per-voice re-record. */
 function useRecorder() {
+  const tr = useTr();
   const [recState, setRecState] = useState<RecState>("idle");
   const [seconds, setSeconds] = useState(0);
   const [blob, setBlob] = useState<Blob | null>(null);
@@ -292,7 +292,7 @@ function useRecorder() {
         });
       }, 1000);
     } catch {
-      setErr("Microphone access was blocked. Allow mic permission and try again.");
+      setErr(tr.voi_mic_blocked);
       cleanupGraph();
       setRecState("idle");
     }
@@ -303,7 +303,7 @@ function useRecorder() {
     const total = chunksRef.current.reduce((n, c) => n + c.length, 0);
     cleanupGraph();
     if (total === 0) {
-      setErr("Nothing was recorded. Try again.");
+      setErr(tr.voi_nothing);
       setRecState("idle");
       return;
     }
@@ -348,9 +348,10 @@ function LangChips({
   onToggle: (code: string) => void;
   disabled: boolean;
 }) {
+  const tr = useTr();
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-[12px] text-slate-500 mr-1">Languages:</span>
+      <span className="text-[12px] text-slate-500 mr-1">{tr.voi_langs}</span>
       {CLONE_LANGS.map((l) => {
         const on = selected.includes(l.code);
         return (
@@ -376,6 +377,7 @@ function LangChips({
 /** Recording indicator + Stop, or the recorded preview + re-take. The Start /
  *  Re-record trigger and the Save button live in the parent. */
 function RecorderStrip({ rec }: { rec: Recorder }) {
+  const tr = useTr();
   if (rec.recState === "recording") {
     return (
       <div className="flex items-center gap-3">
@@ -388,9 +390,11 @@ function RecorderStrip({ rec }: { rec: Recorder }) {
           onClick={rec.stop}
           className="px-4 py-2 rounded-md font-semibold text-[13px] text-white bg-[#04241e] hover:bg-[#0a3a2f]"
         >
-          ■ Stop
+          {tr.voi_rec_stop}
         </button>
-        <span className="text-[11px] text-slate-500">max {MAX_SECONDS / 60} min</span>
+        <span className="text-[11px] text-slate-500">
+          {fmt(tr.voi_rec_max, { n: MAX_SECONDS / 60 })}
+        </span>
       </div>
     );
   }
@@ -398,19 +402,17 @@ function RecorderStrip({ rec }: { rec: Recorder }) {
     return (
       <div className="flex items-center gap-3 flex-wrap">
         <audio controls src={rec.previewUrl} className="h-9" />
-        <span className="text-[12px] text-slate-500">{rec.mmss} recorded</span>
+        <span className="text-[12px] text-slate-500">{fmt(tr.voi_recorded, { t: rec.mmss })}</span>
       </div>
     );
   }
   return null;
 }
 
-const RECORD_TIP = (
-  <div className="text-[11px] text-slate-500">
-    Record <strong>10 seconds–3 minutes</strong>, single speaker, clear speech, no music or
-    background noise.
-  </div>
-);
+function RecordTip() {
+  const tr = useTr();
+  return <div className="text-[11px] text-slate-500">{tr.voi_tip}</div>;
+}
 
 // ---------------------------------------------------------------------------
 //  Existing cloned voice — view + edit (rename, languages, gender, re-record)
@@ -425,6 +427,7 @@ function ClonedVoiceItem({
   supplierSlug: string;
   disabled: boolean;
 }) {
+  const tr = useTr();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(cleanName(voice.name));
   const [gender, setGender] = useState(voice.gender ?? "neutral");
@@ -504,7 +507,7 @@ function ClonedVoiceItem({
           disabled={disabled}
           className="shrink-0 px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          Edit
+          {tr.voi_edit}
         </button>
       </li>
     );
@@ -531,9 +534,9 @@ function ClonedVoiceItem({
           disabled={pending}
           className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
         >
-          <option value="neutral">neutral</option>
-          <option value="male">male</option>
-          <option value="female">female</option>
+          <option value="neutral">{tr.voi_g_neutral}</option>
+          <option value="male">{tr.voi_g_male}</option>
+          <option value="female">{tr.voi_g_female}</option>
         </select>
         {rec.recState === "idle" ? (
           <button
@@ -542,17 +545,15 @@ function ClonedVoiceItem({
             disabled={pending}
             className="shrink-0 px-4 py-2 rounded-md font-semibold text-[13px] text-rose-600 border border-rose-300 hover:bg-rose-50 disabled:opacity-50"
           >
-            ● Re-record
+            {tr.voi_rec_rerecord}
           </button>
         ) : null}
       </div>
 
       <RecorderStrip rec={rec} />
-      {rec.recState !== "idle" ? RECORD_TIP : null}
+      {rec.recState !== "idle" ? <RecordTip /> : null}
       {rec.tooShort ? (
-        <div className="text-[11px] text-amber-700">
-          Recording is under 10 seconds — record a bit more for a good clone.
-        </div>
+        <div className="text-[11px] text-amber-700">{tr.voi_too_short}</div>
       ) : null}
 
       {(err || rec.err) ? (
@@ -572,7 +573,7 @@ function ClonedVoiceItem({
                   : "bg-[#04241e] hover:bg-[#0a3a2f]"
               }`}
             >
-              {pending ? "Saving…" : "Save new recording"}
+              {pending ? tr.voi_saving : tr.voi_save_new_rec}
             </button>
             <button
               type="button"
@@ -580,7 +581,7 @@ function ClonedVoiceItem({
               disabled={pending}
               className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
-              Discard take
+              {tr.voi_discard}
             </button>
           </>
         ) : (
@@ -594,7 +595,7 @@ function ClonedVoiceItem({
                 : "bg-[#04241e] hover:bg-[#0a3a2f]"
             }`}
           >
-            {pending ? "Saving…" : "Save changes"}
+            {pending ? tr.voi_saving : tr.voi_save_changes}
           </button>
         )}
         <button
@@ -603,7 +604,7 @@ function ClonedVoiceItem({
           disabled={pending}
           className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          Cancel
+          {tr.voi_cancel}
         </button>
       </div>
     </li>
@@ -615,6 +616,7 @@ function ClonedVoiceItem({
 // ---------------------------------------------------------------------------
 
 function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled: boolean }) {
+  const tr = useTr();
   const [name, setName] = useState("");
   const [gender, setGender] = useState("neutral");
   const [langs, setLangs] = useState<string[]>([]);
@@ -651,7 +653,7 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <input
           type="text"
-          placeholder="Voice name e.g. Maya — sales lead"
+          placeholder={tr.voi_name_ph}
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
@@ -664,9 +666,9 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
           disabled={disabled || pending || rec.recState !== "idle"}
           className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
         >
-          <option value="neutral">neutral</option>
-          <option value="male">male</option>
-          <option value="female">female</option>
+          <option value="neutral">{tr.voi_g_neutral}</option>
+          <option value="male">{tr.voi_g_male}</option>
+          <option value="female">{tr.voi_g_female}</option>
         </select>
         {rec.recState === "idle" ? (
           <button
@@ -678,13 +680,13 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
             }`}
             title={
               !name.trim()
-                ? "Enter a voice name first"
+                ? tr.voi_enter_name_first
                 : langs.length === 0
-                  ? "Pick at least one language"
+                  ? tr.voi_pick_lang_first
                   : undefined
             }
           >
-            ● Start recording
+            {tr.voi_rec_start}
           </button>
         ) : null}
       </div>
@@ -703,7 +705,7 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
                 : "bg-[#04241e] hover:bg-[#0a3a2f]"
             }`}
           >
-            {pending ? "Cloning…" : "Save & clone"}
+            {pending ? tr.voi_cloning : tr.voi_save_clone}
           </button>
           <button
             type="button"
@@ -711,20 +713,18 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
             disabled={pending}
             className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-white disabled:opacity-50"
           >
-            Re-record
+            {tr.voi_rerecord_btn}
           </button>
         </div>
       ) : null}
 
       {rec.tooShort ? (
-        <div className="text-[11px] text-amber-700">
-          Recording is under 10 seconds — record a bit more for a good clone.
-        </div>
+        <div className="text-[11px] text-amber-700">{tr.voi_too_short}</div>
       ) : null}
 
       {(err || rec.err) ? <div className="text-[11px] text-rose-700">{err ?? rec.err}</div> : null}
 
-      {RECORD_TIP}
+      <RecordTip />
     </div>
   );
 }

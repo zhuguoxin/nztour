@@ -333,9 +333,92 @@ const en = {
   video_setup_hint:
     "Set NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN and a real Stream UID to embed",
   mobile_ask_ai: "Ask AI",
+
+  // ===== New course / generate-from-document =====
+  nc_crumb_new: "New course",
+  nc_label: "/PRODUCT · NEW COURSE",
+  nc_title: "Create a new course",
+  nc_tab_ai: "Generate from a document",
+  nc_tab_manual: "Create manually",
+  nc_manual_sub:
+    "Give the course a title and a one-line summary. You can add modules and content after it's created. New courses start as drafts.",
+  nc_f_title: "Title",
+  nc_f_title_hint: "What an agent sees on the course card.",
+  nc_f_summary: "Summary",
+  nc_f_summary_hint: "1-2 sentences. Optional.",
+  nc_f_emoji: "Emoji",
+  nc_f_emoji_hint: "One character.",
+  nc_f_est: "Estimated minutes",
+  nc_f_est_hint: "Total reading time.",
+  nc_f_lang: "Primary language",
+  nc_f_lang_hint: "The language the source content is in.",
+  nc_create: "Create course →",
+  nc_cancel: "Cancel",
+
+  gen_sub:
+    "Upload a brochure, deck, or fact sheet (PDF or text). Claude reads it and drafts a structured course — modules and content — that you can edit before publishing.",
+  gen_file: "Source file",
+  gen_file_pick: "Choose a PDF or text file",
+  gen_file_hint: "PDF / TXT / Markdown · ≤ 20 MB",
+  gen_title_label: "Working title",
+  gen_title_hint: "Optional — the AI will refine it.",
+  gen_title_ph: "e.g. Coronet Peak 2026",
+  gen_notes_label: "Notes for the AI",
+  gen_notes_hint: "Optional — focus, audience, emphasis.",
+  gen_notes_ph: "e.g. emphasise booking & cancellation policy",
+  gen_button: "Generate course →",
+  gen_generating:
+    "Reading the document and drafting your course… this usually takes 20–60 seconds.",
+  gen_need_file: "Choose a file first.",
+  gen_failed: "Generation failed",
+
+  // ===== Voices panel =====
+  voi_title: "Cloned voices",
+  voi_sub: "Voices recorded for this supplier. Each can narrate only the languages you assign it.",
+  voi_disabled: "Cloning disabled — key not set",
+  voi_empty: "No cloned voices yet — record one below.",
+  voi_edit: "Edit",
+  voi_langs: "Languages:",
+  voi_name_ph: "Voice name e.g. Maya — sales lead",
+  voi_g_neutral: "neutral",
+  voi_g_male: "male",
+  voi_g_female: "female",
+  voi_rec_start: "● Start recording",
+  voi_rec_rerecord: "● Re-record",
+  voi_rec_stop: "■ Stop",
+  voi_rec_max: "max {n} min",
+  voi_recorded: "{t} recorded",
+  voi_save_clone: "Save & clone",
+  voi_cloning: "Cloning…",
+  voi_rerecord_btn: "Re-record",
+  voi_save_new_rec: "Save new recording",
+  voi_discard: "Discard take",
+  voi_save_changes: "Save changes",
+  voi_saving: "Saving…",
+  voi_cancel: "Cancel",
+  voi_too_short: "Recording is under 10 seconds — record a bit more for a good clone.",
+  voi_mic_blocked: "Microphone access was blocked. Allow mic permission and try again.",
+  voi_nothing: "Nothing was recorded. Try again.",
+  voi_tip:
+    "Record 10 seconds–3 minutes, single speaker, clear speech, no music or background noise.",
+  voi_new_heading: "Recording a new voice",
+  voi_enter_name_first: "Enter a voice name first",
+  voi_pick_lang_first: "Pick at least one language",
+
+  // ===== Translations panel =====
+  tp_title: "Languages",
+  tp_sub:
+    "Source language is {lang}. Enable a language to translate the whole course; disable it to hide it from learners without losing the translation or audio — re-enabling is instant.",
+  tp_source: "source",
+  tp_translating: "Translating — usually 10–30 seconds for a typical course.",
+  tp_enabled_title: "Enabled — click to disable (translation is kept)",
+  tp_disabled_title: "Disabled — click to enable (reuses the existing {lang} translation)",
+  tp_translate_title: "Translate the whole course to {lang} and enable it",
+  tp_retranslate_title: "Re-translate (overwrites the existing translation)",
+  tp_preview_title: "Preview in {lang}",
 };
 
-type Dict = typeof en;
+export type Dict = typeof en;
 
 const zhCN: Dict = {
   // Navigation
@@ -625,6 +708,87 @@ const zhCN: Dict = {
   video_setup_hint:
     "在 NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN 填入域名 + 真实 Stream UID 即可嵌入播放",
   mobile_ask_ai: "问 AI",
+
+  // ===== New course / generate-from-document =====
+  nc_crumb_new: "新建课程",
+  nc_label: "/产品 · 新建课程",
+  nc_title: "新建课程",
+  nc_tab_ai: "上传资料生成",
+  nc_tab_manual: "手动创建",
+  nc_manual_sub:
+    "填写课程标题和一句话简介。创建后可继续添加模块和内容。新课程默认为草稿。",
+  nc_f_title: "标题",
+  nc_f_title_hint: "代理商在课程卡片上看到的标题。",
+  nc_f_summary: "简介",
+  nc_f_summary_hint: "1-2 句话,可选。",
+  nc_f_emoji: "表情符号",
+  nc_f_emoji_hint: "一个字符。",
+  nc_f_est: "预计时长(分钟)",
+  nc_f_est_hint: "总阅读时长。",
+  nc_f_lang: "主语言",
+  nc_f_lang_hint: "源内容所用的语言。",
+  nc_create: "创建课程 →",
+  nc_cancel: "取消",
+
+  gen_sub:
+    "上传宣传册、PPT 或资料表(PDF 或文本)。Claude 会阅读并自动生成结构化课程(模块与内容),你可在发布前编辑。",
+  gen_file: "源文件",
+  gen_file_pick: "选择 PDF 或文本文件",
+  gen_file_hint: "PDF / TXT / Markdown · ≤ 20 MB",
+  gen_title_label: "课程标题",
+  gen_title_hint: "可选,AI 会进一步完善。",
+  gen_title_ph: "例如:Coronet Peak 2026",
+  gen_notes_label: "给 AI 的备注",
+  gen_notes_hint: "可选,如侧重点、受众、强调内容。",
+  gen_notes_ph: "例如:侧重预订与退改政策",
+  gen_button: "生成课程 →",
+  gen_generating: "正在阅读文档并生成课程…通常需要 20–60 秒。",
+  gen_need_file: "请先选择文件。",
+  gen_failed: "生成失败",
+
+  // ===== Voices panel =====
+  voi_title: "克隆声音",
+  voi_sub: "为该供应商录制的声音。每个声音只能朗读你为它指定的语言。",
+  voi_disabled: "克隆未启用 — 未配置密钥",
+  voi_empty: "还没有克隆声音 — 在下方录制一个。",
+  voi_edit: "编辑",
+  voi_langs: "适用语言:",
+  voi_name_ph: "声音名称,如:Maya — 销售主管",
+  voi_g_neutral: "中性",
+  voi_g_male: "男声",
+  voi_g_female: "女声",
+  voi_rec_start: "● 开始录音",
+  voi_rec_rerecord: "● 重新录制",
+  voi_rec_stop: "■ 停止",
+  voi_rec_max: "最长 {n} 分钟",
+  voi_recorded: "已录制 {t}",
+  voi_save_clone: "保存并克隆",
+  voi_cloning: "克隆中…",
+  voi_rerecord_btn: "重新录制",
+  voi_save_new_rec: "保存新录音",
+  voi_discard: "放弃本次",
+  voi_save_changes: "保存更改",
+  voi_saving: "保存中…",
+  voi_cancel: "取消",
+  voi_too_short: "录音不足 10 秒 — 多录一点以获得更好的克隆效果。",
+  voi_mic_blocked: "麦克风被阻止。请允许麦克风权限后重试。",
+  voi_nothing: "没有录到声音,请重试。",
+  voi_tip: "录制 10 秒–3 分钟,单人、吐字清晰,无音乐或背景噪音。",
+  voi_new_heading: "录制新声音",
+  voi_enter_name_first: "请先输入声音名称",
+  voi_pick_lang_first: "请至少选择一种语言",
+
+  // ===== Translations panel =====
+  tp_title: "语言",
+  tp_sub:
+    "源语言为 {lang}。启用某语言会翻译整个课程;禁用则对学员隐藏但保留翻译与音频 — 重新启用即时生效。",
+  tp_source: "源语言",
+  tp_translating: "正在翻译 — 一般课程约需 10–30 秒。",
+  tp_enabled_title: "已启用 — 点击可禁用(保留翻译)",
+  tp_disabled_title: "已禁用 — 点击可启用(复用已有的 {lang} 翻译)",
+  tp_translate_title: "将整个课程翻译为 {lang} 并启用",
+  tp_retranslate_title: "重新翻译(覆盖已有翻译)",
+  tp_preview_title: "预览 {lang}",
 };
 
 export const dict: Record<Locale, Dict> = {
