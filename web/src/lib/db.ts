@@ -162,6 +162,56 @@ export async function listPublishedCourses(): Promise<CourseWithOperator[]> {
   return results ?? [];
 }
 
+export interface RecentBadge {
+  verify_code: string;
+  learner_name: string | null;
+  course_title: string;
+  operator_name: string;
+  operator_slug: string;
+  awarded_at: number;
+}
+
+/** Most-recently awarded badges across the platform, for the public Badges
+ *  wall. Joins through to learner name, course, and product. */
+export async function listRecentBadges(limit = 24): Promise<RecentBadge[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT b.verify_code,
+              u.name  AS learner_name,
+              c.title AS course_title,
+              o.name  AS operator_name,
+              o.slug  AS operator_slug,
+              b.awarded_at
+       FROM badges b
+       JOIN users u     ON u.id = b.user_id
+       JOIN courses c   ON c.id = b.course_id
+       JOIN operators o ON o.id = b.operator_id
+       WHERE o.status = 'active'
+       ORDER BY b.awarded_at DESC
+       LIMIT ?`,
+    )
+    .bind(limit)
+    .all<RecentBadge>();
+  return results ?? [];
+}
+
+/** Aggregate badge counters for the Badges page hero. */
+export async function getBadgeStats(): Promise<{
+  total: number;
+  learners: number;
+  courses: number;
+}> {
+  const r = await db()
+    .prepare(
+      `SELECT COUNT(*) AS total,
+              COUNT(DISTINCT user_id)   AS learners,
+              COUNT(DISTINCT course_id) AS courses
+       FROM badges`,
+    )
+    .first<{ total: number; learners: number; courses: number }>();
+  return r ?? { total: 0, learners: 0, courses: 0 };
+}
+
 export async function getCourseBySlug(
   operatorSlug: string,
   courseSlug: string,

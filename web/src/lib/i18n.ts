@@ -715,6 +715,56 @@ const en = {
   fo_contact_head: "CONTACT",
   fo_company: "COMPANY",
   fo_country: "New Zealand",
+
+  // ===== Shared cards =====
+  card_manage: "⚙ Manage",
+  ex_start_course: "Start course →",
+
+  // ===== Explore page =====
+  ex_label: "/EXPLORE",
+  ex_title: "Explore NZ tourism training",
+  ex_subtitle: "Browse every product and course — or ask the AI assistant anything.",
+  ex_products_heading: "Products",
+  ex_products_sub: "Suppliers with training live on Libretour.",
+  ex_view_all_products: "All products →",
+  ex_courses_heading: "All courses",
+  ex_courses_sub: "{n} published course(s) across {ops} product(s).",
+  ex_search_ph: "Search courses or suppliers…",
+  ex_no_results: "No courses match your search.",
+
+  // ===== Products page =====
+  pr_label: "/PRODUCTS",
+  pr_title: "All products",
+  pr_subtitle:
+    "Every NZ tourism supplier with training on Libretour. One agent account works across all of them.",
+  pr_count: "{n} products",
+  pr_empty: "No products yet.",
+  prd_courses_heading: "Courses",
+  prd_no_courses: "No published courses yet.",
+  prd_back: "← All products",
+  prd_browse_all: "Browse all courses on this product below.",
+
+  // ===== Badges page =====
+  bd_label: "/BADGES",
+  bd_title: "Verifiable training badges",
+  bd_subtitle:
+    "Complete a course, earn a digital badge in your name — share it on LinkedIn and verify it with a public link.",
+  bd_stat_awarded: "Badges awarded",
+  bd_stat_learners: "Learners",
+  bd_stat_courses: "Courses",
+  bd_how_heading: "How it works",
+  bd_how_1_t: "Learn",
+  bd_how_1_b: "Take a product's course — modules, audio narration, and a short quiz.",
+  bd_how_2_t: "Earn",
+  bd_how_2_b: "Pass and a verifiable badge is issued in your name.",
+  bd_how_3_t: "Share",
+  bd_how_3_b: "Add it to LinkedIn or your email signature — anyone can verify it.",
+  bd_wall_heading: "Recently awarded",
+  bd_wall_empty: "No badges awarded yet — be the first.",
+  bd_verify: "Verify →",
+  bd_anon_learner: "A learner",
+  bd_earned: "earned",
+  bd_cta: "Start learning →",
 };
 
 export type Dict = typeof en;
@@ -1386,6 +1436,55 @@ const zhCN: Dict = {
   fo_contact_head: "联系方式",
   fo_company: "公司",
   fo_country: "新西兰",
+
+  // ===== Shared cards =====
+  card_manage: "⚙ 管理",
+  ex_start_course: "开始学习 →",
+
+  // ===== Explore page =====
+  ex_label: "/探索",
+  ex_title: "探索新西兰旅游培训",
+  ex_subtitle: "浏览所有产品与课程,任何问题都可以问 AI 助手。",
+  ex_products_heading: "产品",
+  ex_products_sub: "已在 Libretour 上线培训的供应商。",
+  ex_view_all_products: "全部产品 →",
+  ex_courses_heading: "全部课程",
+  ex_courses_sub: "{ops} 个产品共 {n} 门已发布课程。",
+  ex_search_ph: "搜索课程或供应商…",
+  ex_no_results: "没有匹配的课程。",
+
+  // ===== Products page =====
+  pr_label: "/产品",
+  pr_title: "全部产品",
+  pr_subtitle: "所有在 Libretour 提供培训的新西兰旅游供应商。一个代理商账号即可学习全部。",
+  pr_count: "{n} 个产品",
+  pr_empty: "暂无产品。",
+  prd_courses_heading: "课程",
+  prd_no_courses: "暂无已发布课程。",
+  prd_back: "← 全部产品",
+  prd_browse_all: "在下方浏览该产品的全部课程。",
+
+  // ===== Badges page =====
+  bd_label: "/徽章",
+  bd_title: "可验证的培训徽章",
+  bd_subtitle:
+    "完成课程即可获得以你名义颁发的数字徽章 —— 可分享到 LinkedIn,并通过公开链接验证真伪。",
+  bd_stat_awarded: "已颁发徽章",
+  bd_stat_learners: "学员",
+  bd_stat_courses: "课程",
+  bd_how_heading: "如何获得",
+  bd_how_1_t: "学习",
+  bd_how_1_b: "学习某个产品的课程 —— 模块、音频讲解和一个小测验。",
+  bd_how_2_t: "获得",
+  bd_how_2_b: "通过后,系统以你的名义颁发可验证的徽章。",
+  bd_how_3_t: "分享",
+  bd_how_3_b: "添加到 LinkedIn 或邮件签名 —— 任何人都能验证。",
+  bd_wall_heading: "最近颁发",
+  bd_wall_empty: "还没有颁发徽章 —— 成为第一个。",
+  bd_verify: "验证 →",
+  bd_anon_learner: "某位学员",
+  bd_earned: "获得了",
+  bd_cta: "开始学习 →",
 };
 
 export const dict: Record<Locale, Dict> = {

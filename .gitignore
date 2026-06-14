@@ -1,5 +1,9 @@
 # Partner-provided source files — do not commit
 Products/
+# …but the public product-directory ROUTE lives at this lowercase path; the
+# filesystem is case-insensitive so the rule above would otherwise hide it.
+!web/src/app/products/
+!web/src/app/products/**
 
 # OS / editor
 .DS_Store

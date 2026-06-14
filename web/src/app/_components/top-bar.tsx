@@ -101,9 +101,9 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
           <div className="px-1 text-[13px] text-[#a7d4b6] truncate">{breadcrumb}</div>
         ) : (
           <nav className="flex items-center justify-between gap-1 text-[14px] text-[#a7d4b6]">
-            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_explore}</a>
-            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_operators}</a>
-            <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_badges}</a>
+            <Link href="/explore" className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_explore}</Link>
+            <Link href="/products" className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_operators}</Link>
+            <Link href="/badges" className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_badges}</Link>
             <a className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_pricing}</a>
           </nav>
         )}
@@ -116,9 +116,9 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
           <div className="flex-1 min-w-0 text-[14px] text-[#a7d4b6] truncate">{breadcrumb}</div>
         ) : (
           <nav className="flex items-center gap-1 text-[15px] text-[#a7d4b6]">
-            <a className="px-3.5 py-2 hover:text-white">{tr.nav_explore}</a>
-            <a className="px-3.5 py-2 hover:text-white">{tr.nav_operators}</a>
-            <a className="px-3.5 py-2 hover:text-white">{tr.nav_badges}</a>
+            <Link href="/explore" className="px-3.5 py-2 hover:text-white">{tr.nav_explore}</Link>
+            <Link href="/products" className="px-3.5 py-2 hover:text-white">{tr.nav_operators}</Link>
+            <Link href="/badges" className="px-3.5 py-2 hover:text-white">{tr.nav_badges}</Link>
             <a className="px-3.5 py-2 hover:text-white">{tr.nav_pricing}</a>
           </nav>
         )}
