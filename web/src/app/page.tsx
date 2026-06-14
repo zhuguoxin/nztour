@@ -82,7 +82,7 @@ export default async function Home() {
       </section>
 
       {/* Operator marketplace */}
-      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-6xl mx-auto">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1400px] mx-auto">
         <div className="flex items-end justify-between mb-5 sm:mb-7 gap-3">
           <div className="min-w-0">
             <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900">
@@ -132,7 +132,7 @@ export default async function Home() {
       </section>
 
       <footer className="border-t border-slate-200 px-5 sm:px-8 py-8 mt-12">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-6 text-[12.5px]">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-2 sm:grid-cols-3 gap-6 text-[12.5px]">
           <div>
             <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_platform}</div>
             <ul className="space-y-1.5 text-slate-600">
@@ -157,7 +157,7 @@ export default async function Home() {
             </ul>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto mt-8 pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+        <div className="max-w-[1400px] mx-auto mt-8 pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
           <div className="text-[11px] font-mono text-slate-400">
             {fmt(tr.footer_build, { operators: operators.length, courses: totalCourses })}
           </div>

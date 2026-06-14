@@ -19,7 +19,7 @@ export default async function ProductsPage() {
       <TopBar />
 
       {/* Hero */}
-      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-6xl mx-auto">
+      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-[1400px] mx-auto">
         <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-3">
           {tr.pr_label}
         </div>
@@ -35,7 +35,7 @@ export default async function ProductsPage() {
       </section>
 
       {/* Products grid */}
-      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-6xl mx-auto">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1400px] mx-auto">
         {operators.length === 0 ? (
           <div className="text-[15px] text-slate-500">{tr.pr_empty}</div>
         ) : (

@@ -44,7 +44,7 @@ export default async function ExplorePage() {
               "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(16,185,129,0.08) 0%, transparent 60%)",
           }}
         />
-        <div className="relative px-5 sm:px-8 pt-14 sm:pt-20 pb-8 max-w-6xl mx-auto">
+        <div className="relative px-5 sm:px-8 pt-14 sm:pt-20 pb-8 max-w-[1400px] mx-auto">
           <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
             {tr.ex_label}
           </div>
@@ -57,7 +57,7 @@ export default async function ExplorePage() {
         </div>
       </section>
 
-      <section className="px-5 sm:px-8 pb-12 max-w-6xl mx-auto">
+      <section className="px-5 sm:px-8 pb-12 max-w-[1400px] mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-[150px] sm:auto-rows-[190px] gap-3 grid-flow-dense">
           {SPOTS.map((spot, i) => (
             <article

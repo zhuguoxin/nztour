@@ -50,7 +50,7 @@ export default async function BadgesPage() {
       </section>
 
       {/* Stats strip */}
-      <section className="px-5 sm:px-8 pb-12 sm:pb-16 max-w-5xl mx-auto">
+      <section className="px-5 sm:px-8 pb-12 sm:pb-16 max-w-[1400px] mx-auto">
         <div className="grid grid-cols-3 gap-3 sm:gap-5">
           <Kpi value={stats.total} label={tr.bd_stat_awarded} />
           <Kpi value={stats.learners} label={tr.bd_stat_learners} />
@@ -59,7 +59,7 @@ export default async function BadgesPage() {
       </section>
 
       {/* How to earn */}
-      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-5xl mx-auto">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1400px] mx-auto">
         <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900 text-center mb-8 sm:mb-10">
           {tr.bd_how_heading}
         </h2>
@@ -71,7 +71,7 @@ export default async function BadgesPage() {
       </section>
 
       {/* Badge wall */}
-      <section className="px-5 sm:px-8 pb-20 sm:pb-24 max-w-6xl mx-auto">
+      <section className="px-5 sm:px-8 pb-20 sm:pb-24 max-w-[1400px] mx-auto">
         <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900 mb-5 sm:mb-7">
           {tr.bd_wall_heading}
         </h2>

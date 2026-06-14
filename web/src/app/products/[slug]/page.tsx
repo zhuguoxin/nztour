@@ -49,7 +49,7 @@ export default async function ProductDetailPage({
       <TopBar breadcrumb={breadcrumb} />
 
       {/* Product header */}
-      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-6xl mx-auto">
+      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-[1400px] mx-auto">
         <Link
           href="/products"
           className="inline-block text-[13px] text-emerald-700 hover:text-emerald-800 font-medium mb-6"
@@ -70,7 +70,7 @@ export default async function ProductDetailPage({
       </section>
 
       {/* Courses */}
-      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-6xl mx-auto">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1400px] mx-auto">
         <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900 mb-5 sm:mb-7">
           {tr.prd_courses_heading}
         </h2>
