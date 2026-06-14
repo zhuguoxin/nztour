@@ -173,13 +173,13 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   const h = compact ? 22 : 26;
-  const w = (h * 240) / 320; // preserve the 240×320 mark aspect ratio
   return (
-    <Link href="/" className="flex items-center gap-2 shrink-0">
-      <LibretourMark height={h} width={w} />
-      <span className={`font-semibold ${compact ? "text-[15px]" : "text-[17px]"} text-white`}>
-        <span className="text-emerald-300">Libre</span>tour
-      </span>
+    <Link href="/" className="flex items-center shrink-0" aria-label="Libretour">
+      {/* Dark-topbar variant of the wordmark (Logo-L-dark.svg): text in
+          light-green/white, mark in the brand mid-greens — recoloured from the
+          supplied Logo-L.svg to match the previous logo. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/Logo-L-dark.svg" alt="Libretour" height={h} style={{ height: h, width: "auto" }} />
     </Link>
   );
 }
