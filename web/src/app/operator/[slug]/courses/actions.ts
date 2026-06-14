@@ -434,16 +434,22 @@ export async function generateBlockAudioAction(input: {
   let r2Key: string;
   let durationSeconds: number;
 
-  if (voice.provider === "elevenlabs") {
-    if (!voice.external_id) throw new Error("elevenlabs voice missing external_id");
-    const { synthesizeWithVoice } = await import("@/lib/elevenlabs");
+  if (voice.provider === "elevenlabs" || voice.provider === "minimax") {
+    if (!voice.external_id) throw new Error(`${voice.provider} voice missing external_id`);
     const { plainTextFromMarkdown } = await import("@/lib/tts");
     const cleanText = plainTextFromMarkdown(sourceText).slice(0, 2000);
-    const { bytes } = await synthesizeWithVoice({
-      text: cleanText,
-      voiceId: voice.external_id,
-      lang: targetLang,
-    });
+    let bytes: Uint8Array;
+    if (voice.provider === "minimax") {
+      const { synthesizeMiniMax } = await import("@/lib/minimax");
+      ({ bytes } = await synthesizeMiniMax({ text: cleanText, voiceId: voice.external_id }));
+    } else {
+      const { synthesizeWithVoice } = await import("@/lib/elevenlabs");
+      ({ bytes } = await synthesizeWithVoice({
+        text: cleanText,
+        voiceId: voice.external_id,
+        lang: targetLang,
+      }));
+    }
     r2Key = `audio/${blockId}-${targetLang}-${voice.id}.mp3`;
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const { env } = getCloudflareContext();

@@ -57,6 +57,10 @@ function defaultVoiceFor(applicable: VoiceOption[], lang: string, existing?: str
     const premade = applicable.find((v) => v.provider === "elevenlabs" && v.kind === "stock");
     if (premade) return premade.id;
   }
+  // Non-English: prefer MiniMax (premium native, platform key) → then the free
+  // MeloTTS fallback → then whatever's available.
+  const minimax = applicable.find((v) => v.provider === "minimax");
+  if (minimax) return minimax.id;
   const melotts = applicable.find((v) => v.provider === "workers_ai_melotts");
   if (melotts) return melotts.id;
   return applicable[0]?.id ?? "voice_melotts_auto";
