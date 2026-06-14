@@ -89,7 +89,7 @@ export default async function EditCoursePage({
     const { results: blocks } = await db()
       .prepare(
         `SELECT id, module_id, position, kind, text_md, video_uid, image_r2_key, caption,
-                visibility, duration_s,
+                visibility, duration_s, audio_i18n,
                 audio_r2_key, audio_voice, audio_duration_s, audio_generated_at
          FROM content_blocks WHERE module_id IN (${ph}) ORDER BY module_id, position`,
       )

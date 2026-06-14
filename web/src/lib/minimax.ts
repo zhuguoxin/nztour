@@ -31,10 +31,26 @@ interface MiniMaxResponse {
   data?: { audio?: string };
 }
 
+/** Map a BCP-47 code to a MiniMax language_boost value (improves pronunciation
+ *  when a voice narrates a non-Chinese language). */
+function languageBoost(lang?: string): string {
+  if (!lang) return "auto";
+  if (lang.startsWith("zh")) return "Chinese";
+  if (lang.startsWith("en")) return "English";
+  if (lang.startsWith("ja")) return "Japanese";
+  if (lang.startsWith("ko")) return "Korean";
+  if (lang.startsWith("es")) return "Spanish";
+  if (lang.startsWith("fr")) return "French";
+  if (lang.startsWith("de")) return "German";
+  if (lang.startsWith("pt")) return "Portuguese";
+  return "auto";
+}
+
 /** Synthesize text with a MiniMax voice. Returns raw mp3 bytes. */
 export async function synthesizeMiniMax(opts: {
   text: string;
   voiceId: string;
+  lang?: string;
 }): Promise<{ bytes: Uint8Array }> {
   const { env } = getCloudflareContext();
   const key = (env as unknown as { MINIMAX_API_KEY?: string }).MINIMAX_API_KEY;
@@ -54,6 +70,7 @@ export async function synthesizeMiniMax(opts: {
       model: MODEL,
       text: opts.text,
       stream: false,
+      language_boost: languageBoost(opts.lang),
       voice_setting: { voice_id: opts.voiceId, speed: 1, vol: 1, pitch: 0 },
       audio_setting: { sample_rate: 32000, bitrate: 128000, format: "mp3", channel: 1 },
     }),

@@ -82,11 +82,14 @@ export async function synthesizeWithVoice(opts: {
   });
   if (!r.ok) {
     const detail = await r.text().catch(() => "");
-    // Friendly message for the common Free-tier limitation: library (native-
-    // language) voices require Starter+.
-    if (r.status === 402 || /library voices/i.test(detail)) {
+    // Friendly message for the common Free-tier limitations: library (native-
+    // language) voices and certain premium voices require a paid plan.
+    if (
+      r.status === 402 ||
+      /library voices|free_users_not_allowed|creator tier/i.test(detail)
+    ) {
       throw new Error(
-        "This native voice needs an ElevenLabs Starter plan ($5/mo). Pick a Melotts (free) voice for this language, or upgrade ElevenLabs.",
+        "This native voice needs a paid ElevenLabs plan. Pick a MiniMax or Melotts voice for this language instead, or upgrade ElevenLabs.",
       );
     }
     throw new Error(`ElevenLabs TTS failed (${r.status}): ${detail.slice(0, 200)}`);

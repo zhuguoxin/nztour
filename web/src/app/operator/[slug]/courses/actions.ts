@@ -459,7 +459,11 @@ async function generateBlockAudioCore(input: {
     let bytes: Uint8Array;
     if (voice.provider === "minimax") {
       const { synthesizeMiniMax } = await import("@/lib/minimax");
-      ({ bytes } = await synthesizeMiniMax({ text: cleanText, voiceId: voice.external_id }));
+      ({ bytes } = await synthesizeMiniMax({
+        text: cleanText,
+        voiceId: voice.external_id,
+        lang: targetLang,
+      }));
     } else {
       const { synthesizeWithVoice } = await import("@/lib/elevenlabs");
       ({ bytes } = await synthesizeWithVoice({
