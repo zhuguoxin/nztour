@@ -167,8 +167,16 @@ export function writeI18nMap(map: Record<string, string>): string {
   return JSON.stringify(map);
 }
 
-/** Resolve a translation: lookup the chosenLang in the map, fall back to
- *  primary, fall back to legacy. */
+/** Sibling languages to try before falling back to the primary/legacy text.
+ *  Simplified and Traditional Chinese are mutually intelligible in writing for
+ *  most readers and identical in spoken Mandarin, so a missing one falls back
+ *  to the other before falling back to English. */
+const SIBLING_LANGS: Record<string, string[]> = {
+  "zh-TW": ["zh-CN"],
+  "zh-CN": ["zh-TW"],
+};
+
+/** Resolve a localized string: chosenLang → sibling lang → primary/legacy. */
 export function pickLocalized(
   legacy: string | null,
   i18nJson: string | null,
@@ -177,5 +185,10 @@ export function pickLocalized(
 ): string {
   if (chosenLang === primaryLang) return legacy ?? "";
   const map = readI18nMap(i18nJson);
-  return map[chosenLang] || legacy || "";
+  if (map[chosenLang]) return map[chosenLang];
+  for (const sib of SIBLING_LANGS[chosenLang] ?? []) {
+    if (sib === primaryLang) return legacy ?? "";
+    if (map[sib]) return map[sib];
+  }
+  return legacy || "";
 }

@@ -17,6 +17,13 @@ import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
+/** Audio sibling fallback: Simplified/Traditional Chinese share spoken
+ *  Mandarin, so one's narration fits the other's text. */
+const SIBLING_AUDIO: Record<string, string[]> = {
+  "zh-TW": ["zh-CN"],
+  "zh-CN": ["zh-TW"],
+};
+
 interface Props {
   params: Promise<{ operator: string; course: string }>;
   searchParams: Promise<{ m?: string; preview?: string; lang?: string }>;
@@ -162,16 +169,21 @@ export default async function CoursePage({ params, searchParams }: Props) {
       : (() => {
           try {
             const map = JSON.parse(b.audio_i18n ?? "{}");
-            const e = map?.[chosenLang];
-            if (e?.r2_key) {
-              return {
-                audio_r2_key: e.r2_key,
-                audio_voice: e.voice_id,
-                audio_lang: chosenLang,
-                audio_duration_s: e.duration_s,
-                audio_generated_at: e.generated_at,
-                _audio_lang_query: chosenLang,
-              } as Partial<typeof b> & { _audio_lang_query?: string };
+            // Try the chosen language, then a sibling (zh-CN ↔ zh-TW share
+            // spoken Mandarin, so the other's audio fits the displayed text).
+            const candidates = [chosenLang, ...(SIBLING_AUDIO[chosenLang] ?? [])];
+            for (const cand of candidates) {
+              const e = map?.[cand];
+              if (e?.r2_key) {
+                return {
+                  audio_r2_key: e.r2_key,
+                  audio_voice: e.voice_id,
+                  audio_lang: cand,
+                  audio_duration_s: e.duration_s,
+                  audio_generated_at: e.generated_at,
+                  _audio_lang_query: cand,
+                } as Partial<typeof b> & { _audio_lang_query?: string };
+              }
             }
             return { audio_r2_key: null } as Partial<typeof b>;
           } catch {
