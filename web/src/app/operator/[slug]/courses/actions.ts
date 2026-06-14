@@ -355,13 +355,38 @@ export async function updateBlock(form: FormData) {
  *   • Non-primary: writes ONLY to `audio_i18n[lang]`. Legacy columns
  *     untouched so existing audio at primary_lang isn't clobbered.
  */
+/** FormData wrapper kept for any progressive-enhancement form usage. */
 export async function generateBlockAudio(form: FormData) {
-  const operatorSlug = String(form.get("operator_slug") ?? "");
-  const courseSlug = String(form.get("course_slug") ?? "");
-  const moduleId = String(form.get("module_id") ?? "");
-  const blockId = String(form.get("block_id") ?? "");
-  const requestedLang = String(form.get("lang") ?? "auto");
-  const voiceId = String(form.get("voice_id") ?? "").trim() || "voice_melotts_auto";
+  return generateBlockAudioAction({
+    operatorSlug: String(form.get("operator_slug") ?? ""),
+    courseSlug: String(form.get("course_slug") ?? ""),
+    moduleId: String(form.get("module_id") ?? ""),
+    blockId: String(form.get("block_id") ?? ""),
+    lang: String(form.get("lang") ?? "auto"),
+    voiceId: String(form.get("voice_id") ?? "").trim() || "voice_melotts_auto",
+  });
+}
+
+/**
+ * Object-arg variant called directly from the editor's client component (via
+ * useTransition) so we get clear loading + error feedback instead of relying
+ * on a bare form submit. Returns void; throws on failure with a message the
+ * client surfaces to the operator.
+ */
+export async function generateBlockAudioAction(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+  blockId: string;
+  lang: string;
+  voiceId: string;
+}) {
+  const operatorSlug = input.operatorSlug;
+  const courseSlug = input.courseSlug;
+  const moduleId = input.moduleId;
+  const blockId = input.blockId;
+  const requestedLang = input.lang || "auto";
+  const voiceId = (input.voiceId || "").trim() || "voice_melotts_auto";
   await authModule(operatorSlug, courseSlug, moduleId);
 
   // Pull block + parent module + course (need primary_lang).

@@ -1,13 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   updateModule,
   deleteModule,
   createBlock,
   updateBlock,
   deleteBlock,
-  generateBlockAudio,
+  generateBlockAudioAction,
   clearBlockAudio,
   reorderModulesBulk,
   reorderBlocksBulk,
@@ -684,6 +685,23 @@ function AudioLangRow({
   voices: VoiceOption[];
 }) {
   const has = !!entry;
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [voiceId, setVoiceId] = useState(entry?.voice_id ?? voices[0]?.id ?? "voice_melotts_auto");
+  const [err, setErr] = useState<string | null>(null);
+
+  function generate() {
+    setErr(null);
+    startTransition(async () => {
+      try {
+        await generateBlockAudioAction({ operatorSlug, courseSlug, moduleId, blockId, lang, voiceId });
+        router.refresh();
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "Generation failed");
+      }
+    });
+  }
+
   return (
     <div className="rounded border border-white/[.06] bg-black/[.10] p-2">
       <div className="flex items-center gap-2 mb-1.5">
@@ -711,14 +729,11 @@ function AudioLangRow({
           className="w-full h-8 mb-1.5"
         />
       ) : null}
-      <form action={generateBlockAudio} className="flex items-center gap-1.5">
-        <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-        <input type="hidden" name="module_id" value={moduleId} />
-        <input type="hidden" name="block_id" value={blockId} />
-        <input type="hidden" name="lang" value={lang} />
+      <div className="flex items-center gap-1.5">
         <select
-          name="voice_id"
-          defaultValue={entry?.voice_id ?? voices[0]?.id ?? "voice_melotts_auto"}
+          value={voiceId}
+          onChange={(e) => setVoiceId(e.target.value)}
+          disabled={pending}
           className={inputClass + " flex-1 text-[11.5px] py-1"}
         >
           {voices.map((v) => (
@@ -729,12 +744,19 @@ function AudioLangRow({
           ))}
         </select>
         <button
-          type="submit"
-          className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 shrink-0"
+          type="button"
+          onClick={generate}
+          disabled={pending}
+          className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 shrink-0 disabled:opacity-50"
         >
-          {has ? "↻" : "Generate"}
+          {pending ? "…" : has ? "↻" : "Generate"}
         </button>
-      </form>
+      </div>
+      {err ? (
+        <div className="mt-1.5 text-[10.5px] text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
+          {err}
+        </div>
+      ) : null}
     </div>
   );
 }
