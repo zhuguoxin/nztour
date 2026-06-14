@@ -88,7 +88,7 @@ export default async function LearnHome({
     try {
       const r = await db()
       .prepare(
-        `SELECT c.id, c.slug, c.operator_id, c.title, c.summary, c.cover_color, c.emoji,
+        `SELECT c.id, c.slug, c.operator_id, c.title, c.summary, c.cover_color, c.emoji, c.cover_r2_key,
                 c.primary_lang, c.status, c.est_minutes, c.ai_examples_json, c.published_version,
                 c.available_langs, c.title_i18n, c.summary_i18n,
                 o.name AS operator_name, o.slug AS operator_slug,
@@ -161,7 +161,7 @@ export default async function LearnHome({
     // Anonymous: show all published as the "All" tab, no progress / favorites.
     const { results = [] } = await db()
       .prepare(
-        `SELECT c.id, c.slug, c.operator_id, c.title, c.summary, c.cover_color, c.emoji,
+        `SELECT c.id, c.slug, c.operator_id, c.title, c.summary, c.cover_color, c.emoji, c.cover_r2_key,
                 c.primary_lang, c.status, c.est_minutes, c.ai_examples_json,
                 c.available_langs, c.title_i18n, c.summary_i18n,
                 o.name AS operator_name, o.slug AS operator_slug
@@ -300,10 +300,18 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
     <div className="rounded-2xl overflow-hidden bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition relative">
       <Link href={`/learn/${c.operator_slug}/${c.slug}`} className="block">
         <div
-          className="h-32 relative"
+          className="h-32 relative overflow-hidden"
           style={{ background: c.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)" }}
         >
-          <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5">
+          {c.cover_r2_key ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/course-cover?id=${c.id}`}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : null}
+          <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 z-10">
             <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-emerald-200 border border-white/15">
               {t.card_live}
             </span>
@@ -313,8 +321,8 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
               </span>
             ) : null}
           </div>
-          <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between">
-            <div className="text-[36px] leading-none drop-shadow">{c.emoji ?? "📚"}</div>
+          <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between z-10">
+            <div className="text-[36px] leading-none drop-shadow">{c.cover_r2_key ? "" : c.emoji ?? "📚"}</div>
             <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] text-white/85 border border-white/15">
               {c.operator_name}
             </span>

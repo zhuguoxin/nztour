@@ -14,9 +14,10 @@ import { UploadStub } from "./upload-stub";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
 import { ActivityChart } from "./activity-chart";
 import { t, fmt } from "@/lib/i18n";
-import { resolveTheme, themeCssVars } from "@/lib/theme";
+import { resolveTheme } from "@/lib/theme";
 import { updateOperatorTheme, resetOperatorTheme } from "./branding-actions";
 import { ColourField } from "./colour-field";
+import { LogoUploader } from "./logo-uploader";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
   const operator = await db()
     .prepare(
       `SELECT id, slug, name, display_name, country,
-              theme_bg, theme_accent, theme_ink, theme_logo_r2_key
+              theme_bg, theme_panel, theme_accent, theme_ink, theme_logo_r2_key
        FROM operators WHERE slug = ?`,
     )
     .bind(slug)
@@ -71,6 +72,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
       display_name: string | null;
       country: string;
       theme_bg: string | null;
+      theme_panel: string | null;
       theme_accent: string | null;
       theme_ink: string | null;
       theme_logo_r2_key: string | null;
@@ -107,13 +109,12 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
     }));
   }
 
-  const theme = resolveTheme(operator);
-
+  // The back-office stays Libretour-branded (dark green) — the operator's
+  // own theme only applies to the learner-facing /learn and /verify surfaces.
+  // The Branding panel renders a live preview so the operator still sees
+  // exactly what their theme looks like.
   return (
-    <div
-      className="min-h-screen font-sans antialiased text-[16px]"
-      style={themeCssVars(theme)}
-    >
+    <div className="min-h-screen font-sans antialiased text-[16px] bg-[#04241e] text-[#f0fdf4]">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2">
@@ -238,23 +239,40 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                     key={c.id}
                     className="px-5 py-4 flex items-center gap-4 border-b border-white/[.04] last:border-b-0"
                   >
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-[20px] shrink-0"
-                      style={{ background: c.cover_color ?? "#1e293b" }}
+                    <Link
+                      href={`/operator/${operator.slug}/courses/${c.slug}/edit`}
+                      className="flex items-center gap-4 flex-1 min-w-0 group"
+                      title={tr.op_d_action_edit}
                     >
-                      {c.emoji ?? "📚"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-[14px] text-white truncate">{c.title}</div>
-                      <div className="text-[12px] text-[#86b69a]">
-                        {fmt(
-                          c.modules === 1 ? tr.op_d_course_modules : tr.op_d_course_modules_plural,
-                          { n: c.modules },
-                        )}{" "}
-                        ·{" "}
-                        {fmt(tr.op_d_course_updated, { rel: fmtRelative(c.updated_at) })}
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-[20px] shrink-0 overflow-hidden"
+                        style={{ background: c.cover_color ?? "#1e293b" }}
+                      >
+                        {c.cover_r2_key ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={`/api/course-cover?id=${c.id}`}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          c.emoji ?? "📚"
+                        )}
                       </div>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-[14px] text-white truncate group-hover:text-emerald-300">
+                          {c.title}
+                        </div>
+                        <div className="text-[12px] text-[#86b69a]">
+                          {fmt(
+                            c.modules === 1 ? tr.op_d_course_modules : tr.op_d_course_modules_plural,
+                            { n: c.modules },
+                          )}{" "}
+                          ·{" "}
+                          {fmt(tr.op_d_course_updated, { rel: fmtRelative(c.updated_at) })}
+                        </div>
+                      </div>
+                    </Link>
                     <span
                       className={`px-2.5 py-1 rounded-full text-[11px] font-medium tabular-nums shrink-0 ${
                         c.learners > 0
@@ -448,49 +466,58 @@ function BrandingPanel({
   operator: {
     slug: string;
     theme_bg: string | null;
+    theme_panel: string | null;
     theme_accent: string | null;
     theme_ink: string | null;
+    theme_logo_r2_key: string | null;
   };
 }) {
+  const t = resolveTheme(operator);
   return (
     <section className="mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
       <header className="px-5 py-4 border-b border-white/[.06]">
         <div className="font-semibold text-[14px] text-white">Branding</div>
         <div className="text-[12px] text-[#86b69a] mt-0.5">
-          Three colours decide how your courses look to agents. Save → the page chrome on every
-          course you publish shifts to match. Leave blank to use Libretour green.
+          These colours and your logo decide how your courses look to agents. Save → every course
+          you publish shifts to match. Leave a colour blank to use the Libretour default.
         </div>
       </header>
-      <form action={updateOperatorTheme} className="p-5 space-y-4">
-        <input type="hidden" name="operator_slug" value={operator.slug} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <ColourField
-            name="theme_bg"
-            label="Background"
-            hint="Main page surface"
-            defaultValue={operator.theme_bg}
-          />
-          <ColourField
-            name="theme_accent"
-            label="Accent"
-            hint="Buttons, links, highlights"
-            defaultValue={operator.theme_accent}
-          />
-          <ColourField
-            name="theme_ink"
-            label="Text"
-            hint="Headline text contrast"
-            defaultValue={operator.theme_ink}
-          />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-5 p-5">
+        <form action={updateOperatorTheme} className="space-y-4">
+          <input type="hidden" name="operator_slug" value={operator.slug} />
 
-        <div className="flex items-center justify-between flex-wrap gap-2 pt-2">
-          <div className="text-[11.5px] text-[#86b69a]">
-            Preview reloads automatically — refresh the course page after saving to see the new
-            theme on every published course.
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ColourField
+              name="theme_bg"
+              label="Page background"
+              hint="The main page surface behind everything"
+              defaultValue={operator.theme_bg}
+            />
+            <ColourField
+              name="theme_panel"
+              label="Block background"
+              hint="Cards, modules and content blocks"
+              defaultValue={operator.theme_panel}
+            />
+            <ColourField
+              name="theme_ink"
+              label="Text"
+              hint="Headlines and body copy"
+              defaultValue={operator.theme_ink}
+            />
+            <ColourField
+              name="theme_accent"
+              label="Highlight"
+              hint="Buttons, progress bar and links"
+              defaultValue={operator.theme_accent}
+            />
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+            <div className="text-[11.5px] text-[#86b69a]">
+              After saving, refresh a course page to see the new theme applied everywhere.
+            </div>
             <button
               type="submit"
               className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
@@ -498,17 +525,50 @@ function BrandingPanel({
               Save branding
             </button>
           </div>
+        </form>
+
+        {/* Live preview of the four tokens as a learner would see them */}
+        <div className="rounded-xl overflow-hidden border border-white/[.10]" style={{ background: t.bg }}>
+          <div className="px-3 py-2 text-[10px] font-mono tracking-widest" style={{ color: t.inkMuted }}>
+            PREVIEW
+          </div>
+          <div className="m-3 mt-0 rounded-lg p-3" style={{ background: t.panel }}>
+            <div className="text-[13px] font-semibold" style={{ color: t.ink }}>
+              Lifts &amp; terrain map
+            </div>
+            <div className="text-[11px] mt-0.5" style={{ color: t.inkMuted }}>
+              5 min · sample module
+            </div>
+            <div className="h-1.5 rounded-full mt-2.5 overflow-hidden" style={{ background: "rgba(0,0,0,.3)" }}>
+              <div className="h-full" style={{ width: "60%", background: t.accent }} />
+            </div>
+            <div
+              className="mt-3 inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold"
+              style={{ background: t.accent, color: t.bg }}
+            >
+              Continue
+            </div>
+          </div>
         </div>
-      </form>
-      <form action={resetOperatorTheme} className="px-5 pb-5 flex justify-end">
-        <input type="hidden" name="operator_slug" value={operator.slug} />
-        <button
-          type="submit"
-          className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
-        >
-          Reset to Libretour default
-        </button>
-      </form>
+      </div>
+
+      {/* Logo uploader + reset */}
+      <div className="px-5 pb-5 flex items-center justify-between flex-wrap gap-3 border-t border-white/[.06] pt-4">
+        <LogoUploader
+          operatorSlug={operator.slug}
+          hasLogo={!!operator.theme_logo_r2_key}
+          themeBg={t.bg}
+        />
+        <form action={resetOperatorTheme}>
+          <input type="hidden" name="operator_slug" value={operator.slug} />
+          <button
+            type="submit"
+            className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
+          >
+            Reset to Libretour default
+          </button>
+        </form>
+      </div>
     </section>
   );
 }

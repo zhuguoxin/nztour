@@ -174,6 +174,7 @@ export interface CourseSummary {
   title: string;
   emoji: string | null;
   cover_color: string | null;
+  cover_r2_key: string | null;
   status: string;
   modules: number;
   learners: number;
@@ -184,7 +185,7 @@ export async function listOperatorCourses(operatorId: string): Promise<CourseSum
   const { results } = await db()
     .prepare(
       `SELECT
-         c.id, c.slug, c.title, c.emoji, c.cover_color, c.status, c.updated_at,
+         c.id, c.slug, c.title, c.emoji, c.cover_color, c.cover_r2_key, c.status, c.updated_at,
          (SELECT COUNT(*) FROM modules m WHERE m.course_id = c.id) AS modules,
          (SELECT COUNT(DISTINCT e.user_id) FROM enrollments e WHERE e.course_id = c.id) AS learners
        FROM courses c

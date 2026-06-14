@@ -12,6 +12,7 @@ import {
 } from "./editor-modules";
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
 import { TranslationsPanel } from "./translations-panel";
+import { CoverImageField } from "./cover-image-field";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ interface CourseEditRow {
   title: string;
   summary: string | null;
   emoji: string | null;
+  cover_r2_key: string | null;
   status: string;
   est_minutes: number | null;
   primary_lang: string;
@@ -44,14 +46,18 @@ export default async function EditCoursePage({
   }
 
   const op = await db()
-    .prepare(`SELECT id, name FROM operators WHERE slug = ?`)
+    .prepare(
+      `SELECT o.id, o.name, s.slug AS supplier_slug
+       FROM operators o LEFT JOIN suppliers s ON s.id = o.supplier_id
+       WHERE o.slug = ?`,
+    )
     .bind(slug)
-    .first<{ id: string; name: string }>();
+    .first<{ id: string; name: string; supplier_slug: string | null }>();
   if (!op) notFound();
 
   const course = await db()
     .prepare(
-      `SELECT id, slug, title, summary, emoji, status, est_minutes, primary_lang, available_langs
+      `SELECT id, slug, title, summary, emoji, cover_r2_key, status, est_minutes, primary_lang, available_langs
        FROM courses WHERE operator_id = ? AND slug = ?`,
     )
     .bind(op.id, courseSlug)
@@ -138,7 +144,11 @@ export default async function EditCoursePage({
        WHERE v.status = 'active'
          AND (v.supplier_id IS NULL OR o.slug = ?)
        GROUP BY v.id
-       ORDER BY (v.supplier_id IS NULL) DESC, v.created_at DESC`,
+       -- Cloned (supplier-owned) voices first, then ElevenLabs stock voices
+       -- (which handle every language well), then the free melotts fallback.
+       ORDER BY (v.kind = 'cloned') DESC,
+                (v.provider = 'elevenlabs') DESC,
+                v.created_at DESC`,
     )
     .bind(slug)
     .all<{
@@ -174,6 +184,14 @@ export default async function EditCoursePage({
       />
 
       <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto space-y-8">
+        {/* ============== Languages (AI translation) — top of the editor ============== */}
+        <TranslationsPanel
+          operatorSlug={slug}
+          courseSlug={course.slug}
+          primaryLang={course.primary_lang}
+          availableLangs={availableLangs}
+        />
+
         {/* ============== Duration banner ============== */}
         <DurationBanner totalS={totalDurationS} totalMin={totalMin} totalSec={totalSec} />
 
@@ -225,15 +243,15 @@ export default async function EditCoursePage({
               />
             </Field>
 
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Emoji">
-                <input
-                  name="emoji"
-                  defaultValue={course.emoji ?? ""}
-                  maxLength={4}
-                  className={inputClass + " text-[20px]"}
-                />
-              </Field>
+            <CoverImageField
+              courseId={course.id}
+              operatorSlug={slug}
+              courseSlug={course.slug}
+              emoji={course.emoji}
+              hasCover={!!course.cover_r2_key}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
               <Field label="Minutes">
                 <input
                   name="est_minutes"
@@ -280,13 +298,22 @@ export default async function EditCoursePage({
 
         {/* ============== Modules + blocks ============== */}
         <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
-          <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between">
+          <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between gap-3 flex-wrap">
             <div>
               <div className="font-semibold text-[14px] text-white">Modules</div>
               <div className="text-[12px] text-[#86b69a] mt-0.5">
                 {modules?.length ?? 0} module{modules?.length === 1 ? "" : "s"} · drag ⠿ to reorder
               </div>
             </div>
+            {op.supplier_slug ? (
+              <Link
+                href={`/supplier/${op.supplier_slug}`}
+                className="text-[12px] text-emerald-300 hover:underline shrink-0"
+                title="Stock voices work for every language. Clone a sales rep's own voice on the Supplier dashboard."
+              >
+                🎙️ Manage &amp; clone voices →
+              </Link>
+            ) : null}
           </header>
 
           <EditorModules
@@ -318,14 +345,6 @@ export default async function EditCoursePage({
             </button>
           </form>
         </section>
-
-        {/* ============== Languages (AI translation) ============== */}
-        <TranslationsPanel
-          operatorSlug={slug}
-          courseSlug={course.slug}
-          primaryLang={course.primary_lang}
-          availableLangs={availableLangs}
-        />
 
         {/* ============== Supplementary materials (RAG-only) ============== */}
         <AttachmentsPanel

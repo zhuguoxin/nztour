@@ -23,16 +23,17 @@ export async function updateOperatorTheme(form: FormData) {
   const access = await requireOperatorMembership(slug);
 
   const bg = normaliseHex(form.get("theme_bg"));
+  const panel = normaliseHex(form.get("theme_panel"));
   const accent = normaliseHex(form.get("theme_accent"));
   const ink = normaliseHex(form.get("theme_ink"));
 
   await db()
     .prepare(
       `UPDATE operators
-         SET theme_bg = ?, theme_accent = ?, theme_ink = ?
+         SET theme_bg = ?, theme_panel = ?, theme_accent = ?, theme_ink = ?
        WHERE id = ?`,
     )
-    .bind(bg, accent, ink, access.operatorId)
+    .bind(bg, panel, accent, ink, access.operatorId)
     .run();
 
   // Every surface that reads operator.theme_*.
@@ -46,7 +47,8 @@ export async function resetOperatorTheme(form: FormData) {
   await db()
     .prepare(
       `UPDATE operators
-         SET theme_bg = NULL, theme_accent = NULL, theme_ink = NULL, theme_logo_r2_key = NULL
+         SET theme_bg = NULL, theme_panel = NULL, theme_accent = NULL,
+             theme_ink = NULL, theme_logo_r2_key = NULL
        WHERE id = ?`,
     )
     .bind(access.operatorId)

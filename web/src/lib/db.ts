@@ -41,6 +41,7 @@ export interface CourseRow {
   summary: string | null;
   cover_color: string | null;
   emoji: string | null;
+  cover_r2_key?: string | null;
   primary_lang: string;
   status: string;
   est_minutes: number | null;

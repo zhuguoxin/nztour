@@ -1,0 +1,14 @@
+-- 0010: dedicated block/panel background colour token.
+--
+-- Until now operators had three theme tokens (bg / accent / ink) and the
+-- "panel" surface colour (the cards/blocks inside a course) was auto-derived
+-- from bg + ink. Operators found that confusing: changing "accent" appeared
+-- to do nothing visible, because almost no surface consumed --op-accent, and
+-- the most visible surface — the block backgrounds — wasn't directly
+-- controllable.
+--
+-- We add an explicit `theme_panel` column for the block/card background.
+-- `theme_accent` keeps its original meaning (highlight: buttons, progress,
+-- links). resolveTheme falls back to the derived shade when theme_panel is
+-- NULL, so existing operators are unaffected until they pick a colour.
+ALTER TABLE operators ADD COLUMN theme_panel TEXT;  -- block / card background; NULL = derive from bg

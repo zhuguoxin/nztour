@@ -35,30 +35,40 @@ export interface ResolvedTheme {
 
 export interface ThemedOperator {
   theme_bg: string | null;
+  theme_panel?: string | null;
   theme_accent: string | null;
   theme_ink: string | null;
   theme_logo_r2_key?: string | null;
 }
 
 /**
- * Resolve an operator's stored tokens into a full theme. Panel and muted-ink
- * shades are auto-derived from bg / ink so the operator only has to pick
- * three colours. When tokens are null we fall back to the Libretour palette
- * end-to-end so partially configured operators still look polished.
+ * Resolve an operator's stored tokens into a full theme.
+ *
+ * Four controllable tokens:
+ *   bg     — page background          (theme_bg)
+ *   panel  — block / card background  (theme_panel) — derived from bg when null
+ *   ink    — primary text             (theme_ink)
+ *   accent — highlight: buttons,      (theme_accent)
+ *            progress, links
+ *
+ * inkMuted is derived from ink toward panel so secondary text keeps a
+ * consistent relationship to whatever surface the operator chose. When tokens
+ * are null we fall back to the Libretour palette so partially configured
+ * operators still look polished.
  */
 export function resolveTheme(op: ThemedOperator): ResolvedTheme {
   const bg = op.theme_bg ?? DEFAULT_THEME.bg;
   const accent = op.theme_accent ?? DEFAULT_THEME.accent;
   const ink = op.theme_ink ?? DEFAULT_THEME.ink;
-  // Panel = bg lightened toward ink ~12%. Muted ink = ink darkened ~35%.
-  // These derivations keep the surface relations intact across any palette.
+  // Panel: explicit when set, otherwise bg lightened ~10% toward ink.
+  const panel = op.theme_panel ?? mix(bg, ink, 0.1);
   return {
     bg,
     accent,
     ink,
-    panel: mix(bg, ink, 0.1),
-    inkMuted: mix(ink, bg, 0.45),
-    border: "rgba(255,255,255,0.08)",
+    panel,
+    inkMuted: mix(ink, panel, 0.45),
+    border: "rgba(255,255,255,0.10)",
     logoR2Key: op.theme_logo_r2_key ?? null,
   };
 }

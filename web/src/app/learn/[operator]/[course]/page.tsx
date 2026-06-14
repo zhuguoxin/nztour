@@ -222,6 +222,10 @@ export default async function CoursePage({ params, searchParams }: Props) {
         }
       />
 
+      {/* Everything below the TopBar is wrapped in op-theme-scope so the
+          operator's chosen colours apply (the TopBar stays Libretour green). */}
+      <div className="op-theme-scope">
+
       {isPreview ? (
         <div className="bg-amber-400/20 border-b border-amber-400/40 text-amber-100 text-[12.5px] font-mono px-4 py-1.5 flex items-center justify-center gap-2">
           ⚠ PREVIEW MODE — viewing {course.status} content as a learner.
@@ -254,6 +258,16 @@ export default async function CoursePage({ params, searchParams }: Props) {
           className="border-b lg:border-b-0 lg:border-r border-white/[.06] p-5 lg:min-h-[calc(100vh-65px)]"
           style={{ background: "color-mix(in srgb, var(--op-panel) 60%, transparent)" }}
         >
+          {theme.logoR2Key ? (
+            <div className="mb-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/operator-logo?slug=${encodeURIComponent(operatorSlug)}`}
+                alt={operator.name}
+                className="max-h-9 max-w-[180px] object-contain"
+              />
+            </div>
+          ) : null}
           <div className="text-[11px] font-mono text-emerald-300/70 mb-2">{tr.course_label}</div>
           <div className="text-[15px] font-semibold mb-1 text-white">{courseTitleLocal}</div>
           <div className="text-[13px] text-[#a7d4b6] mb-4">{operator.name}</div>
@@ -348,6 +362,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
           </div>
           <FeedbackWidget courseId={course.id} moduleId={active.id} />
         </aside>
+      </div>
       </div>
     </div>
   );

@@ -24,3 +24,42 @@ body {
 	color: var(--foreground);
 	font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ============================================================================
+ * Operator theme scope.
+ *
+ * The learner-facing course experience (/learn/<operator>/<course> and its
+ * widgets) is wrapped in `.op-theme-scope`, with the four theme tokens set as
+ * CSS variables (--op-bg / --op-panel / --op-ink / --op-accent) via inline
+ * style. These rules remap the brand-coloured Tailwind utility classes used
+ * throughout the themed surfaces to those variables, so an operator's chosen
+ * colours actually take effect everywhere without rewriting hundreds of
+ * className strings.
+ *
+ * Rules are intentionally UNLAYERED so they win over Tailwind's @layer
+ * utilities regardless of source order. The TopBar is rendered OUTSIDE the
+ * scope so it always keeps the Libretour dark-green chrome.
+ * ========================================================================== */
+
+/* Block / card backgrounds → panel token */
+.op-theme-scope .bg-\[\#0a3a2f\],
+.op-theme-scope .bg-\[\#062b22\] { background-color: var(--op-panel); }
+
+/* Inner-darkest surfaces → page bg token */
+.op-theme-scope .bg-\[\#04241e\] { background-color: var(--op-bg); }
+
+/* Primary text → ink token */
+.op-theme-scope .text-white,
+.op-theme-scope .text-\[\#f0fdf4\],
+.op-theme-scope .text-\[\#e6f5ec\] { color: var(--op-ink); }
+
+/* Secondary / muted text → derived muted-ink token */
+.op-theme-scope .text-\[\#a7d4b6\],
+.op-theme-scope .text-\[\#86b69a\],
+.op-theme-scope .text-\[\#d8f0e1\],
+.op-theme-scope .text-\[\#c4e9d3\] { color: var(--op-ink-muted); }
+
+/* Highlight (primary buttons + active fills) → accent token */
+.op-theme-scope .bg-emerald-400 { background-color: var(--op-accent); }
+/* Label text accents → accent token */
+.op-theme-scope .text-emerald-300 { color: var(--op-accent); }
