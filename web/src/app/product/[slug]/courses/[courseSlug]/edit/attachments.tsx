@@ -2,6 +2,9 @@
 
 import { useTransition } from "react";
 import { deleteCourseAttachment } from "../../actions";
+import { useTr } from "@/lib/i18n-provider";
+import { fmt } from "@/lib/i18n-shared";
+import type { Dict } from "@/lib/i18n";
 
 export interface AttachmentRow {
   id: string;
@@ -37,6 +40,7 @@ export function AttachmentsPanel({
   attachments: AttachmentRow[];
 }) {
   const [pending, startTransition] = useTransition();
+  const tr = useTr();
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -50,7 +54,7 @@ export function AttachmentsPanel({
       if (r.ok) {
         window.location.reload();
       } else {
-        const msg = await r.text().catch(() => "Upload failed");
+        const msg = await r.text().catch(() => tr.ui_upload_failed);
         alert(msg.slice(0, 300));
       }
     });
@@ -61,21 +65,20 @@ export function AttachmentsPanel({
     <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
       <header className="px-5 py-4 border-b border-white/[.06]">
         <div className="font-semibold text-[14px] text-white">
-          Supplementary materials
+          {tr.at_title}
           <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] uppercase font-mono">
-            AI-only
+            {tr.at_ai_only}
           </span>
         </div>
         <div className="text-[12px] text-[#86b69a] mt-0.5">
-          Hidden from learners · fed to the AI assistant for Q&amp;A only · PDF / TXT / Markdown /
-          DOCX ≤ 16 MB
+          {tr.at_subtitle}
         </div>
       </header>
 
       <div className="divide-y divide-white/[.04]">
         {attachments.length === 0 ? (
           <div className="px-5 py-6 text-center text-[13px] text-[#86b69a]">
-            No supplementary materials yet — drop a file below.
+            {tr.at_empty}
           </div>
         ) : (
           attachments.map((a) => (
@@ -90,7 +93,7 @@ export function AttachmentsPanel({
                   <span className="text-[#395a4a]">·</span>
                   <RagBadge status={a.rag_status} />
                   <span className="text-[#395a4a]">·</span>
-                  <span>uploaded {fmtRelative(a.created_at)}</span>
+                  <span>{fmt(tr.at_uploaded_rel, { rel: fmtRelative(a.created_at, tr) })}</span>
                 </div>
               </div>
               <form action={deleteCourseAttachment} className="inline-flex">
@@ -100,7 +103,7 @@ export function AttachmentsPanel({
                 <button
                   type="submit"
                   className="px-2 py-1 rounded text-rose-300/80 hover:bg-rose-400/10 text-[11px]"
-                  title="Delete attachment"
+                  title={tr.at_delete}
                 >
                   ✕
                 </button>
@@ -113,10 +116,10 @@ export function AttachmentsPanel({
       <div className="px-5 py-4 border-t border-white/[.04]">
         <label className="flex items-center gap-3 text-[12px] text-[#d8f0e1] cursor-pointer">
           <span className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300">
-            {pending ? "Uploading…" : "+ Add file"}
+            {pending ? tr.at_uploading : tr.at_add_file}
           </span>
           <span className="text-[11px] text-[#86b69a]">
-            Ingestion runs async — badge moves from pending → ready once vectorized.
+            {tr.at_add_hint}
           </span>
           <input
             type="file"
@@ -132,12 +135,13 @@ export function AttachmentsPanel({
 }
 
 function RagBadge({ status }: { status: string }) {
+  const tr = useTr();
   const cfg =
     status === "ready"
-      ? { cls: "border-emerald-400/30 text-emerald-300 bg-emerald-400/[.06]", label: "RAG ready" }
+      ? { cls: "border-emerald-400/30 text-emerald-300 bg-emerald-400/[.06]", label: tr.at_rag_ready }
       : status === "failed"
-        ? { cls: "border-rose-400/30 text-rose-300 bg-rose-400/[.06]", label: "RAG failed" }
-        : { cls: "border-amber-400/30 text-amber-300 bg-amber-400/[.06]", label: "RAG pending" };
+        ? { cls: "border-rose-400/30 text-rose-300 bg-rose-400/[.06]", label: tr.at_rag_failed }
+        : { cls: "border-amber-400/30 text-amber-300 bg-amber-400/[.06]", label: tr.at_rag_pending };
   return (
     <span className={`px-1.5 py-0.5 rounded border text-[10px] font-mono uppercase ${cfg.cls}`}>
       {cfg.label}
@@ -158,10 +162,10 @@ function iconFor(mime: string): string {
   return "📎";
 }
 
-function fmtRelative(unix: number): string {
+function fmtRelative(unix: number, tr: Dict): string {
   const diff = Date.now() / 1000 - unix;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60) return tr.ui_just_now;
+  if (diff < 3600) return fmt(tr.ui_m_ago, { n: Math.floor(diff / 60) });
+  if (diff < 86400) return fmt(tr.ui_h_ago, { n: Math.floor(diff / 3600) });
+  return fmt(tr.ui_d_ago, { n: Math.floor(diff / 86400) });
 }

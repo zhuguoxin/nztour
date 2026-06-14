@@ -18,6 +18,7 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTr } from "@/lib/i18n-provider";
 
 /**
  * Generic vertical drag-and-drop list.
@@ -48,6 +49,7 @@ export function SortableList<T extends SortableItem>({
   renderItem: (item: T, dragHandle: DragHandleProps, isDragging: boolean) => ReactNode;
   emptyState?: ReactNode;
 }) {
+  const tr = useTr();
   const [localOrder, setLocalOrder] = useState(items);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export function SortableList<T extends SortableItem>({
       } catch (err) {
         // Revert on failure.
         setLocalOrder(prev);
-        setError(err instanceof Error ? err.message : "Failed to save order");
+        setError(err instanceof Error ? err.message : tr.ui_reorder_failed);
       }
     });
   }
@@ -149,15 +151,16 @@ function SortableRow({
 
 /** Standard grab handle — drop onto a span. */
 export function GrabHandle({ handle }: { handle: DragHandleProps }) {
+  const tr = useTr();
   return (
     <button
       ref={handle.ref as unknown as React.Ref<HTMLButtonElement>}
       {...handle.attributes}
       {...handle.listeners}
       type="button"
-      aria-label="Drag to reorder"
+      aria-label={tr.em_drag_reorder}
       className="cursor-grab active:cursor-grabbing text-[#86b69a] hover:text-emerald-300 px-1.5 py-1 rounded-md hover:bg-white/[.05] touch-none"
-      title="Drag to reorder"
+      title={tr.em_drag_reorder}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
         <circle cx="9" cy="6" r="1.6" />

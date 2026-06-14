@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTr } from "@/lib/i18n-provider";
 
 /**
  * Cover image control for a course. The course cover can be EITHER:
@@ -27,6 +28,7 @@ export function CoverImageField({
 }) {
   const [pending, startTransition] = useTransition();
   const [emojiVal, setEmojiVal] = useState(emoji ?? "");
+  const tr = useTr();
 
   function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -39,7 +41,7 @@ export function CoverImageField({
       const r = await fetch("/api/course-cover", { method: "POST", body: fd });
       if (r.ok) window.location.reload();
       else {
-        const msg = await r.text().catch(() => "Upload failed");
+        const msg = await r.text().catch(() => tr.ui_upload_failed);
         alert(msg.slice(0, 300));
       }
     });
@@ -58,7 +60,7 @@ export function CoverImageField({
 
   return (
     <div>
-      <div className="text-[12px] font-semibold text-[#e6f5ec] mb-1.5">Cover image</div>
+      <div className="text-[12px] font-semibold text-[#e6f5ec] mb-1.5">{tr.ci_cover_image}</div>
       <div className="flex items-center gap-3">
         {/* Preview tile */}
         <div className="w-14 h-14 rounded-lg bg-[#04241e] border border-white/[.10] flex items-center justify-center text-[26px] overflow-hidden shrink-0">
@@ -81,14 +83,14 @@ export function CoverImageField({
             value={emojiVal}
             onChange={(e) => setEmojiVal(e.target.value)}
             maxLength={4}
-            placeholder="Emoji, e.g. 🏔️"
+            placeholder={tr.ci_emoji_ph}
             disabled={hasCover}
             className="w-full bg-[#04241e] border border-white/[.10] rounded-md px-3 py-1.5 text-[18px] text-white outline-none focus:border-emerald-400/60 disabled:opacity-40"
           />
           <div className="flex items-center gap-2">
             <label className="cursor-pointer">
               <span className="px-2.5 py-1 rounded-md bg-white/[.06] border border-white/[.10] text-[#d8f0e1] text-[11.5px] hover:bg-white/[.10]">
-                {pending ? "Uploading…" : hasCover ? "Replace image" : "Upload image"}
+                {pending ? tr.ci_uploading : hasCover ? tr.ci_replace_image : tr.ci_upload_image}
               </span>
               <input
                 type="file"
@@ -105,14 +107,14 @@ export function CoverImageField({
                 disabled={pending}
                 className="text-[11px] text-rose-300/80 hover:underline"
               >
-                use emoji instead
+                {tr.ci_use_emoji}
               </button>
             ) : null}
           </div>
         </div>
       </div>
       <div className="text-[10.5px] text-[#5d9279] mt-1">
-        PNG / JPEG / WebP · ≤ 4 MB · shown on the course card. An image overrides the emoji.
+        {tr.ci_hint}
       </div>
     </div>
   );

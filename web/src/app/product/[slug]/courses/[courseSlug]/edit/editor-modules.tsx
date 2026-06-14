@@ -18,6 +18,8 @@ import {
 } from "../../actions";
 import { SortableList, GrabHandle, type DragHandleProps } from "./sortable-list";
 import { langLabel } from "@/lib/translate";
+import { useTr } from "@/lib/i18n-provider";
+import { fmt } from "@/lib/i18n-shared";
 
 export interface VoiceOption {
   id: string;
@@ -132,6 +134,7 @@ export function EditorModules({
   blocksByModuleId: Record<string, BlockData[]>;
   quizByModuleId: Record<string, QuizQuestionData[]>;
 }) {
+  const tr = useTr();
   return (
     <SortableList
       items={modules}
@@ -140,7 +143,7 @@ export function EditorModules({
       }
       emptyState={
         <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">
-          No modules yet. Add the first one below to get started.
+          {tr.em_no_modules}
         </div>
       }
       renderItem={(m, handle) => (
@@ -181,6 +184,7 @@ function ModuleEditor({
   availableLangs: string[];
   voices: VoiceOption[];
 }) {
+  const tr = useTr();
   return (
     <details className="group border-b border-white/[.04]" open={blocks.length === 0}>
       <summary className="px-5 py-4 cursor-pointer flex items-center gap-3 hover:bg-white/[.02] list-none">
@@ -203,7 +207,7 @@ function ModuleEditor({
         <form action={updateModule} className="space-y-3 bg-[#062b22] rounded-lg p-3">
           <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
           <input type="hidden" name="module_id" value={module.id} />
-          <Field label="Title">
+          <Field label={tr.em_field_title}>
             <input
               name="title"
               defaultValue={module.title}
@@ -213,7 +217,7 @@ function ModuleEditor({
             />
           </Field>
           <div className="grid grid-cols-[1fr_120px] gap-3">
-            <Field label="Summary">
+            <Field label={tr.em_field_summary}>
               <input
                 name="summary"
                 defaultValue={module.summary ?? ""}
@@ -221,7 +225,7 @@ function ModuleEditor({
                 className={inputClass}
               />
             </Field>
-            <Field label="Minutes">
+            <Field label={tr.em_field_minutes}>
               <input
                 name="est_minutes"
                 type="number"
@@ -237,7 +241,7 @@ function ModuleEditor({
               type="submit"
               className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12.5px] hover:bg-emerald-300"
             >
-              Save module
+              {tr.em_save_module}
             </button>
             {/* formAction overrides the form's action for this submit — avoids
                 a nested <form> (which corrupts hydration and breaks every form
@@ -248,7 +252,7 @@ function ModuleEditor({
               formAction={deleteModule}
               className="px-3 py-1.5 rounded-md border border-rose-400/30 text-rose-300 text-[12px] hover:bg-rose-400/10"
             >
-              Delete module
+              {tr.em_delete_module}
             </button>
           </div>
         </form>
@@ -261,7 +265,7 @@ function ModuleEditor({
           }
           emptyState={
             <div className="text-[12px] text-[#86b69a] text-center py-3">
-              No blocks yet — add one below.
+              {tr.em_no_blocks_add}
             </div>
           }
           renderItem={(b, h) => (
@@ -282,7 +286,14 @@ function ModuleEditor({
 
         {/* Add-block buttons */}
         <div className="grid grid-cols-2 gap-2 text-[12px]">
-          {(["text", "callout", "video", "image"] as const).map((kind) => (
+          {(
+            [
+              ["text", tr.em_add_block_text],
+              ["callout", tr.em_add_block_callout],
+              ["video", tr.em_add_block_video],
+              ["image", tr.em_add_block_image],
+            ] as const
+          ).map(([kind, label]) => (
             <form key={kind} action={createBlock} className="inline-flex">
               <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
               <input type="hidden" name="module_id" value={module.id} />
@@ -291,17 +302,16 @@ function ModuleEditor({
                 type="submit"
                 className="w-full px-3 py-2 rounded-md border border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06] text-left"
               >
-                + Add {kind} block
+                {label}
               </button>
             </form>
           ))}
         </div>
         <p className="text-[11px] text-[#86b69a] leading-relaxed">
-          💡 Write each <span className="text-[#d8f0e1]">text</span> block as one coherent paragraph
-          (2–5 sentences) — it reads better and keeps voice-over narration natural. Use a{" "}
-          <span className="text-[#d8f0e1]">callout</span> for a single highlight, and a separate
-          block per distinct item (e.g. each pricing tier). One sentence per block makes the audio
-          choppy.
+          {fmt(tr.em_block_tip, {
+            text: tr.em_block_tip_text,
+            callout: tr.em_block_tip_callout,
+          })}
         </p>
 
         {/* End-of-chapter quiz authoring */}
@@ -327,13 +337,16 @@ function ModuleQuizAuthor({
   operatorSlug: string;
   courseSlug: string;
 }) {
+  const tr = useTr();
   return (
     <section className="rounded-lg border border-amber-400/20 bg-amber-400/[.04] p-3">
       <div className="flex items-baseline justify-between mb-2">
         <div className="text-[12px] font-semibold text-amber-300">
-          End-of-chapter quiz
+          {tr.em_quiz_heading}
           <span className="ml-1.5 text-[10px] text-[#86b69a] font-normal">
-            ({questions.length} question{questions.length === 1 ? "" : "s"} · learner sees 3 random)
+            {fmt(questions.length === 1 ? tr.em_quiz_count_one : tr.em_quiz_count_many, {
+              n: questions.length,
+            })}
           </span>
         </div>
         <form action={generateModuleQuiz} className="inline-flex">
@@ -343,16 +356,16 @@ function ModuleQuizAuthor({
           <button
             type="submit"
             className="px-2.5 py-1 rounded border border-amber-400/40 text-amber-200 hover:bg-amber-400/10 text-[11px]"
-            title="AI-generates 5 multi-choice questions from this module's text content"
+            title={tr.em_quiz_generate_title}
           >
-            ✨ Generate 5 from content
+            {tr.em_quiz_gen5}
           </button>
         </form>
       </div>
 
       {questions.length === 0 ? (
         <div className="text-[11.5px] text-[#86b69a] mb-2">
-          No questions yet — learners will use the default 30-second-dwell completion until you add some.
+          {tr.em_quiz_empty}
         </div>
       ) : (
         <ol className="space-y-1.5 mb-2">
@@ -387,7 +400,7 @@ function ModuleQuizAuthor({
                   <button
                     type="submit"
                     className="px-1.5 py-0.5 rounded text-rose-300/80 hover:bg-rose-400/10 text-[10px]"
-                    title="Delete question"
+                    title={tr.em_quiz_delete_q}
                   >
                     ✕
                   </button>
@@ -416,6 +429,7 @@ function NewQuestionForm({
   operatorSlug: string;
   courseSlug: string;
 }) {
+  const tr = useTr();
   return (
     <form
       action={createQuizQuestion}
@@ -428,7 +442,7 @@ function NewQuestionForm({
         name="prompt"
         required
         maxLength={500}
-        placeholder="Question…"
+        placeholder={tr.em_quiz_q_ph}
         className={inputClass + " text-[12.5px]"}
       />
       <div className="grid grid-cols-[1fr_1fr] gap-1.5">
@@ -436,14 +450,14 @@ function NewQuestionForm({
           type="text"
           name="c0"
           required
-          placeholder="Choice A"
+          placeholder={tr.em_quiz_choice_a}
           className={inputClass + " text-[12.5px]"}
         />
         <input
           type="text"
           name="c1"
           required
-          placeholder="Choice B"
+          placeholder={tr.em_quiz_choice_b}
           className={inputClass + " text-[12.5px]"}
         />
       </div>
@@ -451,18 +465,18 @@ function NewQuestionForm({
         <input
           type="text"
           name="c2"
-          placeholder="Choice C (optional)"
+          placeholder={tr.em_quiz_choice_c}
           className={inputClass + " text-[12.5px]"}
         />
         <input
           type="text"
           name="c3"
-          placeholder="Choice D (optional)"
+          placeholder={tr.em_quiz_choice_d}
           className={inputClass + " text-[12.5px]"}
         />
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-[11px] text-[#a7d4b6]">Correct:</label>
+        <label className="text-[11px] text-[#a7d4b6]">{tr.em_quiz_correct}:</label>
         <select name="correct_idx" defaultValue="0" className={inputClass + " w-20 text-[12px]"}>
           <option value="0">A</option>
           <option value="1">B</option>
@@ -472,7 +486,7 @@ function NewQuestionForm({
         <input
           type="text"
           name="explanation"
-          placeholder="Explanation (optional)"
+          placeholder={tr.em_quiz_explanation_ph}
           maxLength={1000}
           className={inputClass + " flex-1 text-[12px]"}
         />
@@ -481,7 +495,7 @@ function NewQuestionForm({
           type="submit"
           className="px-3 py-1.5 rounded bg-amber-400 text-[#04241e] font-semibold text-[12px] hover:bg-amber-300 shrink-0"
         >
-          + Add
+          {tr.em_quiz_add_short}
         </button>
       </div>
     </form>
@@ -552,6 +566,7 @@ function BlockEditor({
   availableLangs: string[];
   voices: VoiceOption[];
 }) {
+  const tr = useTr();
   const isNarratable = block.kind === "text" || block.kind === "callout";
   const hasAudio = !!block.audio_r2_key;
   const audioI18n = parseAudioI18n(
@@ -570,9 +585,9 @@ function BlockEditor({
           {block.visibility === "assistant_only" ? (
             <span
               className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 uppercase font-mono"
-              title="Fed to the AI assistant for Q&A, but hidden from learners in /learn"
+              title={tr.em_block_training}
             >
-              AI-only
+              {tr.em_ai_only}
             </span>
           ) : null}
           {block.duration_s ? (
@@ -589,7 +604,7 @@ function BlockEditor({
             type="submit"
             className="px-2 py-0.5 rounded text-rose-300/80 hover:bg-rose-400/10 text-[11px]"
           >
-            ✕ delete
+            {tr.em_block_delete_short}
           </button>
         </form>
       </div>
@@ -604,7 +619,7 @@ function BlockEditor({
             name="text_md"
             rows={3}
             defaultValue={block.text_md ?? ""}
-            placeholder="Markdown (**bold**, *italic*)"
+            placeholder={tr.em_block_text_ph}
             className={inputClass + " resize-y"}
           />
         ) : null}
@@ -613,7 +628,7 @@ function BlockEditor({
           <input
             name="video_uid"
             defaultValue={block.video_uid ?? ""}
-            placeholder="yt:<youtube-id>  or  Cloudflare Stream UID (32 hex)"
+            placeholder={tr.em_block_video_ph}
             className={inputClass + " font-mono text-[12.5px]"}
           />
         ) : null}
@@ -631,7 +646,7 @@ function BlockEditor({
           <input
             name="caption"
             defaultValue={block.caption ?? ""}
-            placeholder="Caption (optional)"
+            placeholder={tr.em_block_caption_ph}
             className={inputClass}
           />
         ) : null}
@@ -644,13 +659,13 @@ function BlockEditor({
               defaultChecked={block.visibility === "assistant_only"}
               className="accent-emerald-400"
             />
-            AI-only (hide from learners)
+            {tr.em_ai_only_hide}
           </label>
           <button
             type="submit"
             className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] text-[#e6f5ec] text-[12px] hover:bg-white/[.10]"
           >
-            Save block
+            {tr.em_save_block}
           </button>
         </div>
       </form>
@@ -658,9 +673,9 @@ function BlockEditor({
       {isNarratable ? (
         <div className="rounded-md border border-emerald-400/15 bg-emerald-400/[.04] p-2.5 space-y-2">
           <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-[11px]">
-            🎙️ Voice-over
+            🎙️ {tr.em_audio_heading}
             <span className="text-[10px] text-[#86b69a] font-normal">
-              one row per available language
+              {tr.em_audio_one_per_lang}
             </span>
           </div>
 
@@ -698,9 +713,9 @@ function BlockEditor({
               <button
                 type="submit"
                 className="text-[10px] text-rose-300/80 hover:underline"
-                title="Delete the primary-lang generated audio (other languages stay)"
+                title={tr.em_audio_delete_title}
               >
-                clear primary audio
+                {tr.em_audio_clear_primary}
               </button>
             </form>
           ) : null}
@@ -729,6 +744,7 @@ function AudioLangRow({
   courseSlug: string;
   voices: VoiceOption[];
 }) {
+  const tr = useTr();
   const has = !!entry;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -750,9 +766,9 @@ function AudioLangRow({
           voiceId,
         });
         if (res.ok) router.refresh();
-        else setErr(res.error ?? "Generation failed");
+        else setErr(res.error ?? tr.em_gen_failed);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Generation failed");
+        setErr(e instanceof Error ? e.message : tr.em_gen_failed);
       }
     });
   }
@@ -762,14 +778,14 @@ function AudioLangRow({
       <div className="flex items-center gap-2 mb-1.5">
         <span className="px-1.5 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/30 text-emerald-200 text-[10px] font-mono uppercase">
           {langLabel(lang)}
-          {isPrimary ? " · primary" : ""}
+          {isPrimary ? tr.em_audio_primary_suffix : ""}
         </span>
         {has ? (
           <span className="text-[10px] text-[#86b69a] font-mono">
             {entry!.duration_s}s · {entry!.voice_id}
           </span>
         ) : (
-          <span className="text-[10px] text-[#86b69a]">not generated</span>
+          <span className="text-[10px] text-[#86b69a]">{tr.em_audio_not_generated}</span>
         )}
       </div>
       {has ? (
@@ -804,7 +820,7 @@ function AudioLangRow({
           disabled={pending}
           className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 shrink-0 disabled:opacity-50"
         >
-          {pending ? "…" : has ? "↻" : "Generate"}
+          {pending ? "…" : has ? "↻" : tr.em_audio_gen_short}
         </button>
       </div>
       {err ? (
@@ -832,6 +848,7 @@ function ImageUploader({
   courseSlug: string;
   moduleId: string;
 }) {
+  const tr = useTr();
   const [pending, startTransition] = useTransition();
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -849,7 +866,7 @@ function ImageUploader({
         // Soft refresh — server re-renders with new image_r2_key.
         window.location.reload();
       } else {
-        const msg = await r.text().catch(() => "Upload failed");
+        const msg = await r.text().catch(() => tr.ui_upload_failed);
         alert(msg.slice(0, 300));
       }
     });
@@ -866,12 +883,12 @@ function ImageUploader({
         />
       ) : (
         <div className="h-32 rounded border border-dashed border-white/[.10] flex items-center justify-center text-[12px] text-[#86b69a]">
-          No image — pick a file below
+          {tr.em_img_none}
         </div>
       )}
       <label className="flex items-center gap-2 text-[12px] text-[#d8f0e1] cursor-pointer">
         <span className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] hover:bg-white/[.10]">
-          {pending ? "Uploading…" : block.image_r2_key ? "Replace image" : "Choose image"}
+          {pending ? tr.em_uploading : block.image_r2_key ? tr.em_replace_image : tr.em_choose_image}
         </span>
         <input
           type="file"
@@ -881,7 +898,7 @@ function ImageUploader({
           className="hidden"
         />
         <span className="text-[10px] text-[#86b69a]">
-          PNG / JPEG / WebP / GIF · max 8 MB
+          {tr.em_img_formats}
         </span>
       </label>
     </div>

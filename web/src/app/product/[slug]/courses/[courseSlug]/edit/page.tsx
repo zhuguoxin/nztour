@@ -13,7 +13,8 @@ import {
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
 import { TranslationsPanel } from "./translations-panel";
 import { CoverImageField } from "./cover-image-field";
-import { t } from "@/lib/i18n";
+import { t, fmt } from "@/lib/i18n";
+import type { Dict } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -230,20 +231,20 @@ export default async function EditCoursePage({
         />
 
         {/* ============== Duration banner ============== */}
-        <DurationBanner totalS={totalDurationS} totalMin={totalMin} totalSec={totalSec} />
+        <DurationBanner totalS={totalDurationS} totalMin={totalMin} totalSec={totalSec} tr={tr} />
 
         {/* ============== Course meta ============== */}
         <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
           <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between">
-            <div className="font-semibold text-[14px] text-white">Course details</div>
+            <div className="font-semibold text-[14px] text-white">{tr.ed_course_details}</div>
             <div className="flex items-center gap-3">
               <Link
                 href={`/learn/${slug}/${course.slug}?preview=1`}
                 target="_blank"
                 className="text-[12px] text-amber-300 hover:underline"
-                title="Preview the course as a learner would see it, even while draft"
+                title={tr.ed_preview_title}
               >
-                Preview →
+                {tr.ed_preview}
               </Link>
               {course.status === "published" ? (
                 <Link
@@ -251,7 +252,7 @@ export default async function EditCoursePage({
                   target="_blank"
                   className="text-[12px] text-emerald-300 hover:underline"
                 >
-                  View live →
+                  {tr.ed_view_live}
                 </Link>
               ) : null}
             </div>
@@ -260,7 +261,7 @@ export default async function EditCoursePage({
             <input type="hidden" name="operator_slug" value={slug} />
             <input type="hidden" name="course_slug" value={course.slug} />
 
-            <Field label="Title">
+            <Field label={tr.nc_f_title}>
               <input
                 name="title"
                 defaultValue={course.title}
@@ -270,7 +271,7 @@ export default async function EditCoursePage({
               />
             </Field>
 
-            <Field label="Summary">
+            <Field label={tr.nc_f_summary}>
               <textarea
                 name="summary"
                 rows={3}
@@ -289,7 +290,7 @@ export default async function EditCoursePage({
             />
 
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Minutes">
+              <Field label={tr.ed_minutes}>
                 <input
                   name="est_minutes"
                   type="number"
@@ -299,10 +300,10 @@ export default async function EditCoursePage({
                   className={inputClass}
                 />
               </Field>
-              <Field label="Status">
+              <Field label={tr.ed_status}>
                 <select name="status" defaultValue={course.status} className={inputClass}>
-                  <option value="draft">draft</option>
-                  <option value="published">published</option>
+                  <option value="draft">{tr.ed_draft}</option>
+                  <option value="published">{tr.ed_published}</option>
                 </select>
               </Field>
             </div>
@@ -312,7 +313,7 @@ export default async function EditCoursePage({
                 type="submit"
                 className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
               >
-                Save changes
+                {tr.ed_save_changes}
               </button>
               {/* Delete is a separate form to avoid form-nesting */}
             </div>
@@ -328,7 +329,7 @@ export default async function EditCoursePage({
               type="submit"
               className="px-3 py-1.5 rounded-md border border-rose-400/30 text-rose-300 text-[12px] hover:bg-rose-400/10"
             >
-              Delete course
+              {tr.ed_delete_course}
             </button>
           </form>
         </section>
@@ -337,18 +338,18 @@ export default async function EditCoursePage({
         <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
           <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <div className="font-semibold text-[14px] text-white">Modules</div>
+              <div className="font-semibold text-[14px] text-white">{tr.ed_modules}</div>
               <div className="text-[12px] text-[#86b69a] mt-0.5">
-                {modules?.length ?? 0} module{modules?.length === 1 ? "" : "s"} · drag ⠿ to reorder
+                {fmt(tr.ed_modules_count, { n: modules?.length ?? 0 })}
               </div>
             </div>
             {op.supplier_slug ? (
               <Link
                 href={`/supplier/${op.supplier_slug}/voices`}
                 className="text-[12px] text-emerald-300 hover:underline shrink-0"
-                title="Clone a sales rep's own voice — it works in every language across your products."
+                title={tr.ed_voices_title}
               >
-                🎙️ Manage &amp; clone voices →
+                {tr.ed_manage_voices}
               </Link>
             ) : null}
           </header>
@@ -371,14 +372,14 @@ export default async function EditCoursePage({
             <input
               name="title"
               required
-              placeholder="New module title — e.g. Lifts & terrain map"
+              placeholder={tr.ed_new_module_ph}
               className={`flex-1 ${inputClass}`}
             />
             <button
               type="submit"
               className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300 shrink-0"
             >
-              + Add module
+              {tr.ed_add_module}
             </button>
           </form>
         </section>
@@ -398,10 +399,12 @@ function DurationBanner({
   totalS,
   totalMin,
   totalSec,
+  tr,
 }: {
   totalS: number;
   totalMin: number;
   totalSec: number;
+  tr: Dict;
 }) {
   // Recommended: ≤ 20 min (1200 s). Sweet spot: ~15 min (900 s).
   // < 5 min = under-cooked; > 20 = over-long.
@@ -420,17 +423,17 @@ function DurationBanner({
     over: "bg-rose-400",
   }[band];
   const tip = {
-    low: "Under 5 min — consider adding more content.",
-    good: "Length is in the sweet spot.",
-    warn: "Past 15 min — getting long. Trim or split if you can.",
-    over: "Over 20 min — strongly consider splitting this course.",
+    low: tr.ed_len_low,
+    good: tr.ed_len_good,
+    warn: tr.ed_len_warn,
+    over: tr.ed_len_over,
   }[band];
   const fmt = `${totalMin}:${totalSec.toString().padStart(2, "0")}`;
   return (
     <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">COURSE LENGTH</div>
-        <div className="text-[12px] text-[#a7d4b6]">Target ≤ 20:00 · sweet spot ~15:00</div>
+        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">{tr.ed_len_label}</div>
+        <div className="text-[12px] text-[#a7d4b6]">{tr.ed_len_target}</div>
       </div>
       <div className="flex items-end justify-between gap-3">
         <div className="font-mono text-[28px] text-white tabular-nums leading-none">{fmt}</div>
@@ -442,7 +445,7 @@ function DurationBanner({
         <div
           className="absolute top-0 bottom-0 w-px bg-white/40"
           style={{ left: `${(SWEET / TARGET) * 100}%` }}
-          title="15:00 sweet spot"
+          title={tr.ed_len_sweet}
         />
       </div>
     </section>
