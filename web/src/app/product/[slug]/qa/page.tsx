@@ -4,6 +4,7 @@ import { TopBar } from "../../../_components/top-bar";
 import { requireOperatorMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { CategorizeButton } from "./categorize-button";
+import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
     .first<{ id: string; slug: string; name: string }>();
   if (!operator) notFound();
 
+  const tr = await t();
   const now = Math.floor(Date.now() / 1000);
   const fromTs = parseDate(sp.from) ?? now - 30 * 86400;
   const toTs = parseDate(sp.to, true) ?? now;
@@ -148,7 +150,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
               {operator.name}
             </Link>
             <span className="text-white/20">/</span>
-            <span className="text-white">Q&amp;A archive</span>
+            <span className="text-white">{tr.qa_breadcrumb}</span>
           </span>
         }
       />
@@ -156,7 +158,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
         {/* Window + refresh button */}
         <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] px-4 py-3 mb-5 flex items-center gap-3 flex-wrap">
-          <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">REPORTING WINDOW</div>
+          <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">{tr.qa_reporting_window}</div>
           <div className="font-mono text-[12.5px] text-white">{fromIso} → {toIso}</div>
           <form action={`/product/${slug}/qa`} className="flex items-center gap-1 ml-1">
             <input
@@ -178,16 +180,16 @@ export default async function QAArchive({ params, searchParams }: Props) {
               type="submit"
               className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300"
             >
-              Apply
+              {tr.qa_apply}
             </button>
           </form>
           <div className="ml-auto flex items-center gap-2">
             {uncategorizedCount && uncategorizedCount.n > 0 ? (
               <span className="text-[11.5px] text-amber-300 font-mono">
-                {uncategorizedCount.n} uncategorized
+                {fmt(tr.qa_uncategorized_count, { n: uncategorizedCount.n })}
               </span>
             ) : (
-              <span className="text-[11.5px] text-emerald-300 font-mono">all categorized</span>
+              <span className="text-[11.5px] text-emerald-300 font-mono">{tr.qa_all_categorized}</span>
             )}
             <CategorizeButton
               operatorSlug={slug}
@@ -202,7 +204,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
           {/* Theme sidebar */}
           <aside className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-3 h-fit">
             <div className="text-[11px] tracking-widest font-mono text-emerald-300/70 mb-2 px-1">
-              THEMES — {themes.results?.length ?? 0}
+              {fmt(tr.qa_themes_heading, { n: themes.results?.length ?? 0 })}
             </div>
             <Link
               href={`/product/${slug}/qa?${baseQuery({ theme: undefined })}`}
@@ -212,7 +214,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                   : "text-[#d8f0e1] hover:bg-white/[.06]"
               }`}
             >
-              All themes
+              {tr.qa_all_themes}
               <span className="ml-1.5 font-mono text-[11px] text-[#86b69a]">
                 {(themes.results ?? []).reduce((acc, t) => acc + t.question_count, 0)}
               </span>
@@ -233,7 +235,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                     >
                       <div className="truncate">{t.label}</div>
                       <div className="font-mono text-[10px] text-[#86b69a]">
-                        {t.question_count} question{t.question_count === 1 ? "" : "s"}
+                        {fmt(t.question_count === 1 ? tr.qa_theme_question_one : tr.qa_theme_question_many, { n: t.question_count })}
                       </div>
                     </Link>
                   </li>
@@ -241,7 +243,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
               })}
               {(themes.results ?? []).length === 0 ? (
                 <div className="px-2 py-3 text-[12px] text-[#86b69a]">
-                  No themes yet — click Refresh themes to categorize.
+                  {tr.qa_no_themes}
                 </div>
               ) : null}
             </ul>
@@ -252,10 +254,10 @@ export default async function QAArchive({ params, searchParams }: Props) {
             <header className="px-4 py-3 border-b border-white/[.06] flex items-center gap-3 flex-wrap">
               <div className="text-[13.5px] font-semibold text-white">
                 {themeFilter
-                  ? `Filtered: ${(themes.results ?? []).find((t) => t.id === themeFilter)?.label ?? themeFilter}`
-                  : "All Q&A"}
+                  ? fmt(tr.qa_filtered, { label: (themes.results ?? []).find((t) => t.id === themeFilter)?.label ?? themeFilter })
+                  : tr.qa_all_qa}
                 <span className="ml-1.5 text-[11px] text-[#86b69a] font-mono">
-                  {qaRows.results?.length ?? 0} shown · 200 max
+                  {fmt(tr.qa_shown_count, { n: qaRows.results?.length ?? 0 })}
                 </span>
               </div>
               <form action={`/product/${slug}/qa`} className="ml-auto">
@@ -266,7 +268,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                   type="search"
                   name="q"
                   defaultValue={q}
-                  placeholder="Search question text…"
+                  placeholder={tr.qa_search_placeholder}
                   className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white outline-none focus:border-emerald-400/60 w-56"
                 />
               </form>
@@ -286,7 +288,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                             </span>
                           ) : (
                             <span className="px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-300 font-mono text-[10px]">
-                              uncategorized
+                              {tr.qa_uncategorized_badge}
                             </span>
                           )}
                           <span>{r.user_name ?? maskEmail(r.user_email)}</span>
@@ -316,7 +318,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
               ))}
               {(qaRows.results ?? []).length === 0 ? (
                 <li className="px-4 py-10 text-center text-[13px] text-[#86b69a]">
-                  No questions in this window/filter.
+                  {tr.qa_empty}
                 </li>
               ) : null}
             </ul>

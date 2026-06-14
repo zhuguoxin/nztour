@@ -3,18 +3,25 @@ import Link from "next/link";
 import { db, type CourseWithOperator } from "@/lib/db";
 import { TopBar } from "../_components/top-bar";
 import { bootstrapAdminFromEmailList } from "@/lib/roles";
-import { t, fmt } from "@/lib/i18n";
+import { t, fmt, type Dict } from "@/lib/i18n";
 import { FavoriteButton } from "./favorite-button";
 
 export const dynamic = "force-dynamic";
 
 type Tab = "in_progress" | "completed" | "favorites" | "all" | "badges";
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "in_progress", label: "In progress" },
-  { id: "completed", label: "Completed" },
-  { id: "favorites", label: "Favorites" },
-  { id: "all", label: "All courses" },
-  { id: "badges", label: "Badges" },
+const TAB_LABEL_KEYS: Record<Tab, "lr_tab_in_progress" | "lr_tab_completed" | "lr_tab_favorites" | "lr_tab_all" | "lr_tab_badges"> = {
+  in_progress: "lr_tab_in_progress",
+  completed: "lr_tab_completed",
+  favorites: "lr_tab_favorites",
+  all: "lr_tab_all",
+  badges: "lr_tab_badges",
+};
+const TABS: Array<{ id: Tab }> = [
+  { id: "in_progress" },
+  { id: "completed" },
+  { id: "favorites" },
+  { id: "all" },
+  { id: "badges" },
 ];
 
 interface CourseCardData extends CourseWithOperator {
@@ -252,7 +259,7 @@ export default async function LearnHome({
                       : "border-transparent text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  {t.label}
+                  {tr[TAB_LABEL_KEYS[t.id]]}
                   <span
                     className={`ml-1.5 text-[11px] font-mono ${
                       active ? "text-emerald-700" : "text-slate-400"
@@ -270,7 +277,7 @@ export default async function LearnHome({
               type="search"
               name="q"
               defaultValue={q}
-              placeholder="Search title, supplier, summary…"
+              placeholder={tr.lr_search_placeholder}
               className="w-64 max-w-full px-3 py-1.5 rounded-md border border-slate-300 text-[13px] outline-none focus:border-emerald-500"
             />
           </form>
@@ -278,9 +285,9 @@ export default async function LearnHome({
 
         {/* Body */}
         {tab === "badges" ? (
-          <BadgesGrid badges={badges} />
+          <BadgesGrid badges={badges} tr={tr} />
         ) : filtered.length === 0 ? (
-          <EmptyState tab={tab} q={q} />
+          <EmptyState tab={tab} q={q} tr={tr} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((c) => (
@@ -293,7 +300,7 @@ export default async function LearnHome({
   );
 }
 
-function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_minutes: string } }) {
+function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_minutes: string; lr_card_updated: string; lr_card_modules_progress: string } }) {
   const pct =
     c.module_count > 0 ? Math.round((c.completed_modules / c.module_count) * 100) : 0;
   return (
@@ -317,7 +324,7 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
             </span>
             {c.has_update ? (
               <span className="px-2.5 py-1 rounded-full bg-amber-400/90 text-[#04241e] text-[11px] font-semibold border border-amber-300">
-                Updated
+                {t.lr_card_updated}
               </span>
             ) : null}
           </div>
@@ -343,7 +350,7 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
               </div>
               <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                 <span>
-                  {c.completed_modules} / {c.module_count} modules
+                  {fmt(t.lr_card_modules_progress, { done: c.completed_modules, total: c.module_count })}
                 </span>
                 <span className="text-emerald-700 font-mono">{pct}%</span>
               </div>
@@ -366,11 +373,11 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
   );
 }
 
-function BadgesGrid({ badges }: { badges: BadgeCard[] }) {
+function BadgesGrid({ badges, tr }: { badges: BadgeCard[]; tr: Dict }) {
   if (badges.length === 0) {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500 text-[14px]">
-        No badges yet. Complete a course to earn your first.
+        {tr.lr_badges_empty}
       </div>
     );
   }
@@ -406,16 +413,16 @@ function BadgesGrid({ badges }: { badges: BadgeCard[] }) {
   );
 }
 
-function EmptyState({ tab, q }: { tab: Tab; q: string }) {
+function EmptyState({ tab, q, tr }: { tab: Tab; q: string; tr: Dict }) {
   const msg = q
-    ? `Nothing matches "${q}" in this view.`
+    ? fmt(tr.lr_empty_search, { q })
     : tab === "in_progress"
-      ? "You haven't started anything yet. Browse the All tab and dive in."
+      ? tr.lr_empty_in_progress
       : tab === "completed"
-        ? "No completed courses yet — finish a chapter to start earning a badge."
+        ? tr.lr_empty_completed
         : tab === "favorites"
-          ? "No favorites yet — tap the ♥ on any card to save it here."
-          : "Nothing published yet.";
+          ? tr.lr_empty_favorites
+          : tr.lr_empty_all;
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500 text-[14px]">
       {msg}

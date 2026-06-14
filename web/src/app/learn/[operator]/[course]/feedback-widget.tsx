@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { submitFeedbackAction } from "../../actions";
+import { useTr } from "@/lib/i18n-provider";
+import { fmt } from "@/lib/i18n-shared";
 
 /**
  * Persistent feedback widget that sits below the AI Q&A sidebar.
@@ -22,6 +24,7 @@ export function FeedbackWidget({
   courseId: string;
   moduleId?: string;
 }) {
+  const tr = useTr();
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [text, setText] = useState("");
@@ -41,7 +44,7 @@ export function FeedbackWidget({
           setText("");
         }, 2200);
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Failed to submit");
+        alert(err instanceof Error ? err.message : tr.lr_fb_submit_failed);
       }
     });
   }
@@ -54,9 +57,9 @@ export function FeedbackWidget({
         className="w-full px-3 py-2 border-t border-white/[.06] text-left bg-emerald-400/[.02] hover:bg-emerald-400/[.06] flex items-center justify-between"
       >
         <span className="text-[12.5px] text-[#a7d4b6]">
-          <span className="text-emerald-300">💬</span> How is this training? Share quick feedback →
+          <span className="text-emerald-300">💬</span> {tr.lr_fb_prompt}
         </span>
-        <span className="text-[#5d9279] text-[11px]">click to rate</span>
+        <span className="text-[#5d9279] text-[11px]">{tr.lr_fb_click_to_rate}</span>
       </button>
     );
   }
@@ -64,7 +67,7 @@ export function FeedbackWidget({
   return (
     <div className="border-t border-white/[.06] bg-emerald-400/[.04] p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-[12.5px] text-white font-semibold">Rate this training</div>
+        <div className="text-[12.5px] text-white font-semibold">{tr.lr_fb_rate_title}</div>
         <button
           type="button"
           onClick={() => {
@@ -74,7 +77,7 @@ export function FeedbackWidget({
           }}
           className="text-[#a7d4b6] hover:text-white text-[11px]"
         >
-          dismiss
+          {tr.lr_fb_dismiss}
         </button>
       </div>
 
@@ -83,7 +86,7 @@ export function FeedbackWidget({
       <textarea
         rows={2}
         maxLength={2000}
-        placeholder="Optional: what worked? what was confusing?"
+        placeholder={tr.lr_fb_placeholder}
         value={text}
         onChange={(e) => setText(e.target.value)}
         disabled={done || pending}
@@ -93,9 +96,9 @@ export function FeedbackWidget({
       <div className="flex items-center justify-between">
         <div className="text-[11px] text-[#86b69a]">
           {done ? (
-            <span className="text-emerald-300">✓ Thanks — feedback sent</span>
+            <span className="text-emerald-300">{tr.lr_fb_thanks}</span>
           ) : rating === 0 ? (
-            "Pick a star above to enable Send"
+            tr.lr_fb_pick_star
           ) : null}
         </div>
         <button
@@ -104,7 +107,7 @@ export function FeedbackWidget({
           disabled={rating < 1 || done || pending}
           className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {pending ? "Sending…" : done ? "Sent ✓" : "Send"}
+          {pending ? tr.lr_fb_sending : done ? tr.lr_fb_sent : tr.lr_fb_send}
         </button>
       </div>
     </div>
@@ -120,6 +123,7 @@ function Stars({
   onChange: (n: number) => void;
   disabled: boolean;
 }) {
+  const tr = useTr();
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => {
@@ -133,8 +137,8 @@ function Stars({
             className={`text-[22px] transition disabled:cursor-default ${
               on ? "text-amber-300" : "text-[#395a4a] hover:text-amber-300/60"
             }`}
-            aria-label={`${n} star${n === 1 ? "" : "s"}`}
-            title={`${n} star${n === 1 ? "" : "s"}`}
+            aria-label={fmt(n === 1 ? tr.lr_fb_star_one : tr.lr_fb_star_many, { n })}
+            title={fmt(n === 1 ? tr.lr_fb_star_one : tr.lr_fb_star_many, { n })}
           >
             ★
           </button>

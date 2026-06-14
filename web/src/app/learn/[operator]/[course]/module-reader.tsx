@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ModuleRow, BlockRow } from "@/lib/db";
 import { QuizPanel, type QuizQuestion } from "./quiz-panel";
+import { useTr } from "@/lib/i18n-provider";
 
 const DWELL_REQUIRED_SECONDS = 30;
 
@@ -58,6 +59,7 @@ export function ModuleReader({
   quizQuestions,
 }: Props) {
   const router = useRouter();
+  const dict = useTr();
   const [dwell, setDwell] = useState(0);
   const [isPending, startTransition] = useTransition();
   const [awardedCode, setAwardedCode] = useState<string | null>(null);
@@ -187,7 +189,7 @@ export function ModuleReader({
           {isCompleted ? (
             <span className="text-lime-300">{tr.already_completed}</span>
           ) : hasQuiz ? (
-            <span className="text-amber-300">Pass the quiz above to continue.</span>
+            <span className="text-amber-300">{dict.lr_pass_quiz_to_continue}</span>
           ) : remaining > 0 ? (
             <>
               {tr.stay_to_complete_a}{" "}
@@ -226,6 +228,7 @@ function BlockView({
   block: BlockRow;
   videoFallback?: { caption_default: string; not_uploaded: string; setup_hint: string };
 }) {
+  const dict = useTr();
   switch (block.kind) {
     case "text":
       return (
@@ -252,7 +255,7 @@ function BlockView({
     case "image":
       return (
         <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-center text-[#a7d4b6] text-sm">
-          🖼️ {block.caption ?? "Image"}
+          🖼️ {block.caption ?? dict.lr_block_image}
           <div className="text-[11px] text-[#5d9279] mt-1 font-mono">
             r2_key: {block.image_r2_key ?? "<not uploaded>"}
           </div>
@@ -262,7 +265,7 @@ function BlockView({
       return (
         <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-4 text-sm text-[#a7d4b6] flex items-center gap-3">
           <span className="text-[24px]">📄</span>
-          <span>{block.caption ?? "Attached PDF"}</span>
+          <span>{block.caption ?? dict.lr_block_pdf}</span>
         </div>
       );
     default:
@@ -385,6 +388,7 @@ function VideoBlock({
  * no audio_r2_key. `compact` shrinks padding so it fits nicely inside callouts.
  */
 function AudioPlayer({ block, compact = false }: { block: BlockRow; compact?: boolean }) {
+  const dict = useTr();
   if (!block.audio_r2_key) return null;
   // When viewing a non-primary language, the page sets _audio_lang_query so we
   // request the localised audio (/api/audio?lang=…) instead of the primary
@@ -401,7 +405,7 @@ function AudioPlayer({ block, compact = false }: { block: BlockRow; compact?: bo
       }`}
     >
       <span className="text-[11px] text-emerald-300/80 font-mono uppercase tracking-widest shrink-0">
-        🎙 Voice-over
+        🎙 {dict.lr_voiceover}
       </span>
       <audio controls preload="none" src={src} className="flex-1 h-8" />
     </div>

@@ -216,7 +216,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
             <Link
               href={`/learn?q=${encodeURIComponent(operator.name)}`}
               className="shrink-0 hover:text-white"
-              title={`Browse ${operator.name} courses`}
+              title={fmt(tr.lr_browse_courses, { name: operator.name })}
             >
               {operator.name}
             </Link>
@@ -226,7 +226,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
                 chosenLang !== course.primary_lang ? `?lang=${chosenLang}` : ""
               }`}
               className="text-white truncate hover:underline"
-              title="Back to course start"
+              title={tr.lr_back_to_course_start}
             >
               {courseTitleLocal}
             </Link>
@@ -240,8 +240,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
 
       {isPreview ? (
         <div className="bg-amber-400/20 border-b border-amber-400/40 text-amber-100 text-[12.5px] font-mono px-4 py-1.5 flex items-center justify-center gap-2">
-          ⚠ PREVIEW MODE — viewing {course.status} content as a learner.
-          AI-only blocks are hidden, the same as in production.
+          {fmt(tr.lr_preview_banner, { status: course.status })}
         </div>
       ) : null}
 
@@ -252,6 +251,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
           basePath={`/learn/${operatorSlug}/${courseSlug}`}
           activeSlug={activeLocal.slug}
           preserveQuery={{ preview: isPreview ? "1" : undefined }}
+          label={tr.lr_language}
         />
       ) : null}
 
@@ -312,6 +312,9 @@ export default async function CoursePage({ params, searchParams }: Props) {
             langQuery={chosenLang !== course.primary_lang ? chosenLang : null}
             isPreview={isPreview}
             lockedFromIdx={lockedFromIdx}
+            lockedLabel={tr.lr_module_locked}
+            minLabel={tr.lr_module_min}
+            lockedTooltip={tr.lr_module_locked_tooltip}
           />
         </aside>
 
@@ -389,6 +392,9 @@ function ModuleList({
   langQuery,
   isPreview,
   lockedFromIdx,
+  lockedLabel,
+  minLabel,
+  lockedTooltip,
 }: {
   modules: ModuleRow[];
   active: ModuleRow;
@@ -398,6 +404,9 @@ function ModuleList({
   langQuery: string | null;
   isPreview: boolean;
   lockedFromIdx: number;
+  lockedLabel: string;
+  minLabel: string;
+  lockedTooltip: string;
 }) {
   return (
     <div className="space-y-1">
@@ -413,7 +422,7 @@ function ModuleList({
               ? "bg-white/10"
               : "bg-white/15";
         const labelExtras = locked
-          ? " · 🔒 locked"
+          ? ` · 🔒 ${lockedLabel}`
           : done
             ? ` · ${completedLabel}`
             : "";
@@ -430,7 +439,7 @@ function ModuleList({
                 {m.title}
               </div>
               <div className="text-[11px] text-[#86b69a]">
-                {m.est_minutes ? `${m.est_minutes} min` : ""}
+                {m.est_minutes ? fmt(minLabel, { n: m.est_minutes }) : ""}
                 {labelExtras}
               </div>
             </div>
@@ -438,7 +447,7 @@ function ModuleList({
         );
         if (locked) {
           return (
-            <div key={m.id} className={rowClass} title="Complete the previous module's quiz to unlock">
+            <div key={m.id} className={rowClass} title={lockedTooltip}>
               {inner}
             </div>
           );
@@ -472,16 +481,18 @@ function LangPicker({
   basePath,
   activeSlug,
   preserveQuery,
+  label,
 }: {
   langs: string[];
   chosen: string;
   basePath: string;
   activeSlug: string;
   preserveQuery: Record<string, string | undefined>;
+  label: string;
 }) {
   return (
     <div className="border-b border-white/[.06] px-4 py-2 flex items-center gap-2 overflow-x-auto">
-      <span className="text-[11px] font-mono text-emerald-300/70 uppercase shrink-0">Language</span>
+      <span className="text-[11px] font-mono text-emerald-300/70 uppercase shrink-0">{label}</span>
       {langs.map((code) => {
         const params = new URLSearchParams({ m: activeSlug, lang: code });
         for (const [k, v] of Object.entries(preserveQuery)) {
@@ -521,22 +532,22 @@ function nativeLabel(code: string): string {
   return map[code] ?? code;
 }
 
-function EmptyCourse({ operator, title }: { operator: string; title: string }) {
+async function EmptyCourse({ operator, title }: { operator: string; title: string }) {
+  const tr = await t();
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased flex items-center justify-center">
       <div className="text-center max-w-md px-6">
-        <div className="text-[11px] font-mono text-emerald-300/70 mb-3 tracking-widest">DRAFT</div>
+        <div className="text-[11px] font-mono text-emerald-300/70 mb-3 tracking-widest">{tr.lr_draft_label}</div>
         <h1 className="text-[26px] font-semibold text-white">{title}</h1>
         <p className="text-[#a7d4b6] mt-1.5">{operator}</p>
         <p className="mt-6 text-[14px] text-[#a7d4b6] leading-relaxed">
-          This course is auto-drafted from source files and pending operator review. Modules will
-          appear once the operator publishes the parsed content.
+          {tr.lr_draft_blurb}
         </p>
         <Link
           href="/learn"
           className="mt-7 inline-block px-4 py-2 rounded-md border border-white/[.10] text-[14px] text-[#d8f0e1] hover:bg-white/[.06]"
         >
-          ← Back to courses
+          {tr.lr_back_to_courses_arrow}
         </Link>
       </div>
     </div>

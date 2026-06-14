@@ -611,6 +611,96 @@ const en = {
   sp_voices_label: "VOICES",
   sp_voices_blurb:
     "Clone a sales rep's voice (MiniMax) — it becomes available in every course your products publish, in any language. Stock voices are listed for reference.",
+
+  // ===== Learner area =====
+  lr_tab_in_progress: "In progress",
+  lr_tab_completed: "Completed",
+  lr_tab_favorites: "Favorites",
+  lr_tab_all: "All courses",
+  lr_tab_badges: "Badges",
+  lr_search_placeholder: "Search title, supplier, summary…",
+  lr_card_updated: "Updated",
+  lr_card_modules_progress: "{done} / {total} modules",
+  lr_badges_empty: "No badges yet. Complete a course to earn your first.",
+  lr_empty_search: "Nothing matches \"{q}\" in this view.",
+  lr_empty_in_progress: "You haven't started anything yet. Browse the All tab and dive in.",
+  lr_empty_completed: "No completed courses yet — finish a chapter to start earning a badge.",
+  lr_empty_favorites: "No favorites yet — tap the ♥ on any card to save it here.",
+  lr_empty_all: "Nothing published yet.",
+
+  // Favorite button
+  lr_fav_remove: "Remove from favorites",
+  lr_fav_add: "Add to favorites",
+  lr_fav_saved: "Saved to favorites",
+  lr_fav_save: "Save to favorites",
+
+  // Course page
+  lr_preview_banner:
+    "⚠ PREVIEW MODE — viewing {status} content as a learner. AI-only blocks are hidden, the same as in production.",
+  lr_browse_courses: "Browse {name} courses",
+  lr_back_to_course_start: "Back to course start",
+  lr_module_locked: "locked",
+  lr_module_min: "{n} min",
+  lr_module_locked_tooltip: "Complete the previous module's quiz to unlock",
+  lr_language: "Language",
+  lr_draft_label: "DRAFT",
+  lr_draft_blurb:
+    "This course is auto-drafted from source files and pending operator review. Modules will appear once the operator publishes the parsed content.",
+  lr_back_to_courses_arrow: "← Back to courses",
+
+  // Module reader
+  lr_pass_quiz_to_continue: "Pass the quiz above to continue.",
+  lr_block_image: "Image",
+  lr_block_pdf: "Attached PDF",
+  lr_voiceover: "Voice-over",
+
+  // Quiz panel
+  lr_quiz_passed_chip: "✓ You've passed this chapter's quiz.",
+  lr_quiz_heading: "End-of-chapter quiz",
+  lr_quiz_instructions: "Answer {n} questions to continue — pass {pass} of {n}.",
+  lr_quiz_q_prefix: "Q{n}.",
+  lr_quiz_incorrect: "✗ Incorrect.",
+  lr_quiz_passed_result: "✓ Passed {score}/{total} — next chapter unlocked",
+  lr_quiz_failed_result: "Scored {score}/{total}. Review and try a new set.",
+  lr_quiz_answered: "Answered {answered}/{total}",
+  lr_quiz_ready: "Ready to submit",
+  lr_quiz_try_new: "Try a new set",
+  lr_quiz_grading: "Grading…",
+  lr_quiz_submit: "Submit answers",
+  lr_quiz_submit_failed: "Failed to submit",
+
+  // Feedback widget
+  lr_fb_prompt: "How is this training? Share quick feedback →",
+  lr_fb_click_to_rate: "click to rate",
+  lr_fb_rate_title: "Rate this training",
+  lr_fb_dismiss: "dismiss",
+  lr_fb_placeholder: "Optional: what worked? what was confusing?",
+  lr_fb_thanks: "✓ Thanks — feedback sent",
+  lr_fb_pick_star: "Pick a star above to enable Send",
+  lr_fb_sending: "Sending…",
+  lr_fb_sent: "Sent ✓",
+  lr_fb_send: "Send",
+  lr_fb_submit_failed: "Failed to submit",
+  lr_fb_star_one: "{n} star",
+  lr_fb_star_many: "{n} stars",
+
+  // Q&A archive
+  qa_breadcrumb: "Q&A archive",
+  qa_reporting_window: "REPORTING WINDOW",
+  qa_apply: "Apply",
+  qa_uncategorized_count: "{n} uncategorized",
+  qa_all_categorized: "all categorized",
+  qa_themes_heading: "THEMES — {n}",
+  qa_all_themes: "All themes",
+  qa_theme_question_one: "{n} question",
+  qa_theme_question_many: "{n} questions",
+  qa_no_themes: "No themes yet — click Refresh themes to categorize.",
+  qa_filtered: "Filtered: {label}",
+  qa_all_qa: "All Q&A",
+  qa_shown_count: "{n} shown · 200 max",
+  qa_search_placeholder: "Search question text…",
+  qa_uncategorized_badge: "uncategorized",
+  qa_empty: "No questions in this window/filter.",
 };
 
 export type Dict = typeof en;
@@ -1178,6 +1268,96 @@ const zhCN: Dict = {
   sp_voices_label: "声音",
   sp_voices_blurb:
     "克隆销售代表的声音(MiniMax)— 它将可用于你旗下产品发布的每一门课程,支持任意语言。库存声音仅供参考。",
+
+  // ===== Learner area =====
+  lr_tab_in_progress: "学习中",
+  lr_tab_completed: "已完成",
+  lr_tab_favorites: "收藏",
+  lr_tab_all: "全部课程",
+  lr_tab_badges: "徽章",
+  lr_search_placeholder: "搜索课程标题、供应商、简介…",
+  lr_card_updated: "有更新",
+  lr_card_modules_progress: "{done} / {total} 个模块",
+  lr_badges_empty: "还没有徽章。完成一门课程即可获得第一枚。",
+  lr_empty_search: "当前视图中没有匹配「{q}」的内容。",
+  lr_empty_in_progress: "你还没有开始任何课程。去「全部课程」看看,挑一门开始吧。",
+  lr_empty_completed: "还没有完成的课程 — 完成一个章节,开始赢取徽章。",
+  lr_empty_favorites: "还没有收藏 — 点击任意卡片上的 ♥ 即可收藏到这里。",
+  lr_empty_all: "暂无已发布的课程。",
+
+  // Favorite button
+  lr_fav_remove: "取消收藏",
+  lr_fav_add: "加入收藏",
+  lr_fav_saved: "已收藏",
+  lr_fav_save: "收藏",
+
+  // Course page
+  lr_preview_banner:
+    "⚠ 预览模式 — 正以学员视角查看{status}内容。仅 AI 可见的内容块已隐藏,与正式环境一致。",
+  lr_browse_courses: "浏览 {name} 的课程",
+  lr_back_to_course_start: "返回课程起点",
+  lr_module_locked: "已锁定",
+  lr_module_min: "{n} 分钟",
+  lr_module_locked_tooltip: "通过上一模块的测验后解锁",
+  lr_language: "语言",
+  lr_draft_label: "草稿",
+  lr_draft_blurb:
+    "本课程由源文件自动生成草稿,正在等待运营商审核。运营商发布解析内容后,模块将会出现。",
+  lr_back_to_courses_arrow: "← 返回课程列表",
+
+  // Module reader
+  lr_pass_quiz_to_continue: "通过上方的测验后才能继续。",
+  lr_block_image: "图片",
+  lr_block_pdf: "附件 PDF",
+  lr_voiceover: "配音",
+
+  // Quiz panel
+  lr_quiz_passed_chip: "✓ 你已通过本章测验。",
+  lr_quiz_heading: "章末测验",
+  lr_quiz_instructions: "回答 {n} 道题即可继续 — {n} 道中答对 {pass} 道。",
+  lr_quiz_q_prefix: "第 {n} 题.",
+  lr_quiz_incorrect: "✗ 回答错误。",
+  lr_quiz_passed_result: "✓ 已通过 {score}/{total} — 下一章已解锁",
+  lr_quiz_failed_result: "得分 {score}/{total}。回顾后换一组题再试。",
+  lr_quiz_answered: "已回答 {answered}/{total}",
+  lr_quiz_ready: "可以提交了",
+  lr_quiz_try_new: "换一组题",
+  lr_quiz_grading: "评分中…",
+  lr_quiz_submit: "提交答案",
+  lr_quiz_submit_failed: "提交失败",
+
+  // Feedback widget
+  lr_fb_prompt: "这次培训怎么样?分享你的快速反馈 →",
+  lr_fb_click_to_rate: "点击评分",
+  lr_fb_rate_title: "为本次培训评分",
+  lr_fb_dismiss: "关闭",
+  lr_fb_placeholder: "可选:哪里有帮助?哪里让你困惑?",
+  lr_fb_thanks: "✓ 谢谢 — 反馈已提交",
+  lr_fb_pick_star: "请先在上方选择星级以启用发送",
+  lr_fb_sending: "发送中…",
+  lr_fb_sent: "已发送 ✓",
+  lr_fb_send: "发送",
+  lr_fb_submit_failed: "提交失败",
+  lr_fb_star_one: "{n} 星",
+  lr_fb_star_many: "{n} 星",
+
+  // Q&A archive
+  qa_breadcrumb: "问答存档",
+  qa_reporting_window: "统计区间",
+  qa_apply: "应用",
+  qa_uncategorized_count: "{n} 条未分类",
+  qa_all_categorized: "已全部分类",
+  qa_themes_heading: "主题 — {n}",
+  qa_all_themes: "全部主题",
+  qa_theme_question_one: "{n} 个问题",
+  qa_theme_question_many: "{n} 个问题",
+  qa_no_themes: "暂无主题 — 点击「刷新主题」进行分类。",
+  qa_filtered: "已筛选:{label}",
+  qa_all_qa: "全部问答",
+  qa_shown_count: "显示 {n} 条 · 最多 200 条",
+  qa_search_placeholder: "搜索问题内容…",
+  qa_uncategorized_badge: "未分类",
+  qa_empty: "该区间/筛选下暂无问题。",
 };
 
 export const dict: Record<Locale, Dict> = {

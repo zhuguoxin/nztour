@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitQuizAttemptAction } from "../../actions";
+import { useTr } from "@/lib/i18n-provider";
+import { fmt } from "@/lib/i18n-shared";
 
 export interface QuizQuestion {
   id: string;
@@ -37,6 +39,7 @@ export function QuizPanel({
   isCompleted: boolean;
 }) {
   const router = useRouter();
+  const tr = useTr();
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<{
     score: number;
@@ -50,7 +53,7 @@ export function QuizPanel({
   if (isCompleted) {
     return (
       <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/[.05] px-4 py-3 text-[13px] text-emerald-300 mb-4">
-        ✓ You&apos;ve passed this chapter&apos;s quiz.
+        {tr.lr_quiz_passed_chip}
       </div>
     );
   }
@@ -76,7 +79,7 @@ export function QuizPanel({
           router.refresh();
         }
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Failed to submit");
+        alert(err instanceof Error ? err.message : tr.lr_quiz_submit_failed);
       }
     });
   }
@@ -84,10 +87,10 @@ export function QuizPanel({
   return (
     <section className="rounded-xl border border-amber-400/30 bg-amber-400/[.05] p-4 mb-4">
       <div className="text-[11px] font-mono uppercase tracking-widest text-amber-300 mb-1">
-        End-of-chapter quiz
+        {tr.lr_quiz_heading}
       </div>
       <div className="text-[14px] text-white font-semibold mb-3">
-        Answer {questions.length} questions to continue — pass {Math.ceil((2 * questions.length) / 3)} of {questions.length}.
+        {fmt(tr.lr_quiz_instructions, { n: questions.length, pass: Math.ceil((2 * questions.length) / 3) })}
       </div>
 
       <ol className="space-y-4">
@@ -96,7 +99,7 @@ export function QuizPanel({
           return (
             <li key={q.id}>
               <div className="text-[14px] text-[#e6f5ec] mb-2">
-                <span className="text-amber-300 font-mono mr-2">Q{qi + 1}.</span>
+                <span className="text-amber-300 font-mono mr-2">{fmt(tr.lr_quiz_q_prefix, { n: qi + 1 })}</span>
                 {q.prompt}
               </div>
               <div className="space-y-1.5">
@@ -131,7 +134,7 @@ export function QuizPanel({
               </div>
               {result && !correct ? (
                 <div className="text-[12px] text-rose-300/90 mt-2">
-                  ✗ Incorrect.
+                  {tr.lr_quiz_incorrect}
                 </div>
               ) : null}
             </li>
@@ -144,17 +147,17 @@ export function QuizPanel({
           {result ? (
             result.passed ? (
               <span className="text-emerald-300 font-semibold">
-                ✓ Passed {result.score}/{result.total} — next chapter unlocked
+                {fmt(tr.lr_quiz_passed_result, { score: result.score, total: result.total })}
               </span>
             ) : (
               <span className="text-rose-300">
-                Scored {result.score}/{result.total}. Review and try a new set.
+                {fmt(tr.lr_quiz_failed_result, { score: result.score, total: result.total })}
               </span>
             )
           ) : !allAnswered ? (
-            `Answered ${Object.keys(answers).length}/${questions.length}`
+            fmt(tr.lr_quiz_answered, { answered: Object.keys(answers).length, total: questions.length })
           ) : (
-            "Ready to submit"
+            tr.lr_quiz_ready
           )}
         </div>
         {result ? (
@@ -164,7 +167,7 @@ export function QuizPanel({
               onClick={() => router.refresh()}
               className="px-4 py-2 rounded-md border border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06] text-[13px]"
             >
-              Try a new set
+              {tr.lr_quiz_try_new}
             </button>
           )
         ) : (
@@ -174,7 +177,7 @@ export function QuizPanel({
             disabled={!allAnswered || pending}
             className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {pending ? "Grading…" : "Submit answers"}
+            {pending ? tr.lr_quiz_grading : tr.lr_quiz_submit}
           </button>
         )}
       </div>

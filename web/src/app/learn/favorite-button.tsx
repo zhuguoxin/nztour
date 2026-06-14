@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toggleFavoriteAction } from "./actions";
+import { useTr } from "@/lib/i18n-provider";
 
 /**
  * Heart toggle. Optimistic — flips immediately, reverts if the server call
@@ -20,6 +21,7 @@ export function FavoriteButton({
   compact?: boolean;
   label?: string;
 }) {
+  const tr = useTr();
   const [on, setOn] = useState(initial);
   const [pending, startTransition] = useTransition();
 
@@ -53,9 +55,9 @@ export function FavoriteButton({
       onClick={toggle}
       disabled={pending}
       aria-pressed={on}
-      aria-label={on ? "Remove from favorites" : "Add to favorites"}
+      aria-label={on ? tr.lr_fav_remove : tr.lr_fav_add}
       className={cls}
-      title={on ? "Saved to favorites" : "Save to favorites"}
+      title={on ? tr.lr_fav_saved : tr.lr_fav_save}
     >
       <svg
         width={compact ? 14 : 13}
