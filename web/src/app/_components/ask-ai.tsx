@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTr } from "@/lib/i18n-provider";
 
 interface RagCitationView {
   kind: "rag";
@@ -72,6 +73,7 @@ export function AskAI({
   noAnswerWarning?: string;
   askLabel?: string;
 }) {
+  const tr = useTr();
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<AskAIResult[]>([]);
   const [current, setCurrent] = useState<AskAIResult | null>(null);
@@ -228,7 +230,7 @@ export function AskAI({
             <Sparkle />
           </div>
           <div className="flex-1 text-left min-w-0">
-            <div className="text-[12px] sm:text-[13px] text-slate-500 mb-1">Ask the agent assistant</div>
+            <div className="text-[12px] sm:text-[13px] text-slate-500 mb-1">{tr.hero_ask_label}</div>
             <Composer
               value={input}
               onChange={setInput}

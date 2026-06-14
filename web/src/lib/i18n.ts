@@ -701,6 +701,20 @@ const en = {
   qa_search_placeholder: "Search question text…",
   qa_uncategorized_badge: "uncategorized",
   qa_empty: "No questions in this window/filter.",
+
+  // ===== Home footer =====
+  fo_platform: "PLATFORM",
+  fo_browse: "Browse training",
+  fo_about: "About",
+  fo_contact_link: "Contact",
+  fo_legal: "LEGAL",
+  fo_terms: "Terms of Service",
+  fo_privacy: "Privacy Policy",
+  fo_acceptable: "Acceptable Use",
+  fo_cookies: "Cookies",
+  fo_contact_head: "CONTACT",
+  fo_company: "COMPANY",
+  fo_country: "New Zealand",
 };
 
 export type Dict = typeof en;
@@ -1358,6 +1372,20 @@ const zhCN: Dict = {
   qa_search_placeholder: "搜索问题内容…",
   qa_uncategorized_badge: "未分类",
   qa_empty: "该区间/筛选下暂无问题。",
+
+  // ===== Home footer =====
+  fo_platform: "平台",
+  fo_browse: "浏览培训",
+  fo_about: "关于",
+  fo_contact_link: "联系",
+  fo_legal: "法律",
+  fo_terms: "服务条款",
+  fo_privacy: "隐私政策",
+  fo_acceptable: "可接受使用政策",
+  fo_cookies: "Cookie 政策",
+  fo_contact_head: "联系方式",
+  fo_company: "公司",
+  fo_country: "新西兰",
 };
 
 export const dict: Record<Locale, Dict> = {

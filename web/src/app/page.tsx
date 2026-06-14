@@ -130,24 +130,24 @@ export default async function Home() {
       <footer className="border-t border-slate-200 px-5 sm:px-8 py-8 mt-12">
         <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-[12.5px]">
           <div>
-            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">PLATFORM</div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_platform}</div>
             <ul className="space-y-1.5 text-slate-600">
-              <li><Link href="/learn" className="hover:text-slate-900">Browse training</Link></li>
-              <li><Link href="/about" className="hover:text-slate-900">About</Link></li>
-              <li><Link href="/contact" className="hover:text-slate-900">Contact</Link></li>
+              <li><Link href="/learn" className="hover:text-slate-900">{tr.fo_browse}</Link></li>
+              <li><Link href="/about" className="hover:text-slate-900">{tr.fo_about}</Link></li>
+              <li><Link href="/contact" className="hover:text-slate-900">{tr.fo_contact_link}</Link></li>
             </ul>
           </div>
           <div>
-            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">LEGAL</div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_legal}</div>
             <ul className="space-y-1.5 text-slate-600">
-              <li><Link href="/legal/terms" className="hover:text-slate-900">Terms of Service</Link></li>
-              <li><Link href="/legal/privacy" className="hover:text-slate-900">Privacy Policy</Link></li>
-              <li><Link href="/legal/acceptable-use" className="hover:text-slate-900">Acceptable Use</Link></li>
-              <li><Link href="/legal/cookies" className="hover:text-slate-900">Cookies</Link></li>
+              <li><Link href="/legal/terms" className="hover:text-slate-900">{tr.fo_terms}</Link></li>
+              <li><Link href="/legal/privacy" className="hover:text-slate-900">{tr.fo_privacy}</Link></li>
+              <li><Link href="/legal/acceptable-use" className="hover:text-slate-900">{tr.fo_acceptable}</Link></li>
+              <li><Link href="/legal/cookies" className="hover:text-slate-900">{tr.fo_cookies}</Link></li>
             </ul>
           </div>
           <div>
-            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">CONTACT</div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_contact_head}</div>
             <ul className="space-y-1.5 text-slate-600">
               <li><a href="mailto:hello@libretour.com" className="hover:text-slate-900">hello@libretour.com</a></li>
               <li><a href="mailto:support@libretour.com" className="hover:text-slate-900">support@libretour.com</a></li>
@@ -155,7 +155,7 @@ export default async function Home() {
             </ul>
           </div>
           <div>
-            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">COMPANY</div>
+            <div className="text-[10px] tracking-widest font-mono text-emerald-700/70 mb-2">{tr.fo_company}</div>
             <p className="text-slate-600 leading-relaxed">
               Libretour Limited
               <br />
@@ -163,7 +163,7 @@ export default async function Home() {
               <br />
               <span className="text-slate-400">[TBD-registered-address]</span>
               <br />
-              New Zealand
+              {tr.fo_country}
             </p>
           </div>
         </div>
