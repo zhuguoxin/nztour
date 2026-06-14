@@ -108,7 +108,13 @@ export async function translateBatch(
       model: MODEL,
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
+      messages: [
+        { role: "user", content: userMessage },
+        // Prefill the assistant turn with "[" so the model is forced to emit a
+        // bare JSON array and can't prepend prose like "Here are the
+        // translations:" (which made JSON.parse fail on the whole reply).
+        { role: "assistant", content: "[" },
+      ],
     });
   } catch (e) {
     // Surface the upstream status/message so the caller can show something
@@ -118,25 +124,49 @@ export async function translateBatch(
     throw new Error(`Translation API error${status ? ` (${status})` : ""}: ${msg}`);
   }
 
+  if (resp.stop_reason === "max_tokens") {
+    throw new Error("Translation was truncated (too long) — split the course into smaller blocks.");
+  }
+
   const text = resp.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
     .join("");
 
-  // Be tolerant about the JSON — sometimes models wrap in ```json fences.
-  const cleaned = text
-    .replace(/^\s*```(?:json)?\s*/i, "")
-    .replace(/\s*```\s*$/i, "")
-    .trim();
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    throw new Error("Translator returned non-JSON output");
+  // The prefill "[" is NOT echoed in the response, so re-attach it. Then try a
+  // few tolerant parses: the reconstructed array, the raw text, and a
+  // first-"["-to-last-"]" slice (handles a stray fence or trailing prose).
+  const stripFences = (s: string) =>
+    s.replace(/```(?:json)?/gi, "").trim();
+  const candidates = [
+    "[" + text,
+    text,
+    (() => {
+      const t = stripFences("[" + text);
+      const a = t.indexOf("[");
+      const b = t.lastIndexOf("]");
+      return a >= 0 && b > a ? t.slice(a, b + 1) : "";
+    })(),
+  ];
+  let parsed: unknown = null;
+  for (const cand of candidates) {
+    if (!cand) continue;
+    try {
+      const v = JSON.parse(stripFences(cand));
+      if (Array.isArray(v)) {
+        parsed = v;
+        break;
+      }
+    } catch {
+      /* try next candidate */
+    }
   }
-  if (!Array.isArray(parsed) || parsed.length !== nonEmpty.length) {
+  if (!Array.isArray(parsed)) {
+    throw new Error(`Translator returned non-JSON output: ${text.slice(0, 160)}`);
+  }
+  if (parsed.length !== nonEmpty.length) {
     throw new Error(
-      `Translator returned ${Array.isArray(parsed) ? parsed.length : "non-array"} items, expected ${nonEmpty.length}`,
+      `Translator returned ${parsed.length} items, expected ${nonEmpty.length}`,
     );
   }
   for (let i = 0; i < nonEmpty.length; i++) {
