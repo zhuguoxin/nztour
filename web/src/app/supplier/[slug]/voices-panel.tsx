@@ -18,18 +18,15 @@ export interface VoiceRow {
 /**
  * Voice profiles UI for a supplier.
  *
- * Lists every voice the supplier can use in audio narration:
- *   • Platform stock voices (shared, free) — grouped by language, model name
- *     hidden (customers shouldn't need to know "MiniMax")
- *   • Cloned voices (owned by this supplier) — pending/active/failed badges
+ * Two sections:
+ *   1. "Cloned voices" — the supplier's already-recorded voices (e.g. Arthur).
+ *      Each can be edited in place: rename, change the languages it applies to,
+ *      and re-record a fresh sample.
+ *   2. "Recording a new voice" — pick languages + name + gender, record a
+ *      10s–3min sample in the browser; the WAV is POSTed to /api/voice/clone
+ *      and MiniMax clones it.
  *
- * Clone flow:
- *   • Enter name + gender, record a 10s–3min sample in the browser (mic)
- *   • The recording is encoded to WAV client-side and POSTed to
- *     /api/voice/clone — MiniMax clones it, we save the voice_id
- *   • Row appears with status='pending' → 'active' on success, 'failed' on error
- *
- * The "Clone a voice" CTA is disabled if `hasXIKey=false`.
+ * Cloning / re-recording is disabled if `hasXIKey=false`.
  */
 
 // code → human label for the cloned-voice language chips. "zh" collapses both
@@ -47,11 +44,37 @@ const LANG_DISPLAY: Record<string, string> = {
   pt: "Português",
 };
 
+// Languages a cloned voice can be assigned to. "zh" covers both zh-CN and
+// zh-TW (the editor matches on the base code), so one "中文" chip is enough.
+const CLONE_LANGS: Array<{ code: string; label: string }> = [
+  { code: "en", label: "English" },
+  { code: "zh", label: "中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "pt", label: "Português" },
+];
+
 function langLabels(langs: string | null): string[] {
   if (!langs) return [];
   try {
     const arr = JSON.parse(langs) as string[];
     return [...new Set(arr.map((c) => LANG_DISPLAY[c] ?? c))];
+  } catch {
+    return [];
+  }
+}
+
+function parseLangCodes(langs: string | null): string[] {
+  if (!langs) return [];
+  try {
+    const arr = JSON.parse(langs) as string[];
+    // collapse Chinese variants to "zh" so they round-trip with the chip set
+    return [...new Set(arr.map((c) => (c.startsWith("zh") ? "zh" : c)))].filter((c) =>
+      CLONE_LANGS.some((l) => l.code === c),
+    );
   } catch {
     return [];
   }
@@ -85,7 +108,7 @@ export function VoicesPanel({
         <div>
           <div className="font-semibold text-[14px] text-slate-900">Cloned voices</div>
           <div className="text-[12.5px] text-slate-500 mt-0.5">
-            Record a sample to clone a voice that&apos;s private to this supplier.
+            Voices recorded for this supplier. Each can narrate only the languages you assign it.
           </div>
         </div>
         {!hasXIKey ? (
@@ -98,42 +121,29 @@ export function VoicesPanel({
         ) : null}
       </header>
 
-      {/* Cloned voices */}
+      {/* Existing cloned voices (editable) */}
       <div className="px-5 py-4">
         {cloned.length === 0 ? (
-          <div className="text-[12.5px] text-slate-500 py-2">
-            No cloned voices yet — record a 10-second to 3-minute sample below to clone a sales
-            rep&apos;s voice.
+          <div className="text-[12.5px] text-slate-500 py-1">
+            No cloned voices yet — record one below.
           </div>
         ) : (
           <ul className="space-y-2">
             {cloned.map((v) => (
-              <li
+              <ClonedVoiceItem
                 key={v.id}
-                className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2"
-              >
-                <span className="text-[18px]">🎤</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] text-slate-900 truncate">{cleanName(v.name)}</div>
-                  <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
-                    {v.gender ? <span className="uppercase font-mono">{v.gender}</span> : null}
-                    <StatusBadge status={v.status} detail={v.status_detail} />
-                    {langLabels(v.langs).map((lbl) => (
-                      <span
-                        key={lbl}
-                        className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600"
-                      >
-                        {lbl}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </li>
+                voice={v}
+                supplierSlug={supplierSlug}
+                disabled={!hasXIKey}
+              />
             ))}
           </ul>
         )}
+      </div>
 
-        {/* Clone form */}
+      {/* Add a new voice */}
+      <div className="px-5 py-4 border-t border-slate-200 bg-slate-50/60 rounded-b-2xl">
+        <div className="font-semibold text-[13.5px] text-slate-900">Recording a new voice</div>
         <CloneForm supplierSlug={supplierSlug} disabled={!hasXIKey} />
       </div>
     </section>
@@ -215,32 +225,14 @@ function downsample(input: Float32Array, from: number, to: number): Float32Array
 
 type RecState = "idle" | "recording" | "recorded";
 
-// Languages a cloned voice can be assigned to. "zh" covers both zh-CN and
-// zh-TW (the editor matches on the base code), so one "中文" chip is enough.
-const CLONE_LANGS: Array<{ code: string; label: string }> = [
-  { code: "en", label: "English" },
-  { code: "zh", label: "中文" },
-  { code: "ja", label: "日本語" },
-  { code: "ko", label: "한국어" },
-  { code: "es", label: "Español" },
-  { code: "fr", label: "Français" },
-  { code: "de", label: "Deutsch" },
-  { code: "pt", label: "Português" },
-];
-
-function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled: boolean }) {
-  const [name, setName] = useState("");
-  const [gender, setGender] = useState("neutral");
-  const [langs, setLangs] = useState<string[]>([]);
-  const [pending, startTransition] = useTransition();
-
+/** Mic → WAV recorder. Shared by the new-voice form and per-voice re-record. */
+function useRecorder() {
   const [recState, setRecState] = useState<RecState>("idle");
   const [seconds, setSeconds] = useState(0);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  // refs holding the live recording graph
   const ctxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const nodeRef = useRef<ScriptProcessorNode | null>(null);
@@ -266,7 +258,7 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
     ctxRef.current = null;
   }
 
-  async function startRecording() {
+  async function start() {
     setErr(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
@@ -276,7 +268,9 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const ctx = new AC();
       ctxRef.current = ctx;
       rateRef.current = ctx.sampleRate;
@@ -293,7 +287,7 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
       timerRef.current = setInterval(() => {
         setSeconds((s) => {
           const next = s + 1;
-          if (next >= MAX_SECONDS) stopRecording();
+          if (next >= MAX_SECONDS) stop();
           return next;
         });
       }, 1000);
@@ -304,7 +298,7 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
     }
   }
 
-  function stopRecording() {
+  function stop() {
     const from = rateRef.current;
     const total = chunksRef.current.reduce((n, c) => n + c.length, 0);
     cleanupGraph();
@@ -336,58 +330,322 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
     setErr(null);
   }
 
+  const mmss = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  const tooShort = recState === "recorded" && seconds < 10;
+
+  return { recState, seconds, blob, previewUrl, err, setErr, start, stop, reset, mmss, tooShort };
+}
+
+type Recorder = ReturnType<typeof useRecorder>;
+
+/** Language chip multi-select. */
+function LangChips({
+  selected,
+  onToggle,
+  disabled,
+}: {
+  selected: string[];
+  onToggle: (code: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[12px] text-slate-500 mr-1">Languages:</span>
+      {CLONE_LANGS.map((l) => {
+        const on = selected.includes(l.code);
+        return (
+          <button
+            key={l.code}
+            type="button"
+            onClick={() => onToggle(l.code)}
+            disabled={disabled}
+            className={`px-2.5 py-1 rounded-full border text-[12px] transition disabled:opacity-50 ${
+              on
+                ? "bg-[#04241e] border-[#04241e] text-white"
+                : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
+            }`}
+          >
+            {l.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Recording indicator + Stop, or the recorded preview + re-take. The Start /
+ *  Re-record trigger and the Save button live in the parent. */
+function RecorderStrip({ rec }: { rec: Recorder }) {
+  if (rec.recState === "recording") {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-rose-600">
+          <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
+          {rec.mmss}
+        </span>
+        <button
+          type="button"
+          onClick={rec.stop}
+          className="px-4 py-2 rounded-md font-semibold text-[13px] text-white bg-[#04241e] hover:bg-[#0a3a2f]"
+        >
+          ■ Stop
+        </button>
+        <span className="text-[11px] text-slate-500">max {MAX_SECONDS / 60} min</span>
+      </div>
+    );
+  }
+  if (rec.recState === "recorded" && rec.previewUrl) {
+    return (
+      <div className="flex items-center gap-3 flex-wrap">
+        <audio controls src={rec.previewUrl} className="h-9" />
+        <span className="text-[12px] text-slate-500">{rec.mmss} recorded</span>
+      </div>
+    );
+  }
+  return null;
+}
+
+const RECORD_TIP = (
+  <div className="text-[11px] text-slate-500">
+    Record <strong>10 seconds–3 minutes</strong>, single speaker, clear speech, no music or
+    background noise.
+  </div>
+);
+
+// ---------------------------------------------------------------------------
+//  Existing cloned voice — view + edit (rename, languages, gender, re-record)
+// ---------------------------------------------------------------------------
+
+function ClonedVoiceItem({
+  voice,
+  supplierSlug,
+  disabled,
+}: {
+  voice: VoiceRow;
+  supplierSlug: string;
+  disabled: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(cleanName(voice.name));
+  const [gender, setGender] = useState(voice.gender ?? "neutral");
+  const [langs, setLangs] = useState<string[]>(parseLangCodes(voice.langs));
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const rec = useRecorder();
+
   function toggleLang(code: string) {
     setLangs((cur) => (cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code]));
   }
 
-  function save() {
-    if (!blob || !name.trim() || langs.length === 0) return;
+  function cancel() {
+    rec.reset();
+    setName(cleanName(voice.name));
+    setGender(voice.gender ?? "neutral");
+    setLangs(parseLangCodes(voice.langs));
+    setErr(null);
+    setEditing(false);
+  }
+
+  // Save metadata only (no new recording).
+  function saveMeta() {
+    if (!name.trim() || langs.length === 0) return;
     const fd = new FormData();
-    fd.append("file", blob, "sample.wav");
+    fd.append("voice_id", voice.id);
+    fd.append("supplier_slug", supplierSlug);
+    fd.append("name", name.trim());
+    fd.append("gender", gender);
+    fd.append("langs", JSON.stringify(langs));
+    startTransition(async () => {
+      const r = await fetch("/api/voice/update", { method: "POST", body: fd });
+      if (r.ok) window.location.reload();
+      else setErr((await r.text().catch(() => "Save failed")).slice(0, 400));
+    });
+  }
+
+  // Save the freshly recorded sample (re-clone in place) + metadata.
+  function saveRecording() {
+    if (!rec.blob || !name.trim() || langs.length === 0) return;
+    const fd = new FormData();
+    fd.append("voice_id", voice.id);
+    fd.append("file", rec.blob, "sample.wav");
     fd.append("supplier_slug", supplierSlug);
     fd.append("name", name.trim());
     fd.append("gender", gender);
     fd.append("langs", JSON.stringify(langs));
     startTransition(async () => {
       const r = await fetch("/api/voice/clone", { method: "POST", body: fd });
-      if (r.ok) {
-        window.location.reload();
-      } else {
-        const msg = await r.text().catch(() => "Clone failed");
-        setErr(msg.slice(0, 400));
-      }
+      if (r.ok) window.location.reload();
+      else setErr((await r.text().catch(() => "Re-record failed")).slice(0, 400));
     });
   }
 
-  const mmss = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
-  const tooShort = recState === "recorded" && seconds < 10;
+  if (!editing) {
+    return (
+      <li className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2">
+        <span className="text-[18px]">🎤</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13.5px] text-slate-900 truncate">{cleanName(voice.name)}</div>
+          <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
+            {voice.gender ? <span className="uppercase font-mono">{voice.gender}</span> : null}
+            <StatusBadge status={voice.status} detail={voice.status_detail} />
+            {langLabels(voice.langs).map((lbl) => (
+              <span
+                key={lbl}
+                className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600"
+              >
+                {lbl}
+              </span>
+            ))}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          disabled={disabled}
+          className="shrink-0 px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Edit
+        </button>
+      </li>
+    );
+  }
+
+  const canSaveMeta = !pending && name.trim() !== "" && langs.length > 0;
+
+  return (
+    <li className="rounded-md border border-slate-300 bg-white px-3 py-3 space-y-2.5">
+      <LangChips selected={langs} onToggle={toggleLang} disabled={pending} />
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={80}
+          disabled={pending}
+          className="flex-1 min-w-0 px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+        />
+        <select
+          value={gender}
+          onChange={(e) => setGender(e.target.value)}
+          disabled={pending}
+          className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+        >
+          <option value="neutral">neutral</option>
+          <option value="male">male</option>
+          <option value="female">female</option>
+        </select>
+        {rec.recState === "idle" ? (
+          <button
+            type="button"
+            onClick={rec.start}
+            disabled={pending}
+            className="shrink-0 px-4 py-2 rounded-md font-semibold text-[13px] text-rose-600 border border-rose-300 hover:bg-rose-50 disabled:opacity-50"
+          >
+            ● Re-record
+          </button>
+        ) : null}
+      </div>
+
+      <RecorderStrip rec={rec} />
+      {rec.recState !== "idle" ? RECORD_TIP : null}
+      {rec.tooShort ? (
+        <div className="text-[11px] text-amber-700">
+          Recording is under 10 seconds — record a bit more for a good clone.
+        </div>
+      ) : null}
+
+      {(err || rec.err) ? (
+        <div className="text-[11px] text-rose-700">{err ?? rec.err}</div>
+      ) : null}
+
+      <div className="flex items-center gap-2 flex-wrap pt-0.5">
+        {rec.recState === "recorded" ? (
+          <>
+            <button
+              type="button"
+              onClick={saveRecording}
+              disabled={pending || rec.tooShort}
+              className={`px-4 py-1.5 rounded-md font-semibold text-[13px] text-white ${
+                pending || rec.tooShort
+                  ? "bg-slate-400 cursor-not-allowed"
+                  : "bg-[#04241e] hover:bg-[#0a3a2f]"
+              }`}
+            >
+              {pending ? "Saving…" : "Save new recording"}
+            </button>
+            <button
+              type="button"
+              onClick={rec.reset}
+              disabled={pending}
+              className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Discard take
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={saveMeta}
+            disabled={!canSaveMeta || rec.recState === "recording"}
+            className={`px-4 py-1.5 rounded-md font-semibold text-[13px] text-white ${
+              !canSaveMeta || rec.recState === "recording"
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-[#04241e] hover:bg-[#0a3a2f]"
+            }`}
+          >
+            {pending ? "Saving…" : "Save changes"}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={cancel}
+          disabled={pending}
+          className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+//  New voice — languages + name + gender + record
+// ---------------------------------------------------------------------------
+
+function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled: boolean }) {
+  const [name, setName] = useState("");
+  const [gender, setGender] = useState("neutral");
+  const [langs, setLangs] = useState<string[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const rec = useRecorder();
+
+  function toggleLang(code: string) {
+    setLangs((cur) => (cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code]));
+  }
+
+  function save() {
+    if (!rec.blob || !name.trim() || langs.length === 0) return;
+    const fd = new FormData();
+    fd.append("file", rec.blob, "sample.wav");
+    fd.append("supplier_slug", supplierSlug);
+    fd.append("name", name.trim());
+    fd.append("gender", gender);
+    fd.append("langs", JSON.stringify(langs));
+    startTransition(async () => {
+      const r = await fetch("/api/voice/clone", { method: "POST", body: fd });
+      if (r.ok) window.location.reload();
+      else setErr((await r.text().catch(() => "Clone failed")).slice(0, 400));
+    });
+  }
+
   const canRecord = !disabled && !pending && name.trim() !== "" && langs.length > 0;
 
   return (
-    <div className="mt-4 space-y-2.5">
-      {/* Language multi-select — the cloned voice only appears in these
-          languages' dropdowns. */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[12px] text-slate-500 mr-1">Languages:</span>
-        {CLONE_LANGS.map((l) => {
-          const on = langs.includes(l.code);
-          return (
-            <button
-              key={l.code}
-              type="button"
-              onClick={() => toggleLang(l.code)}
-              disabled={disabled || pending || recState !== "idle"}
-              className={`px-2.5 py-1 rounded-full border text-[12px] transition disabled:opacity-50 ${
-                on
-                  ? "bg-[#04241e] border-[#04241e] text-white"
-                  : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
-              }`}
-            >
-              {l.label}
-            </button>
-          );
-        })}
-      </div>
+    <div className="mt-3 space-y-2.5">
+      <LangChips selected={langs} onToggle={toggleLang} disabled={disabled || pending || rec.recState !== "idle"} />
 
       {/* Name + gender + start recording on one row */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -397,42 +655,26 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
-          disabled={disabled || pending || recState !== "idle"}
+          disabled={disabled || pending || rec.recState !== "idle"}
           className="flex-1 min-w-0 px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
         />
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value)}
-          disabled={disabled || pending || recState !== "idle"}
+          disabled={disabled || pending || rec.recState !== "idle"}
           className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
         >
           <option value="neutral">neutral</option>
           <option value="male">male</option>
           <option value="female">female</option>
         </select>
-        {recState === "recording" ? (
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-rose-600">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
-              {mmss}
-            </span>
-            <button
-              type="button"
-              onClick={stopRecording}
-              className="px-4 py-2 rounded-md font-semibold text-[13px] text-white bg-[#04241e] hover:bg-[#0a3a2f]"
-            >
-              ■ Stop
-            </button>
-          </div>
-        ) : (
+        {rec.recState === "idle" ? (
           <button
             type="button"
-            onClick={startRecording}
-            disabled={!canRecord || recState === "recorded"}
+            onClick={rec.start}
+            disabled={!canRecord}
             className={`shrink-0 px-4 py-2 rounded-md font-semibold text-[13px] text-white ${
-              !canRecord || recState === "recorded"
-                ? "bg-slate-400 cursor-not-allowed"
-                : "bg-rose-600 hover:bg-rose-500"
+              !canRecord ? "bg-slate-400 cursor-not-allowed" : "bg-rose-600 hover:bg-rose-500"
             }`}
             title={
               !name.trim()
@@ -444,52 +686,45 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
           >
             ● Start recording
           </button>
-        )}
+        ) : null}
       </div>
 
-      {/* Recorded preview */}
-      {recState === "recorded" && previewUrl ? (
-        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 flex-wrap">
-              <audio controls src={previewUrl} className="h-9" />
-              <span className="text-[12px] text-slate-500">{mmss} recorded</span>
-              <button
-                type="button"
-                onClick={reset}
-                disabled={pending}
-                className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-white disabled:opacity-50"
-              >
-                Re-record
-              </button>
-              <button
-                type="button"
-                onClick={save}
-                disabled={pending || tooShort}
-                className={`px-4 py-1.5 rounded-md font-semibold text-[13px] text-white ${
-                  pending || tooShort
-                    ? "bg-slate-400 cursor-not-allowed"
-                    : "bg-[#04241e] hover:bg-[#0a3a2f]"
-                }`}
-              >
-                {pending ? "Cloning…" : "Save & clone"}
-              </button>
-            </div>
-            {tooShort ? (
-              <div className="text-[11px] text-amber-700">
-                Recording is under 10 seconds — record a bit more for a good clone.
-              </div>
-            ) : null}
-          </div>
+      <RecorderStrip rec={rec} />
+
+      {rec.recState === "recorded" ? (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={save}
+            disabled={pending || rec.tooShort}
+            className={`px-4 py-1.5 rounded-md font-semibold text-[13px] text-white ${
+              pending || rec.tooShort
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-[#04241e] hover:bg-[#0a3a2f]"
+            }`}
+          >
+            {pending ? "Cloning…" : "Save & clone"}
+          </button>
+          <button
+            type="button"
+            onClick={rec.reset}
+            disabled={pending}
+            className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-white disabled:opacity-50"
+          >
+            Re-record
+          </button>
         </div>
       ) : null}
 
-      {err ? <div className="text-[11px] text-rose-700">{err}</div> : null}
+      {rec.tooShort ? (
+        <div className="text-[11px] text-amber-700">
+          Recording is under 10 seconds — record a bit more for a good clone.
+        </div>
+      ) : null}
 
-      <div className="text-[11px] text-slate-500">
-        Record <strong>10 seconds–3 minutes</strong>, single speaker, clear Mandarin or English, no
-        music or background noise. A cloned voice can narrate any language.
-      </div>
+      {(err || rec.err) ? <div className="text-[11px] text-rose-700">{err ?? rec.err}</div> : null}
+
+      {RECORD_TIP}
     </div>
   );
 }

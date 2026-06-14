@@ -7,8 +7,13 @@
  *   supplier_slug  — voice belongs to this supplier (shared across its products)
  *   name           — display label e.g. "Maya — sales lead"
  *   gender         — male | female | neutral  (UI hint only)
+ *   langs          — JSON array of language codes the clone may narrate
+ *   voice_id       — (optional) re-record an existing cloned voice in place
+ *                    instead of creating a new one
  *
  * Auth: supplier_membership for `supplier_slug` (or platform admin).
+ * Metadata-only edits (rename / change languages without a new recording) go
+ * to /api/voice/update.
  *
  * Flow:
  *   1. Validate + upload sample to R2 under voices/<voice_id>/sample.<ext>
@@ -105,7 +110,24 @@ export async function POST(req: Request) {
     return new Response(msg, { status: msg === "unauthorised" ? 401 : 403 });
   }
 
-  const voiceRowId = shortId("voice");
+  // Re-record path: an existing cloned voice owned by this supplier gets a new
+  // sample (and refreshed name/gender/langs). Otherwise we insert a new row.
+  const existingId = String(form.get("voice_id") ?? "").trim();
+  let voiceRowId: string;
+  if (existingId) {
+    const row = await db()
+      .prepare(
+        `SELECT id FROM voice_profiles
+         WHERE id = ? AND supplier_id = ? AND kind = 'cloned'`,
+      )
+      .bind(existingId, access.supplierId)
+      .first<{ id: string }>();
+    if (!row) return new Response("voice not found", { status: 404 });
+    voiceRowId = existingId;
+  } else {
+    voiceRowId = shortId("voice");
+  }
+
   const sampleKey = `voices/${voiceRowId}/sample.${ext}`;
   const { env } = getCloudflareContext();
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -113,16 +135,29 @@ export async function POST(req: Request) {
   // 1) Stash the sample in R2 so we keep the original for re-cloning.
   await env.ASSETS_BUCKET.put(sampleKey, bytes, { httpMetadata: { contentType: mime } });
 
-  // 2) Pending row. langs restricts which language dropdowns this voice shows
-  //    in (the supplier picked them at clone time).
-  await db()
-    .prepare(
-      `INSERT INTO voice_profiles
-         (id, supplier_id, name, provider, kind, gender, langs, sample_r2_key, status, created_by)
-       VALUES (?, ?, ?, 'minimax', 'cloned', ?, ?, ?, 'pending', ?)`,
-    )
-    .bind(voiceRowId, access.supplierId, name, gender, langsJson, sampleKey, access.userId)
-    .run();
+  // 2) Pending row (insert new, or flip an existing one back to pending while
+  //    its new sample re-clones). langs restricts which language dropdowns this
+  //    voice shows in (the supplier picked them at clone time).
+  if (existingId) {
+    await db()
+      .prepare(
+        `UPDATE voice_profiles
+           SET name = ?, gender = ?, langs = ?, sample_r2_key = ?,
+               status = 'pending', status_detail = NULL
+         WHERE id = ?`,
+      )
+      .bind(name, gender, langsJson, sampleKey, voiceRowId)
+      .run();
+  } else {
+    await db()
+      .prepare(
+        `INSERT INTO voice_profiles
+           (id, supplier_id, name, provider, kind, gender, langs, sample_r2_key, status, created_by)
+         VALUES (?, ?, ?, 'minimax', 'cloned', ?, ?, ?, 'pending', ?)`,
+      )
+      .bind(voiceRowId, access.supplierId, name, gender, langsJson, sampleKey, access.userId)
+      .run();
+  }
 
   // 3) Upload to MiniMax + clone.
   try {
