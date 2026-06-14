@@ -722,8 +722,9 @@ const en = {
 
   // ===== Explore page =====
   ex_label: "/EXPLORE",
-  ex_title: "Explore NZ tourism training",
-  ex_subtitle: "Browse every product and course — or ask the AI assistant anything.",
+  ex_title: "Explore New Zealand",
+  ex_subtitle: "From fiords to dark skies — Aotearoa's most iconic destinations.",
+  ex_attribution: "Imagery via Pexels",
   ex_products_heading: "Products",
   ex_products_sub: "Suppliers with training live on Libretour.",
   ex_view_all_products: "All products →",
@@ -1443,8 +1444,9 @@ const zhCN: Dict = {
 
   // ===== Explore page =====
   ex_label: "/探索",
-  ex_title: "探索新西兰旅游培训",
-  ex_subtitle: "浏览所有产品与课程,任何问题都可以问 AI 助手。",
+  ex_title: "探索新西兰",
+  ex_subtitle: "从峡湾到星空 —— 新西兰最具代表性的目的地。",
+  ex_attribution: "图片来自 Pexels",
   ex_products_heading: "产品",
   ex_products_sub: "已在 Libretour 上线培训的供应商。",
   ex_view_all_products: "全部产品 →",

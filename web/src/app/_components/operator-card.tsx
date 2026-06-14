@@ -32,8 +32,17 @@ export function OperatorCard({
 
   return (
     <article className="rounded-2xl overflow-hidden bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition h-full relative">
-      <div className="h-32 relative" style={{ background: cover }}>
-        <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5">
+      <div className="h-32 relative overflow-hidden" style={{ background: cover }}>
+        {op.cover_image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={op.cover_image_url}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : null}
+        <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 z-[1]">
           {hasCourses ? (
             <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-emerald-200 border border-white/15">
               {tr.card_live}
@@ -52,9 +61,11 @@ export function OperatorCard({
             {tr.card_manage}
           </Link>
         ) : null}
-        <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between">
-          <div className="text-[36px] leading-none drop-shadow">{op.emoji ?? "📚"}</div>
-        </div>
+        {op.cover_image_url ? null : (
+          <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between">
+            <div className="text-[36px] leading-none drop-shadow">{op.emoji ?? "📚"}</div>
+          </div>
+        )}
       </div>
       <div className="p-5">
         <div className="text-[13px] text-slate-500 mb-1">{op.name}</div>
