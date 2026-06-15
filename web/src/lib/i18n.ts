@@ -785,6 +785,31 @@ const en = {
   reg_waikato: "Waikato",
   reg_canterbury: "Canterbury",
   reg_australia: "Australia",
+
+  // ===== Translation glossary =====
+  gl_title: "Translation glossary",
+  gl_sub_supplier:
+    "Approved term translations shared across all this supplier's products. The AI translator uses these exactly.",
+  gl_sub_operator:
+    "Product-specific terms, on top of the supplier glossary. The AI translator uses these exactly.",
+  gl_inherited: "+{n} inherited from the supplier glossary",
+  gl_import_heading: "Import",
+  gl_import_hint:
+    "Upload a CSV/TSV, or paste from a spreadsheet. First column = source term; each other column = one language (header can be a code like zh-CN or a name like 中文 / Chinese).",
+  gl_choose_file: "Choose file",
+  gl_paste_ph: "…or paste rows here (tab- or comma-separated)",
+  gl_parse: "Parse",
+  gl_parsed_count: "Parsed {n} term(s) · {langs} language(s)",
+  gl_parse_empty: "Nothing recognized — check the header row.",
+  gl_unmatched_cols: "Ignored unrecognized columns: {cols}",
+  gl_save_import: "Save & replace glossary",
+  gl_saving: "Saving…",
+  gl_import_note: "Importing replaces the whole glossary for this scope.",
+  gl_current_heading: "Current terms — {n}",
+  gl_empty: "No terms yet. Import a list above.",
+  gl_col_source: "Source",
+  gl_delete: "Delete",
+  gl_failed: "Import failed",
 };
 
 export type Dict = typeof en;
@@ -1525,6 +1550,29 @@ const zhCN: Dict = {
   reg_waikato: "怀卡托",
   reg_canterbury: "坎特伯雷",
   reg_australia: "澳大利亚",
+
+  // ===== Translation glossary =====
+  gl_title: "翻译词汇库",
+  gl_sub_supplier: "该供应商名下所有产品共享的术语译法,AI 翻译时会严格遵循。",
+  gl_sub_operator: "本产品专属术语(叠加在供应商词汇库之上),AI 翻译时会严格遵循。",
+  gl_inherited: "另继承 {n} 条供应商词汇",
+  gl_import_heading: "导入",
+  gl_import_hint:
+    "上传 CSV/TSV,或从表格直接粘贴。第一列为原文术语,其余每列对应一种语言(表头可用 zh-CN 这类代码,或「中文」「Chinese」这类名称)。",
+  gl_choose_file: "选择文件",
+  gl_paste_ph: "…或在此粘贴表格内容(制表符或逗号分隔)",
+  gl_parse: "解析",
+  gl_parsed_count: "已解析 {n} 条术语 · {langs} 种语言",
+  gl_parse_empty: "未识别到内容 —— 请检查表头行。",
+  gl_unmatched_cols: "已忽略无法识别的列:{cols}",
+  gl_save_import: "保存并替换词汇库",
+  gl_saving: "保存中…",
+  gl_import_note: "导入会替换当前作用域下的整份词汇库。",
+  gl_current_heading: "现有术语 — {n}",
+  gl_empty: "暂无术语。请在上方导入。",
+  gl_col_source: "原文",
+  gl_delete: "删除",
+  gl_failed: "导入失败",
 };
 
 export const dict: Record<Locale, Dict> = {

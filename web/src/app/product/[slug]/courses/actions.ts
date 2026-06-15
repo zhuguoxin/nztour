@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireOperatorMembership } from "@/lib/roles";
 import { synthesizeAndStore, isValidLang } from "@/lib/tts";
 import { translateBatch, translateOne, readI18nMap, writeI18nMap, isSupportedLang } from "@/lib/translate";
+import { glossaryForTranslation } from "@/lib/glossary";
 
 function slugify(s: string): string {
   return s
@@ -784,7 +785,10 @@ async function translateCourseCore(form: FormData): Promise<void> {
   const courseSlug = String(form.get("course_slug") ?? "");
   const toLang = String(form.get("to_lang") ?? "");
   if (!isSupportedLang(toLang)) throw new Error("unsupported target language");
-  const { courseId } = await authCourse(operatorSlug, courseSlug);
+  const { access, courseId } = await authCourse(operatorSlug, courseSlug);
+
+  // Approved supplier/product term translations to enforce during this run.
+  const glossary = await glossaryForTranslation(access.operatorId, toLang);
 
   const course = await db()
     .prepare(
@@ -809,7 +813,7 @@ async function translateCourseCore(form: FormData): Promise<void> {
     { id: "title", text: course.title },
     { id: "summary", text: course.summary ?? "" },
   ];
-  const courseTrans = await translateBatch(course.primary_lang, toLang, courseInputs);
+  const courseTrans = await translateBatch(course.primary_lang, toLang, courseInputs, glossary);
   const titleMap = { ...readI18nMap(course.title_i18n), [toLang]: courseTrans[0].translation };
   const summaryMap = { ...readI18nMap(course.summary_i18n), [toLang]: courseTrans[1].translation };
 
@@ -855,7 +859,7 @@ async function translateCourseCore(form: FormData): Promise<void> {
         { id: `b:${b.id}:caption`, text: b.caption ?? "" },
       ]),
     ];
-    const out = await translateBatch(course.primary_lang, toLang, batch);
+    const out = await translateBatch(course.primary_lang, toLang, batch, glossary);
     const byId = new Map(out.map((r) => [r.id, r.translation]));
 
     moduleUpdates.push({

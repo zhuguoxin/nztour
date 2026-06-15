@@ -60,15 +60,23 @@ Rules:
 - Translate the meaning, not word-for-word. Idiomatic phrasing in the target language is preferred.
 - Output ONLY the translation — no preamble, no explanation, no quotes.`;
 
+/** An approved source→target term pair for the translation glossary. */
+export interface GlossaryPair {
+  source: string;
+  target: string;
+}
+
 /**
  * Translate a batch of text fragments to a single target language. Inputs and
- * outputs are 1:1 in order. The whole batch is sent in one Claude call so
- * terminology stays consistent across fragments.
+ * outputs are 1:1 in order. The whole batch is sent in one call so terminology
+ * stays consistent. `glossary` (optional) forces approved translations for the
+ * supplier's / product's specific terms.
  */
 export async function translateBatch(
   fromLang: string,
   toLang: string,
   inputs: TranslateInput[],
+  glossary?: GlossaryPair[],
 ): Promise<TranslateResult[]> {
   if (fromLang === toLang) return inputs.map((i) => ({ id: i.id, translation: i.text }));
 
@@ -96,14 +104,14 @@ export async function translateBatch(
 
   let parsed: unknown[];
   if (useDeepseek) {
-    parsed = await callDeepSeek(deepseekKey as string, fromName, toName, fragments);
+    parsed = await callDeepSeek(deepseekKey as string, fromName, toName, fragments, glossary);
   } else {
     if (!env.ANTHROPIC_API_KEY) {
       throw new Error(
         "ANTHROPIC_API_KEY not configured — translation unavailable until the secret is set.",
       );
     }
-    parsed = await callClaude(env.ANTHROPIC_API_KEY, fromName, toName, fragments);
+    parsed = await callClaude(env.ANTHROPIC_API_KEY, fromName, toName, fragments, glossary);
   }
 
   if (parsed.length !== nonEmpty.length) {
@@ -134,15 +142,27 @@ function buildUserMessage(
   toName: string,
   fragments: string[],
   wantObject: boolean,
+  glossary?: GlossaryPair[],
 ): string {
   const shape = wantObject
     ? `a JSON object of the form {"translations": [...]} whose "translations" is a JSON array of exactly ${fragments.length} translated strings, in the same order`
     : `a JSON array of exactly ${fragments.length} translated strings, in the same order`;
+  const glossaryLine =
+    glossary && glossary.length
+      ? `GLOSSARY — these terms have an APPROVED ${toName} translation. Whenever a term appears (match case-insensitively), use its approved translation EXACTLY/verbatim:\n` +
+        glossary
+          .slice(0, 200)
+          .map((g) => `- "${g.source}" => "${g.target}"`)
+          .join("\n")
+      : "";
   return [
     `Translate each string in the INPUT JSON array from ${fromName} to ${toName}.`,
     `Reply with ${shape}. Output valid JSON only — no markdown fences, no commentary.`,
+    glossaryLine,
     `INPUT: ${JSON.stringify(fragments)}`,
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Pull the string array out of a model reply (array, {translations:[…]}, or
@@ -164,6 +184,7 @@ async function callClaude(
   fromName: string,
   toName: string,
   fragments: string[],
+  glossary?: GlossaryPair[],
 ): Promise<unknown[]> {
   const client = new Anthropic({ apiKey });
   let resp;
@@ -173,7 +194,7 @@ async function callClaude(
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
       messages: [
-        { role: "user", content: buildUserMessage(fromName, toName, fragments, false) },
+        { role: "user", content: buildUserMessage(fromName, toName, fragments, false, glossary) },
         { role: "assistant", content: "[" },
       ],
     });
@@ -198,6 +219,7 @@ async function callDeepSeek(
   fromName: string,
   toName: string,
   fragments: string[],
+  glossary?: GlossaryPair[],
 ): Promise<unknown[]> {
   let resp: Response;
   try {
@@ -210,7 +232,7 @@ async function callDeepSeek(
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildUserMessage(fromName, toName, fragments, true) },
+          { role: "user", content: buildUserMessage(fromName, toName, fragments, true, glossary) },
         ],
       }),
     });

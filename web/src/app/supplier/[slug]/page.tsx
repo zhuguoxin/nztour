@@ -6,6 +6,9 @@ import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
 import { hasMiniMaxKey } from "@/lib/minimax";
 import { VoicesPanel, type VoiceRow } from "./voices-panel";
+import { GlossaryPanel } from "../../_components/glossary-panel";
+import { listGlossaryEntries } from "@/lib/glossary";
+import { TRANSLATE_LANGS } from "@/lib/translate";
 
 export const dynamic = "force-dynamic";
 
@@ -215,6 +218,15 @@ export default async function SupplierDashboard({ params }: Props) {
         </div>
 
         <VoicesPanel supplierSlug={supplier.slug} voices={voices ?? []} hasXIKey={cloneEnabled} />
+
+        <div className="mt-8">
+          <GlossaryPanel
+            scope="supplier"
+            slug={supplier.slug}
+            entries={await listGlossaryEntries({ supplierId: supplier.id })}
+            languages={TRANSLATE_LANGS}
+          />
+        </div>
       </main>
     </div>
   );
