@@ -77,6 +77,27 @@ export async function updateSupplierProfile(
       .run();
 
     revalidatePath(`/supplier/${supplierSlug}`);
+    revalidatePath(`/supplier/${supplierSlug}/profile`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+/** Update just the billing fields (billing email). Plan tier / status stay
+ *  platform-admin concerns and are not editable here. */
+export async function updateSupplierBilling(
+  form: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const supplierSlug = String(form.get("supplier_slug") ?? "");
+    if (!supplierSlug) throw new Error("missing supplier_slug");
+    await requireSupplierMembership(supplierSlug);
+    await db()
+      .prepare(`UPDATE suppliers SET billing_email = ? WHERE slug = ?`)
+      .bind(clean(form.get("billing_email"), 200), supplierSlug)
+      .run();
+    revalidatePath(`/supplier/${supplierSlug}/billing`);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "failed" };

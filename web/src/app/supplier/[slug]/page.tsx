@@ -4,12 +4,6 @@ import { TopBar } from "../../_components/top-bar";
 import { requireSupplierMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
-import { hasMiniMaxKey } from "@/lib/minimax";
-import { VoicesPanel, type VoiceRow } from "./voices-panel";
-import { GlossaryPanel } from "../../_components/glossary-panel";
-import { listGlossaryEntries } from "@/lib/glossary";
-import { TRANSLATE_LANGS } from "@/lib/translate";
-import { SupplierProfile } from "./supplier-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -111,23 +105,19 @@ export default async function SupplierDashboard({ params }: Props) {
     .bind(supplier.id)
     .all<ProductKpiRow>();
 
-  // The supplier panel is the back-office hub — it lists the supplier's
-  // products (click one to manage its courses) plus voices, even when the
-  // supplier owns a single product. (Previously it folded away to the product
-  // dashboard for single-product suppliers.)
-
-  // Voices owned by this supplier OR platform stock (supplier_id IS NULL).
-  // Stock first in the panel so customers see what's available out of the box.
-  const { results: voices = [] } = await db()
+  // The supplier panel is a hub: brief identity + management entry cards (which
+  // open dedicated management pages) + roll-up KPIs and product cards. Counts
+  // power the card subtitles.
+  const counts = await db()
     .prepare(
-      `SELECT id, name, provider, external_id, kind, gender, langs, status, status_detail, created_at
-       FROM voice_profiles
-       WHERE supplier_id = ? OR supplier_id IS NULL
-       ORDER BY (supplier_id IS NULL) DESC, created_at DESC`,
+      `SELECT
+         (SELECT COUNT(*) FROM voice_profiles WHERE supplier_id = ?) AS voices_count,
+         (SELECT COUNT(*) FROM glossary_entries WHERE supplier_id = ?) AS glossary_count`,
     )
-    .bind(supplier.id)
-    .all<VoiceRow>();
-  const cloneEnabled = hasMiniMaxKey();
+    .bind(supplier.id, supplier.id)
+    .first<{ voices_count: number; glossary_count: number }>();
+  const voicesCount = counts?.voices_count ?? 0;
+  const glossaryCount = counts?.glossary_count ?? 0;
 
   // Aggregate KPIs.
   const totalProducts = products.length;
@@ -191,39 +181,73 @@ export default async function SupplierDashboard({ params }: Props) {
 
         {/* Two-column: editable profile rail + management main column */}
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
-          {/* Left rail — supplier profile (cover upload + editable fields) */}
+          {/* Left rail — brief identity + management entry cards */}
           <div className="space-y-4 lg:sticky lg:top-4">
-            <div className="text-[12px] font-semibold text-slate-700 px-1">{tr.sp_p_heading}</div>
-            <SupplierProfile
-              s={{
-                slug: supplier.slug,
-                name: supplier.name,
-                legal_name: supplier.legal_name,
-                intro: supplier.intro,
-                website: supplier.website,
-                country: supplier.country,
-                hq_city: supplier.hq_city,
-                address: supplier.address,
-                contact_email: supplier.contact_email,
-                phone: supplier.phone,
-                billing_email: supplier.billing_email,
-                poc_name: supplier.poc_name,
-                poc_title: supplier.poc_title,
-                poc_email: supplier.poc_email,
-                poc_phone: supplier.poc_phone,
-                links_json: supplier.links_json,
-                default_lang: supplier.default_lang,
-                timezone: supplier.timezone,
-                hasCover: !!supplier.cover_r2_key,
-              }}
-            />
-            <div className="rounded-2xl border border-slate-200 bg-white p-3 flex items-center gap-4 text-[13px]">
-              <a href="#voices" className="text-emerald-700 hover:underline">🎙 {tr.sp_p_nav_voices}</a>
-              <a href="#glossary" className="text-emerald-700 hover:underline">📖 {tr.sp_p_nav_glossary}</a>
+            {/* Condensed info card */}
+            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+              <div className="relative h-24 bg-gradient-to-br from-slate-800 to-slate-600">
+                {supplier.cover_r2_key ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/api/supplier-cover?slug=${encodeURIComponent(supplier.slug)}`}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : null}
+              </div>
+              <div className="p-4">
+                <div className="font-semibold text-[15px] text-slate-900">{supplier.name}</div>
+                {supplier.intro ? (
+                  <p className="text-[12.5px] text-slate-600 mt-1 leading-relaxed line-clamp-3">{supplier.intro}</p>
+                ) : null}
+                {supplier.website ? (
+                  <a
+                    href={supplier.website}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-block text-[12.5px] text-emerald-700 hover:underline mt-1.5"
+                  >
+                    {supplier.website.replace(/^https?:\/\//, "")}
+                  </a>
+                ) : null}
+                <div className="mt-3">
+                  <Link
+                    href={`/supplier/${supplier.slug}/profile`}
+                    className="text-[12.5px] font-medium text-emerald-700 hover:underline"
+                  >
+                    {tr.sp_edit_details}
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Management entry cards */}
+            <div className="space-y-2.5">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-slate-400 px-1">
+                {tr.sp_hub_manage}
+              </div>
+              <ManageCard
+                href={`/supplier/${supplier.slug}/voices`}
+                icon="🎙"
+                title={tr.sp_p_nav_voices}
+                desc={fmt(tr.sp_hub_voices_desc, { n: voicesCount })}
+              />
+              <ManageCard
+                href={`/supplier/${supplier.slug}/glossary`}
+                icon="📖"
+                title={tr.sp_p_nav_glossary}
+                desc={fmt(tr.sp_hub_glossary_desc, { n: glossaryCount })}
+              />
+              <ManageCard
+                href={`/supplier/${supplier.slug}/billing`}
+                icon="💳"
+                title={tr.sp_hub_billing_card}
+                desc={tr.sp_hub_billing_desc}
+              />
             </div>
           </div>
 
-          {/* Main column — roll-up KPIs, products, voices, glossary */}
+          {/* Main column — roll-up KPIs + product cards */}
           <div className="space-y-9 min-w-0">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Kpi label={tr.sup_d_kpi_products} value={totalProducts} />
@@ -264,23 +288,36 @@ export default async function SupplierDashboard({ params }: Props) {
                 ))}
               </div>
             </div>
-
-            <div id="voices" className="scroll-mt-4">
-              <VoicesPanel supplierSlug={supplier.slug} voices={voices ?? []} hasXIKey={cloneEnabled} />
-            </div>
-
-            <div id="glossary" className="scroll-mt-4">
-              <GlossaryPanel
-                scope="supplier"
-                slug={supplier.slug}
-                entries={await listGlossaryEntries({ supplierId: supplier.id })}
-                languages={TRANSLATE_LANGS}
-              />
-            </div>
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+function ManageCard({
+  href,
+  icon,
+  title,
+  desc,
+}: {
+  href: string;
+  icon: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-emerald-300 hover:shadow-[0_4px_18px_rgba(15,23,42,0.06)] transition"
+    >
+      <span className="text-[22px] leading-none shrink-0">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-[14px] text-slate-900">{title}</span>
+        <span className="block text-[12px] text-slate-500 truncate">{desc}</span>
+      </span>
+      <span className="text-slate-400 text-[16px] shrink-0">›</span>
+    </Link>
   );
 }
 
