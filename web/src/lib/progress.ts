@@ -184,25 +184,44 @@ export async function getModuleProgress(
   return map;
 }
 
-/** Award a badge when all modules are completed. Idempotent. */
+/**
+ * Award a badge when the learner has PASSED the quiz in every module that has
+ * one (chapters are no longer locked in sequence, so the badge — not the
+ * unlock — is what requires mastery). Wrong answers just mean retrying until
+ * passed. If a course happens to have no quizzes at all, fall back to the old
+ * "all modules completed" rule so such courses can still award a badge.
+ * Idempotent.
+ */
 export async function maybeAwardBadge(
   userId: string,
   courseId: string,
 ): Promise<{ awarded: boolean; verifyCode?: string }> {
-  // Count modules and completions
   const counts = await db()
     .prepare(
       `SELECT
-         (SELECT COUNT(*) FROM modules WHERE course_id = ?) AS total,
+         (SELECT COUNT(DISTINCT q.module_id) FROM quiz_questions q
+            JOIN modules m ON m.id = q.module_id WHERE m.course_id = ?) AS quiz_modules,
+         (SELECT COUNT(DISTINCT qa.module_id) FROM quiz_attempts qa
+            JOIN modules m ON m.id = qa.module_id
+            WHERE m.course_id = ? AND qa.user_id = ? AND qa.passed = 1) AS passed_modules,
+         (SELECT COUNT(*) FROM modules WHERE course_id = ?) AS total_modules,
          (SELECT COUNT(*) FROM module_progress mp
             JOIN modules m ON m.id = mp.module_id
-            WHERE m.course_id = ? AND mp.user_id = ? AND mp.completed_at IS NOT NULL) AS done`,
+            WHERE m.course_id = ? AND mp.user_id = ? AND mp.completed_at IS NOT NULL) AS done_modules`,
     )
-    .bind(courseId, courseId, userId)
-    .first<{ total: number; done: number }>();
-  if (!counts || counts.total === 0 || counts.done < counts.total) {
-    return { awarded: false };
-  }
+    .bind(courseId, courseId, userId, courseId, courseId, userId)
+    .first<{
+      quiz_modules: number;
+      passed_modules: number;
+      total_modules: number;
+      done_modules: number;
+    }>();
+  if (!counts) return { awarded: false };
+  const earned =
+    counts.quiz_modules > 0
+      ? counts.passed_modules >= counts.quiz_modules
+      : counts.total_modules > 0 && counts.done_modules >= counts.total_modules;
+  if (!earned) return { awarded: false };
 
   // Check existing
   const existing = await db()

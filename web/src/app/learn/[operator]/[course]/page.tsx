@@ -74,19 +74,18 @@ export default async function CoursePage({ params, searchParams }: Props) {
 
   const progressMap = await getModuleProgress(userId, course.id);
 
-  // Chapter gating: the "current" module is the FIRST uncompleted one in
-  // order. Modules after `current` are locked; modules at or before it
-  // are navigable. This also means jumping to ?m=<future-slug> is silently
-  // redirected to the current module — no skip-ahead.
+  // No chapter gating: every module is navigable in any order (learners often
+  // need to jump straight to a newly-added chapter on a product update). The
+  // badge — not an unlock — is what requires passing every quiz. `current` is
+  // still the first uncompleted module, used only as the default landing one.
   const currentIdx = (() => {
     const i = modules.findIndex((m) => !progressMap.get(m.id)?.completed_at);
     return i === -1 ? modules.length - 1 : i;
   })();
   const currentModule = modules[currentIdx] ?? modules[0];
   const requestedIdx = modules.findIndex((m) => m.slug === moduleSlug);
-  const active =
-    requestedIdx >= 0 && requestedIdx <= currentIdx ? modules[requestedIdx] : currentModule;
-  const lockedFromIdx = currentIdx + 1; // every module at index ≥ this is locked
+  const active = requestedIdx >= 0 ? modules[requestedIdx] : currentModule;
+  const lockedFromIdx = modules.length; // nothing is locked
   const blocks = await getModuleBlocks(active.id);
 
   const completedCount = modules.filter((m) => progressMap.get(m.id)?.completed_at).length;

@@ -100,6 +100,18 @@ export function ModuleReader({
     });
   }
 
+  // Chapters aren't gated. When a quiz is present it's the badge gate, not a
+  // navigation gate — so the footer button just moves on; passing the quiz is
+  // encouraged (and required for the badge) but never blocks progress.
+  function advance() {
+    if (hasQuiz && !isCompleted) {
+      if (next) router.push(`/learn/${operatorSlug}/${courseSlug}?m=${next.slug}`);
+      else router.refresh();
+      return;
+    }
+    complete();
+  }
+
   return (
     <main className="p-5 sm:p-8 max-w-4xl">
       <div className="flex items-center gap-2 text-[13px] text-[#a7d4b6] mb-2 flex-wrap">
@@ -202,13 +214,13 @@ export function ModuleReader({
         </div>
 
         <button
-          onClick={complete}
-          disabled={!canComplete || isPending}
+          onClick={advance}
+          disabled={isPending || (!hasQuiz && !canComplete)}
           className="px-4 py-2 rounded-md text-[13px] font-semibold bg-emerald-400 text-[#04241e] hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed order-2 sm:order-3"
         >
           {isPending
             ? tr.saving
-            : isCompleted
+            : isCompleted || hasQuiz
               ? next
                 ? tr.continue_to.replace("{title}", next.title)
                 : tr.done

@@ -649,7 +649,7 @@ const en = {
   lr_back_to_courses_arrow: "← Back to courses",
 
   // Module reader
-  lr_pass_quiz_to_continue: "Pass the quiz above to continue.",
+  lr_pass_quiz_to_continue: "Pass the quiz to earn your badge.",
   lr_block_image: "Image",
   lr_block_pdf: "Attached PDF",
   lr_voiceover: "Voice-over",
@@ -1415,7 +1415,7 @@ const zhCN: Dict = {
   lr_back_to_courses_arrow: "← 返回课程列表",
 
   // Module reader
-  lr_pass_quiz_to_continue: "通过上方的测验后才能继续。",
+  lr_pass_quiz_to_continue: "答对测验即可获得徽章。",
   lr_block_image: "图片",
   lr_block_pdf: "附件 PDF",
   lr_voiceover: "配音",
