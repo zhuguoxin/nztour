@@ -9,6 +9,7 @@ import { VoicesPanel, type VoiceRow } from "./voices-panel";
 import { GlossaryPanel } from "../../_components/glossary-panel";
 import { listGlossaryEntries } from "@/lib/glossary";
 import { TRANSLATE_LANGS } from "@/lib/translate";
+import { SupplierProfile } from "./supplier-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,17 @@ interface SupplierRow {
   intro: string | null;
   plan_tier: string;
   contact_email: string | null;
+  cover_r2_key: string | null;
+  phone: string | null;
+  address: string | null;
+  billing_email: string | null;
+  links_json: string | null;
+  default_lang: string | null;
+  timezone: string | null;
+  poc_name: string | null;
+  poc_title: string | null;
+  poc_email: string | null;
+  poc_phone: string | null;
 }
 
 interface ProductKpiRow {
@@ -73,7 +85,9 @@ export default async function SupplierDashboard({ params }: Props) {
 
   const supplier = await db()
     .prepare(
-      `SELECT id, slug, name, legal_name, country, hq_city, website, intro, plan_tier, contact_email
+      `SELECT id, slug, name, legal_name, country, hq_city, website, intro, plan_tier, contact_email,
+              cover_r2_key, phone, address, billing_email, links_json, default_lang, timezone,
+              poc_name, poc_title, poc_email, poc_phone
        FROM suppliers WHERE id = ?`,
     )
     .bind(access.supplierId)
@@ -138,94 +152,132 @@ export default async function SupplierDashboard({ params }: Props) {
         }
       />
 
-      <main className="px-5 sm:px-8 py-8 sm:py-10 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
-          <div className="min-w-0">
-            <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
+      <main className="px-5 sm:px-8 py-8 max-w-7xl mx-auto">
+        {/* Cover hero — shown on entry to the supplier panel */}
+        <div className="relative h-40 sm:h-52 rounded-2xl overflow-hidden border border-slate-200 mb-6 bg-gradient-to-br from-slate-800 to-slate-600">
+          {supplier.cover_r2_key ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/supplier-cover?slug=${encodeURIComponent(supplier.slug)}`}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+            <div className="text-[11px] tracking-widest font-mono text-white/70">
               {tr.sup_d_chrome_label}
             </div>
-            <h1 className="text-[28px] sm:text-[34px] font-semibold tracking-tight mt-1 text-slate-900">
+            <h1 className="text-[26px] sm:text-[32px] font-semibold tracking-tight text-white mt-0.5">
               {supplier.name}
             </h1>
-            {supplier.legal_name && supplier.legal_name !== supplier.name ? (
-              <div className="text-[13px] text-slate-500 mt-0.5">{supplier.legal_name}</div>
-            ) : null}
-            <div className="flex items-center gap-3 mt-2 text-[13px] text-slate-600 flex-wrap">
-              <span className="font-mono uppercase text-[11px] text-slate-500">{supplier.country}</span>
-              {supplier.hq_city ? <span>· {supplier.hq_city}</span> : null}
-              {supplier.website ? (
-                <a
-                  href={supplier.website}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="text-emerald-700 hover:underline"
-                >
-                  {supplier.website.replace(/^https?:\/\//, "")}
-                </a>
+            <div className="flex items-center gap-2.5 mt-1.5 text-[12.5px] text-white/85 flex-wrap">
+              {supplier.legal_name && supplier.legal_name !== supplier.name ? (
+                <span>{supplier.legal_name}</span>
               ) : null}
-              <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-mono uppercase">
+              <span className="font-mono uppercase text-[11px] text-white/70">{supplier.country}</span>
+              {supplier.hq_city ? <span>· {supplier.hq_city}</span> : null}
+              <span className="px-2 py-0.5 rounded-md bg-white/15 border border-white/25 text-white text-[11px] font-mono uppercase">
                 {supplier.plan_tier}
               </span>
+              {access.isAdmin ? (
+                <span className="px-2 py-0.5 rounded-full bg-lime-300/20 border border-lime-300/40 text-lime-100 text-[11px] font-medium">
+                  {tr.op_d_view_as_admin}
+                </span>
+              ) : null}
             </div>
-            {supplier.intro ? (
-              <p className="text-[14px] text-slate-700 mt-3 max-w-2xl leading-relaxed">{supplier.intro}</p>
-            ) : null}
           </div>
         </div>
 
-        {/* Aggregated KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-9">
-          <Kpi label={tr.sup_d_kpi_products} value={totalProducts} />
-          <Kpi label={tr.sup_d_kpi_courses} value={totalCourses} />
-          <Kpi label={tr.sup_d_kpi_learners} value={totalLearners} />
-          <Kpi label={tr.sup_d_kpi_badges} value={totalBadges} />
-        </div>
+        {/* Two-column: editable profile rail + management main column */}
+        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
+          {/* Left rail — supplier profile (cover upload + editable fields) */}
+          <div className="space-y-4 lg:sticky lg:top-4">
+            <div className="text-[12px] font-semibold text-slate-700 px-1">{tr.sp_p_heading}</div>
+            <SupplierProfile
+              s={{
+                slug: supplier.slug,
+                name: supplier.name,
+                legal_name: supplier.legal_name,
+                intro: supplier.intro,
+                website: supplier.website,
+                country: supplier.country,
+                hq_city: supplier.hq_city,
+                address: supplier.address,
+                contact_email: supplier.contact_email,
+                phone: supplier.phone,
+                billing_email: supplier.billing_email,
+                poc_name: supplier.poc_name,
+                poc_title: supplier.poc_title,
+                poc_email: supplier.poc_email,
+                poc_phone: supplier.poc_phone,
+                links_json: supplier.links_json,
+                default_lang: supplier.default_lang,
+                timezone: supplier.timezone,
+                hasCover: !!supplier.cover_r2_key,
+              }}
+            />
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 flex items-center gap-4 text-[13px]">
+              <a href="#voices" className="text-emerald-700 hover:underline">🎙 {tr.sp_p_nav_voices}</a>
+              <a href="#glossary" className="text-emerald-700 hover:underline">📖 {tr.sp_p_nav_glossary}</a>
+            </div>
+          </div>
 
-        {/* Per-product cards */}
-        <div className="flex items-baseline justify-between mb-3">
-          <h2 className="text-[18px] sm:text-[20px] font-semibold text-slate-900">
-            {fmt(tr.sup_d_products_heading, { n: totalProducts })}
-          </h2>
-        </div>
+          {/* Main column — roll-up KPIs, products, voices, glossary */}
+          <div className="space-y-9 min-w-0">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Kpi label={tr.sup_d_kpi_products} value={totalProducts} />
+              <Kpi label={tr.sup_d_kpi_courses} value={totalCourses} />
+              <Kpi label={tr.sup_d_kpi_learners} value={totalLearners} />
+              <Kpi label={tr.sup_d_kpi_badges} value={totalBadges} />
+            </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-          {products.map((p) => (
-            <Link
-              key={p.id}
-              href={`/product/${p.slug}`}
-              className="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition"
-            >
-              <div
-                className="h-20"
-                style={{
-                  background: p.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)",
-                }}
-              />
-              <div className="p-4">
-                <div className="font-semibold text-[15px] text-slate-900">
-                  {p.display_name ?? p.name}
-                </div>
-                <div className="grid grid-cols-3 gap-2 mt-3 text-center">
-                  <MiniKpi label={tr.sup_d_mini_courses} value={p.course_count} />
-                  <MiniKpi label={tr.sup_d_mini_learners} value={p.learner_count} />
-                  <MiniKpi label={tr.sup_d_mini_badges} value={p.badge_count} />
-                </div>
-                <div className="text-[12px] text-emerald-700 mt-3">{tr.sup_d_card_cta}</div>
+            <div>
+              <h2 className="text-[18px] sm:text-[20px] font-semibold text-slate-900 mb-3">
+                {fmt(tr.sup_d_products_heading, { n: totalProducts })}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {products.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/product/${p.slug}`}
+                    className="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition"
+                  >
+                    <div
+                      className="h-20"
+                      style={{
+                        background: p.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)",
+                      }}
+                    />
+                    <div className="p-4">
+                      <div className="font-semibold text-[15px] text-slate-900">
+                        {p.display_name ?? p.name}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+                        <MiniKpi label={tr.sup_d_mini_courses} value={p.course_count} />
+                        <MiniKpi label={tr.sup_d_mini_learners} value={p.learner_count} />
+                        <MiniKpi label={tr.sup_d_mini_badges} value={p.badge_count} />
+                      </div>
+                      <div className="text-[12px] text-emerald-700 mt-3">{tr.sup_d_card_cta}</div>
+                    </div>
+                  </Link>
+                ))}
               </div>
-            </Link>
-          ))}
-        </div>
+            </div>
 
-        <VoicesPanel supplierSlug={supplier.slug} voices={voices ?? []} hasXIKey={cloneEnabled} />
+            <div id="voices" className="scroll-mt-4">
+              <VoicesPanel supplierSlug={supplier.slug} voices={voices ?? []} hasXIKey={cloneEnabled} />
+            </div>
 
-        <div className="mt-8">
-          <GlossaryPanel
-            scope="supplier"
-            slug={supplier.slug}
-            entries={await listGlossaryEntries({ supplierId: supplier.id })}
-            languages={TRANSLATE_LANGS}
-          />
+            <div id="glossary" className="scroll-mt-4">
+              <GlossaryPanel
+                scope="supplier"
+                slug={supplier.slug}
+                entries={await listGlossaryEntries({ supplierId: supplier.id })}
+                languages={TRANSLATE_LANGS}
+              />
+            </div>
+          </div>
         </div>
       </main>
     </div>
