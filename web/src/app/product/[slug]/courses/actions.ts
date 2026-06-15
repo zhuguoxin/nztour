@@ -647,6 +647,174 @@ export async function deleteQuizQuestion(form: FormData) {
  * Claude to produce structured JSON, then bulk-inserts. Existing questions
  * are NOT touched — generator appends so operators can review/curate.
  */
+// =========================================================================
+//  MODULE NARRATION (voice-over) — module-level script + per-language audio
+// =========================================================================
+
+/** Save a module's narration script for one language. */
+export async function saveModuleNarration(
+  form: FormData,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const operatorSlug = String(form.get("operator_slug") ?? "");
+    const courseSlug = String(form.get("course_slug") ?? "");
+    const moduleId = String(form.get("module_id") ?? "");
+    const lang = String(form.get("lang") ?? "");
+    const script = String(form.get("script") ?? "").slice(0, 8000);
+    if (!isSupportedLang(lang)) throw new Error("unsupported language");
+    await authModule(operatorSlug, courseSlug, moduleId);
+    const row = await db()
+      .prepare(`SELECT narration_md_i18n FROM modules WHERE id = ?`)
+      .bind(moduleId)
+      .first<{ narration_md_i18n: string }>();
+    const map = readI18nMap(row?.narration_md_i18n ?? "{}");
+    map[lang] = script;
+    await db()
+      .prepare(`UPDATE modules SET narration_md_i18n = ? WHERE id = ?`)
+      .bind(writeI18nMap(map), moduleId)
+      .run();
+    revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+export async function generateModuleAudioAction(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+  lang: string;
+  voiceId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await generateModuleAudioCore(input);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+async function generateModuleAudioCore(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+  lang: string;
+  voiceId: string;
+}) {
+  const { operatorSlug, courseSlug, moduleId } = input;
+  const requestedLang = input.lang || "auto";
+  const voiceId = (input.voiceId || "").trim() || "voice_melotts_auto";
+  await authModule(operatorSlug, courseSlug, moduleId);
+
+  const mod = await db()
+    .prepare(
+      `SELECT m.narration_md_i18n, m.narration_audio_i18n,
+              c.primary_lang AS course_primary_lang, c.operator_id
+       FROM modules m JOIN courses c ON c.id = m.course_id WHERE m.id = ?`,
+    )
+    .bind(moduleId)
+    .first<{
+      narration_md_i18n: string;
+      narration_audio_i18n: string;
+      course_primary_lang: string;
+      operator_id: string;
+    }>();
+  if (!mod) throw new Error("not_found");
+
+  const targetLang =
+    requestedLang === "auto" || !requestedLang ? mod.course_primary_lang : requestedLang;
+  const scriptMap = readI18nMap(mod.narration_md_i18n);
+  let script = scriptMap[targetLang] ?? "";
+
+  // Scheme A: author once in the primary language; auto-translate (with the
+  // supplier glossary) for other languages, persisting the result.
+  if (
+    !script.trim() &&
+    targetLang !== mod.course_primary_lang &&
+    (scriptMap[mod.course_primary_lang] ?? "").trim()
+  ) {
+    const glossary = await glossaryForTranslation(mod.operator_id, targetLang);
+    const out = await translateBatch(
+      mod.course_primary_lang,
+      targetLang,
+      [{ id: "0", text: scriptMap[mod.course_primary_lang] }],
+      glossary,
+    );
+    const translated = out[0]?.translation ?? "";
+    if (translated.trim()) {
+      script = translated;
+      const newMap = { ...scriptMap, [targetLang]: translated };
+      await db()
+        .prepare(`UPDATE modules SET narration_md_i18n = ? WHERE id = ?`)
+        .bind(writeI18nMap(newMap), moduleId)
+        .run();
+    }
+  }
+  if (!script.trim()) throw new Error(`Module has no narration script in ${targetLang}.`);
+
+  const voice = await db()
+    .prepare(`SELECT id, provider, external_id, status FROM voice_profiles WHERE id = ?`)
+    .bind(voiceId)
+    .first<{ id: string; provider: string; external_id: string | null; status: string }>();
+  if (!voice) throw new Error("voice not found");
+  if (voice.status !== "active") throw new Error(`voice is ${voice.status}`);
+
+  let r2Key: string;
+  let durationSeconds: number;
+  if (voice.provider === "elevenlabs" || voice.provider === "minimax") {
+    if (!voice.external_id) throw new Error(`${voice.provider} voice missing external_id`);
+    const { plainTextFromMarkdown } = await import("@/lib/tts");
+    const cleanText = plainTextFromMarkdown(script).slice(0, 4000);
+    let bytes: Uint8Array;
+    if (voice.provider === "minimax") {
+      const { synthesizeMiniMax } = await import("@/lib/minimax");
+      ({ bytes } = await synthesizeMiniMax({ text: cleanText, voiceId: voice.external_id, lang: targetLang }));
+    } else {
+      const { synthesizeWithVoice } = await import("@/lib/elevenlabs");
+      ({ bytes } = await synthesizeWithVoice({ text: cleanText, voiceId: voice.external_id, lang: targetLang }));
+    }
+    r2Key = `audio/module-${moduleId}-${targetLang}-${voice.id}.mp3`;
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    await env.ASSETS_BUCKET.put(r2Key, bytes, { httpMetadata: { contentType: "audio/mpeg" } });
+    durationSeconds = Math.max(2, Math.round((cleanText.split(/\s+/).length / 160) * 60));
+  } else {
+    const shortLang =
+      targetLang.startsWith("zh") ? "zh"
+        : targetLang.startsWith("en") ? "en"
+        : targetLang.startsWith("ja") ? "ja"
+        : targetLang.startsWith("ko") ? "ko"
+        : targetLang.startsWith("es") ? "es"
+        : targetLang.startsWith("fr") ? "fr"
+        : "auto";
+    if (!isValidLang(shortLang)) throw new Error("melotts: invalid lang");
+    const result = await synthesizeAndStore(`module-${moduleId}-${targetLang}`, script, shortLang);
+    r2Key = result.r2Key;
+    durationSeconds = result.durationSeconds;
+  }
+
+  const audioMap = (() => {
+    try {
+      const v = JSON.parse(mod.narration_audio_i18n);
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch {
+      return {};
+    }
+  })();
+  audioMap[targetLang] = {
+    r2_key: r2Key,
+    voice_id: voice.id,
+    duration_s: durationSeconds,
+    generated_at: Math.floor(Date.now() / 1000),
+  };
+  await db()
+    .prepare(`UPDATE modules SET narration_audio_i18n = ? WHERE id = ?`)
+    .bind(JSON.stringify(audioMap), moduleId)
+    .run();
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+}
+
 export async function generateModuleQuiz(form: FormData) {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
