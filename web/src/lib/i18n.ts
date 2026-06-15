@@ -580,6 +580,8 @@ const en = {
 
   // ===== Branding panel =====
   br_title: "Branding",
+  br_cover_title: "Product cover image",
+  br_cover_blurb: "Shown on public product cards. Pick from the media library or upload.",
   br_blurb:
     "These colours and your logo decide how your courses look to agents. Save → every course you publish shifts to match. Leave a colour blank to use the Libretour default.",
   br_field_bg_label: "Page background",
@@ -647,6 +649,16 @@ const en = {
   sp_p_save_failed: "Save failed",
   sp_p_nav_voices: "Voices",
   sp_p_nav_glossary: "Glossary",
+  mp_choose: "Choose image",
+  mp_change: "Change",
+  mp_remove: "Remove",
+  mp_library: "Media library",
+  mp_upload: "Upload new",
+  mp_uploading: "Uploading…",
+  mp_empty: "No images yet — upload one.",
+  mp_loading: "Loading…",
+  mp_close: "Close",
+  mp_failed: "Failed",
   sp_voices_crumb: "{name} · Voices",
   sp_no_access_label: "/ NO ACCESS",
   sp_no_access_title: "You don't have supplier access to this account.",
@@ -1391,6 +1403,8 @@ const zhCN: Dict = {
 
   // ===== Branding panel =====
   br_title: "品牌外观",
+  br_cover_title: "产品封面图",
+  br_cover_blurb: "显示在公开的产品卡片上。从媒体库选择或上传。",
   br_blurb:
     "这些颜色和你的 Logo 决定了课程在代理眼中的样式。保存后,你发布的每门课程都会随之更新。某个颜色留空则使用 Libretour 默认值。",
   br_field_bg_label: "页面背景",
@@ -1458,6 +1472,16 @@ const zhCN: Dict = {
   sp_p_save_failed: "保存失败",
   sp_p_nav_voices: "声音",
   sp_p_nav_glossary: "翻译词库",
+  mp_choose: "选择图片",
+  mp_change: "更换",
+  mp_remove: "移除",
+  mp_library: "媒体库",
+  mp_upload: "上传新图",
+  mp_uploading: "上传中…",
+  mp_empty: "媒体库为空，上传一张。",
+  mp_loading: "加载中…",
+  mp_close: "关闭",
+  mp_failed: "操作失败",
   sp_voices_crumb: "{name} · 声音",
   sp_no_access_label: "/ 无访问权限",
   sp_no_access_title: "你没有该账户的供应商访问权限。",

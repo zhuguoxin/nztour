@@ -18,6 +18,7 @@ import { resolveTheme } from "@/lib/theme";
 import { updateOperatorTheme, resetOperatorTheme } from "./branding-actions";
 import { ColourField } from "./colour-field";
 import { LogoUploader } from "./logo-uploader";
+import { MediaPicker } from "../../_components/media-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
     .prepare(
       `SELECT o.id, o.slug, o.name, o.display_name, o.country,
               o.theme_bg, o.theme_panel, o.theme_accent, o.theme_ink, o.theme_logo_r2_key,
-              s.slug AS supplier_slug
+              o.cover_r2_key, s.slug AS supplier_slug
        FROM operators o LEFT JOIN suppliers s ON s.id = o.supplier_id
        WHERE o.slug = ?`,
     )
@@ -78,6 +79,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
       theme_accent: string | null;
       theme_ink: string | null;
       theme_logo_r2_key: string | null;
+      cover_r2_key: string | null;
       supplier_slug: string | null;
     }>();
   if (!operator) notFound();
@@ -497,6 +499,8 @@ function BrandingPanel({
     theme_accent: string | null;
     theme_ink: string | null;
     theme_logo_r2_key: string | null;
+    cover_r2_key: string | null;
+    supplier_slug: string | null;
   };
   tr: Dict;
 }) {
@@ -586,6 +590,23 @@ function BrandingPanel({
           </div>
         </div>
       </div>
+
+      {/* Product cover image — picked from the supplier media library. */}
+      {operator.supplier_slug ? (
+        <div className="px-5 pb-4 border-t border-white/[.06] pt-4">
+          <div className="text-[12px] font-semibold text-white mb-1">{tr.br_cover_title}</div>
+          <div className="text-[12px] text-[#86b69a] mb-2.5">{tr.br_cover_blurb}</div>
+          <div className="max-w-xs">
+            <MediaPicker
+              supplierSlug={operator.supplier_slug}
+              target={{ target: "product", operatorSlug: operator.slug }}
+              currentUrl={operator.cover_r2_key ? `/api/product-cover?slug=${encodeURIComponent(operator.slug)}` : null}
+              aspect="video"
+              theme="dark"
+            />
+          </div>
+        </div>
+      ) : null}
 
       {/* Logo uploader + reset */}
       <div className="px-5 pb-5 flex items-center justify-between flex-wrap gap-3 border-t border-white/[.06] pt-4">

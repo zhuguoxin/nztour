@@ -120,6 +120,8 @@ export interface OperatorCard {
   cover_color: string | null;
   cover_image_url: string | null;
   cover_image_credit: string | null;
+  /** Uploaded/library cover (operators.cover_r2_key); takes precedence over cover_image_url. */
+  cover_r2_key?: string | null;
   category: string | null;
   region: string | null;
   primary_lang: string;
@@ -133,7 +135,7 @@ export async function listOperatorsWithCourseCounts(): Promise<OperatorCard[]> {
     .prepare(
       `SELECT
          o.id, o.slug, o.name, o.primary_lang, o.status,
-         o.cover_image_url, o.cover_image_credit, o.category, o.region,
+         o.cover_image_url, o.cover_image_credit, o.cover_r2_key, o.category, o.region,
          COUNT(DISTINCT c.id) AS course_count,
          COUNT(DISTINCT m.id) AS module_count,
          COALESCE(SUM(c.est_minutes), 0) AS est_minutes,

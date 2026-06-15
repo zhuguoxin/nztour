@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTr } from "@/lib/i18n-provider";
 import { updateSupplierProfile } from "./actions";
+import { MediaPicker } from "../../_components/media-picker";
 
 export interface SupplierProfileData {
   slug: string;
@@ -65,7 +66,18 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-      <CoverField slug={s.slug} hasCover={s.hasCover} />
+      <div className="p-3 border-b border-slate-200 bg-slate-50">
+        <div className="text-[11px] font-mono uppercase tracking-widest text-emerald-700/70 mb-1.5">
+          {tr.sp_p_cover}
+        </div>
+        <MediaPicker
+          supplierSlug={s.slug}
+          target={{ target: "supplier", supplierSlug: s.slug }}
+          currentUrl={s.hasCover ? `/api/supplier-cover?slug=${encodeURIComponent(s.slug)}` : null}
+          aspect="wide"
+          theme="light"
+        />
+      </div>
 
       <form action={formAction} className="p-4 space-y-4">
         <input type="hidden" name="supplier_slug" value={s.slug} />
@@ -200,77 +212,6 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
           ) : null}
         </div>
       </form>
-    </div>
-  );
-}
-
-/** Cover image upload/remove (POSTs to /api/supplier-cover). */
-function CoverField({ slug, hasCover }: { slug: string; hasCover: boolean }) {
-  const tr = useTr();
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
-  // Bust the browser cache after a replace so the new image shows immediately.
-  const [v, setV] = useState(0);
-  const has = hasCover || v > 0;
-
-  function upload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setErr(null);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("supplier_slug", slug);
-    start(async () => {
-      const r = await fetch("/api/supplier-cover", { method: "POST", body: fd });
-      if (r.ok) {
-        setV((x) => x + 1);
-        router.refresh();
-      } else setErr((await r.text().catch(() => "")).slice(0, 200) || tr.sp_p_save_failed);
-    });
-  }
-
-  function remove() {
-    setErr(null);
-    const fd = new FormData();
-    fd.append("supplier_slug", slug);
-    start(async () => {
-      const r = await fetch("/api/supplier-cover?remove=1", { method: "POST", body: fd });
-      if (r.ok) {
-        setV((x) => x + 1);
-        router.refresh();
-      } else setErr(tr.sp_p_save_failed);
-    });
-  }
-
-  return (
-    <div>
-      <div className="relative h-32 bg-gradient-to-br from-slate-800 to-slate-600">
-        {has ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/api/supplier-cover?slug=${encodeURIComponent(slug)}&v=${v}`}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-white/60 text-[12px]">
-            {tr.sp_p_cover}
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200 bg-slate-50">
-        <label className="px-2.5 py-1 rounded-md bg-white border border-slate-300 text-[12px] text-slate-700 hover:bg-slate-100 cursor-pointer">
-          {pending ? tr.sp_p_uploading : has ? tr.sp_p_cover_replace : tr.sp_p_cover_upload}
-          <input type="file" accept="image/png,image/jpeg,image/webp" disabled={pending} onChange={upload} className="hidden" />
-        </label>
-        {has ? (
-          <button type="button" onClick={remove} disabled={pending} className="text-[12px] text-rose-600 hover:underline disabled:opacity-50">
-            {tr.sp_p_cover_remove}
-          </button>
-        ) : null}
-        {err ? <span className="text-[11px] text-rose-600 truncate">{err}</span> : null}
-      </div>
     </div>
   );
 }

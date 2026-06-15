@@ -22,6 +22,8 @@ export function OperatorCard({
 }) {
   const hasCourses = op.course_count > 0;
   const cover = op.cover_color ?? "linear-gradient(135deg,#475569 0%,#64748b 100%)";
+  // Uploaded/library cover wins over the hotlinked Pexels image.
+  const coverImg = op.cover_r2_key ? `/api/product-cover?slug=${encodeURIComponent(op.slug)}` : op.cover_image_url;
   const coursesLabel =
     op.course_count === 1
       ? fmt(tr.card_courses_count, { n: op.course_count })
@@ -33,10 +35,10 @@ export function OperatorCard({
   return (
     <article className="rounded-2xl overflow-hidden bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition h-full relative">
       <div className="h-48 relative overflow-hidden" style={{ background: cover }}>
-        {op.cover_image_url ? (
+        {coverImg ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={op.cover_image_url}
+            src={coverImg}
             alt=""
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover"
@@ -61,7 +63,7 @@ export function OperatorCard({
             {tr.card_manage}
           </Link>
         ) : null}
-        {op.cover_image_url ? null : (
+        {coverImg ? null : (
           <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between">
             <div className="text-[36px] leading-none drop-shadow">{op.emoji ?? "📚"}</div>
           </div>
