@@ -3,7 +3,7 @@ import Link from "next/link";
 import { TopBar } from "../../../../../_components/top-bar";
 import { requireOperatorMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
-import { updateCourse, deleteCourse, createModule } from "../../actions";
+import { updateCourse, deleteCourse } from "../../actions";
 import {
   EditorModules,
   type BlockData,
@@ -13,7 +13,9 @@ import {
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
 import { TranslationsPanel } from "./translations-panel";
 import { CoverImageField } from "./cover-image-field";
-import { t, fmt } from "@/lib/i18n";
+import { CourseSwitcher } from "./course-switcher";
+import { ModuleNav } from "./module-nav";
+import { t } from "@/lib/i18n";
 import type { Dict } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -33,15 +35,17 @@ interface CourseEditRow {
 }
 
 type ModuleRow = ModuleData;
-
 type BlockRow = BlockData;
 
 export default async function EditCoursePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; courseSlug: string }>;
+  searchParams: Promise<{ m?: string }>;
 }) {
   const { slug, courseSlug } = await params;
+  const { m: activeModuleId } = await searchParams;
   try {
     await requireOperatorMembership(slug);
   } catch {
@@ -68,18 +72,25 @@ export default async function EditCoursePage({
     .bind(op.id, courseSlug)
     .first<CourseEditRow>();
   if (!course) notFound();
+
+  // All of this product's courses, for the left-rail course switcher.
+  const { results: allCourses = [] } = await db()
+    .prepare(`SELECT slug, title FROM courses WHERE operator_id = ? ORDER BY position, title`)
+    .bind(op.id)
+    .all<{ slug: string; title: string }>();
+
   // Enabled languages = shown to learners (available_langs).
   const availableLangs: string[] = (() => {
     try {
       const a = JSON.parse(course.available_langs);
-      return Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [course.primary_lang];
+      return Array.isArray(a)
+        ? a.filter((s): s is string => typeof s === "string")
+        : [course.primary_lang];
     } catch {
       return [course.primary_lang];
     }
   })();
-  // Translated languages = ever translated (content present). Derived from the
-  // course title translation map + the primary language. A disabled language
-  // stays "translated" so re-enabling it doesn't re-translate.
+  // Translated languages = ever translated (content present).
   const translatedLangs: string[] = (() => {
     const set = new Set<string>([course.primary_lang]);
     try {
@@ -90,7 +101,6 @@ export default async function EditCoursePage({
     } catch {
       /* ignore */
     }
-    // Anything currently enabled is, by definition, translated.
     for (const l of availableLangs) set.add(l);
     return Array.from(set);
   })();
@@ -103,8 +113,11 @@ export default async function EditCoursePage({
     .bind(course.id)
     .all<ModuleRow>();
 
-  // Pull every block at once (one query) and group client-side.
-  const moduleIds = (modules ?? []).map((m) => m.id);
+  const moduleList = modules ?? [];
+  const activeModule = moduleList.find((m) => m.id === activeModuleId) ?? moduleList[0] ?? null;
+
+  // Pull every block at once and group client-side.
+  const moduleIds = moduleList.map((m) => m.id);
   const blocksByModule: Record<string, BlockRow[]> = {};
   let totalDurationS = 0;
   if (moduleIds.length > 0) {
@@ -134,7 +147,7 @@ export default async function EditCoursePage({
     .bind(course.id)
     .all<AttachmentRow>();
 
-  // Quiz pool per module — one query joining on course.
+  // Quiz pool per module.
   const quizByModule: Record<string, QuizQuestionData[]> = {};
   if (moduleIds.length > 0) {
     const ph2 = moduleIds.map(() => "?").join(",");
@@ -157,8 +170,7 @@ export default async function EditCoursePage({
     }
   }
 
-  // Voices available to this product: every platform stock voice + every
-  // cloned voice owned by the parent supplier.
+  // Voices available to this product.
   const { results: voices = [] } = await db()
     .prepare(
       `SELECT v.id, v.name, v.provider, v.kind, v.gender, v.langs, v.status
@@ -167,8 +179,6 @@ export default async function EditCoursePage({
        WHERE v.status = 'active'
          AND (v.supplier_id IS NULL OR o.slug = ?)
        GROUP BY v.id
-       -- Cloned (supplier-owned) voices first, then the rest. Per-language
-       -- filtering + default selection happens client-side in AudioLangRow.
        ORDER BY (v.kind = 'cloned') DESC, v.created_at DESC`,
     )
     .bind(slug)
@@ -193,10 +203,7 @@ export default async function EditCoursePage({
             <span className="text-white/20 shrink-0">/</span>
             {op.supplier_slug ? (
               <>
-                <Link
-                  href={`/supplier/${op.supplier_slug}`}
-                  className="hover:text-white shrink-0"
-                >
+                <Link href={`/supplier/${op.supplier_slug}`} className="hover:text-white shrink-0">
                   {tr.bc_supplier}
                 </Link>
                 <span className="text-white/20 shrink-0">/</span>
@@ -220,28 +227,86 @@ export default async function EditCoursePage({
         }
       />
 
-      <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto space-y-8">
-        {/* ============== Languages (AI translation) — top of the editor ============== */}
-        <TranslationsPanel
-          operatorSlug={slug}
-          courseSlug={course.slug}
-          primaryLang={course.primary_lang}
-          enabledLangs={availableLangs}
-          translatedLangs={translatedLangs}
-        />
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-[230px_1fr_300px] gap-6 items-start">
+        {/* ============ Left rail (sticky): course switch · languages · modules ============ */}
+        <aside className="lg:sticky lg:top-[76px] space-y-5 order-1">
+          <CourseSwitcher
+            operatorSlug={slug}
+            current={course.slug}
+            courses={allCourses}
+            label={tr.ed_course_label}
+          />
+          <TranslationsPanel
+            operatorSlug={slug}
+            courseSlug={course.slug}
+            primaryLang={course.primary_lang}
+            enabledLangs={availableLangs}
+            translatedLangs={translatedLangs}
+          />
+          <ModuleNav
+            operatorSlug={slug}
+            courseSlug={course.slug}
+            modules={moduleList}
+            activeId={activeModule?.id ?? null}
+          />
+        </aside>
 
-        {/* ============== Duration banner ============== */}
-        <DurationBanner totalS={totalDurationS} totalMin={totalMin} totalSec={totalSec} tr={tr} />
+        {/* ============ Centre: course title/summary + the active module ============ */}
+        <main className="order-3 lg:order-2 min-w-0 space-y-6">
+          <form
+            id="course-form"
+            action={updateCourse}
+            className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-5 space-y-4"
+          >
+            <input type="hidden" name="operator_slug" value={slug} />
+            <input type="hidden" name="course_slug" value={course.slug} />
+            <Field label={tr.nc_f_title}>
+              <input name="title" defaultValue={course.title} required maxLength={200} className={inputClass} />
+            </Field>
+            <Field label={tr.nc_f_summary}>
+              <textarea
+                name="summary"
+                rows={2}
+                maxLength={1000}
+                defaultValue={course.summary ?? ""}
+                className={inputClass + " resize-y"}
+              />
+            </Field>
+          </form>
 
-        {/* ============== Course meta ============== */}
-        <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
-          <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between">
-            <div className="font-semibold text-[14px] text-white">{tr.ed_course_details}</div>
-            <div className="flex items-center gap-3">
+          <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
+            <EditorModules
+              solo
+              operatorSlug={slug}
+              courseSlug={course.slug}
+              primaryLang={course.primary_lang}
+              availableLangs={availableLangs}
+              voices={voices ?? []}
+              modules={activeModule ? [activeModule] : []}
+              blocksByModuleId={blocksByModule}
+              quizByModuleId={quizByModule}
+            />
+          </section>
+
+          <AttachmentsPanel operatorSlug={slug} courseSlug={course.slug} attachments={attachments ?? []} />
+        </main>
+
+        {/* ============ Right rail (sticky): one save button + course settings ============ */}
+        <aside className="lg:sticky lg:top-[76px] space-y-5 order-2 lg:order-3">
+          <div className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-4 space-y-3">
+            {/* Single save button for the whole course (associated to #course-form). */}
+            <button
+              type="submit"
+              form="course-form"
+              className="w-full px-4 py-2.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[14px] hover:bg-emerald-300"
+            >
+              {tr.ed_save_changes}
+            </button>
+            <div className="flex items-center gap-3 text-[12px]">
               <Link
                 href={`/learn/${slug}/${course.slug}?preview=1`}
                 target="_blank"
-                className="text-[12px] text-amber-300 hover:underline"
+                className="text-amber-300 hover:underline"
                 title={tr.ed_preview_title}
               >
                 {tr.ed_preview}
@@ -250,37 +315,16 @@ export default async function EditCoursePage({
                 <Link
                   href={`/learn/${slug}/${course.slug}`}
                   target="_blank"
-                  className="text-[12px] text-emerald-300 hover:underline"
+                  className="text-emerald-300 hover:underline"
                 >
                   {tr.ed_view_live}
                 </Link>
               ) : null}
             </div>
-          </header>
-          <form action={updateCourse} className="p-5 space-y-4">
-            <input type="hidden" name="operator_slug" value={slug} />
-            <input type="hidden" name="course_slug" value={course.slug} />
+          </div>
 
-            <Field label={tr.nc_f_title}>
-              <input
-                name="title"
-                defaultValue={course.title}
-                required
-                maxLength={200}
-                className={inputClass}
-              />
-            </Field>
-
-            <Field label={tr.nc_f_summary}>
-              <textarea
-                name="summary"
-                rows={3}
-                maxLength={1000}
-                defaultValue={course.summary ?? ""}
-                className={inputClass + " resize-y"}
-              />
-            </Field>
-
+          <div className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-4 space-y-4">
+            <div className="font-semibold text-[13px] text-white">{tr.ed_course_details}</div>
             <CoverImageField
               courseId={course.id}
               operatorSlug={slug}
@@ -288,11 +332,11 @@ export default async function EditCoursePage({
               emoji={course.emoji}
               hasCover={!!course.cover_r2_key}
             />
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <Field label={tr.ed_minutes}>
                 <input
                   name="est_minutes"
+                  form="course-form"
                   type="number"
                   min={1}
                   max={600}
@@ -301,96 +345,34 @@ export default async function EditCoursePage({
                 />
               </Field>
               <Field label={tr.ed_status}>
-                <select name="status" defaultValue={course.status} className={inputClass}>
+                <select name="status" form="course-form" defaultValue={course.status} className={inputClass}>
                   <option value="draft">{tr.ed_draft}</option>
                   <option value="published">{tr.ed_published}</option>
                 </select>
               </Field>
             </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
-              >
-                {tr.ed_save_changes}
-              </button>
-              {/* Delete is a separate form to avoid form-nesting */}
-            </div>
-          </form>
-
-          <form
-            action={deleteCourse}
-            className="px-5 pb-5 -mt-1 flex items-center justify-end"
-          >
-            <input type="hidden" name="operator_slug" value={slug} />
-            <input type="hidden" name="course_slug" value={course.slug} />
-            <button
-              type="submit"
-              className="px-3 py-1.5 rounded-md border border-rose-400/30 text-rose-300 text-[12px] hover:bg-rose-400/10"
-            >
-              {tr.ed_delete_course}
-            </button>
-          </form>
-        </section>
-
-        {/* ============== Modules + blocks ============== */}
-        <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
-          <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <div className="font-semibold text-[14px] text-white">{tr.ed_modules}</div>
-              <div className="text-[12px] text-[#86b69a] mt-0.5">
-                {fmt(tr.ed_modules_count, { n: modules?.length ?? 0 })}
-              </div>
-            </div>
             {op.supplier_slug ? (
               <Link
                 href={`/supplier/${op.supplier_slug}/voices`}
-                className="text-[12px] text-emerald-300 hover:underline shrink-0"
+                className="block text-[12px] text-emerald-300 hover:underline"
                 title={tr.ed_voices_title}
               >
                 {tr.ed_manage_voices}
               </Link>
             ) : null}
-          </header>
+          </div>
 
-          <EditorModules
-            operatorSlug={slug}
-            courseSlug={course.slug}
-            primaryLang={course.primary_lang}
-            availableLangs={availableLangs}
-            voices={voices ?? []}
-            modules={modules ?? []}
-            blocksByModuleId={blocksByModule}
-            quizByModuleId={quizByModule}
-          />
+          <DurationBanner totalS={totalDurationS} totalMin={totalMin} totalSec={totalSec} tr={tr} />
 
-          {/* New-module form */}
-          <form action={createModule} className="p-5 border-t border-white/[.04] flex gap-2">
+          <form action={deleteCourse} className="px-1">
             <input type="hidden" name="operator_slug" value={slug} />
             <input type="hidden" name="course_slug" value={course.slug} />
-            <input
-              name="title"
-              required
-              placeholder={tr.ed_new_module_ph}
-              className={`flex-1 ${inputClass}`}
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300 shrink-0"
-            >
-              {tr.ed_add_module}
+            <button type="submit" className="text-[12px] text-rose-300 hover:underline">
+              {tr.ed_delete_course}
             </button>
           </form>
-        </section>
-
-        {/* ============== Supplementary materials (RAG-only) ============== */}
-        <AttachmentsPanel
-          operatorSlug={slug}
-          courseSlug={course.slug}
-          attachments={attachments ?? []}
-        />
-      </main>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -406,8 +388,6 @@ function DurationBanner({
   totalSec: number;
   tr: Dict;
 }) {
-  // Recommended: ≤ 20 min (1200 s). Sweet spot: ~15 min (900 s).
-  // < 5 min = under-cooked; > 20 = over-long.
   const TARGET = 20 * 60;
   const SWEET = 15 * 60;
   const pct = Math.min(100, (totalS / TARGET) * 100);
@@ -441,7 +421,6 @@ function DurationBanner({
       </div>
       <div className="h-2 rounded-full bg-white/[.06] overflow-hidden mt-3 relative">
         <div className={`${cls} h-full transition-all`} style={{ width: `${pct}%` }} />
-        {/* Sweet-spot marker */}
         <div
           className="absolute top-0 bottom-0 w-px bg-white/40"
           style={{ left: `${(SWEET / TARGET) * 100}%` }}
@@ -463,4 +442,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
-

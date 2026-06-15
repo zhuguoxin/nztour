@@ -124,6 +124,7 @@ export function EditorModules({
   modules,
   blocksByModuleId,
   quizByModuleId,
+  solo = false,
 }: {
   operatorSlug: string;
   courseSlug: string;
@@ -133,8 +134,32 @@ export function EditorModules({
   modules: ModuleData[];
   blocksByModuleId: Record<string, BlockData[]>;
   quizByModuleId: Record<string, QuizQuestionData[]>;
+  /** Single-module view (3-column editor): render just the one module,
+   *  expanded, no drag handle / reorder list. */
+  solo?: boolean;
 }) {
   const tr = useTr();
+  if (solo) {
+    const m = modules[0];
+    if (!m) {
+      return (
+        <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">{tr.em_no_modules}</div>
+      );
+    }
+    return (
+      <ModuleEditor
+        module={m}
+        solo
+        blocks={blocksByModuleId[m.id] ?? []}
+        quiz={quizByModuleId[m.id] ?? []}
+        operatorSlug={operatorSlug}
+        courseSlug={courseSlug}
+        primaryLang={primaryLang}
+        availableLangs={availableLangs}
+        voices={voices}
+      />
+    );
+  }
   return (
     <SortableList
       items={modules}
@@ -173,9 +198,10 @@ function ModuleEditor({
   primaryLang,
   availableLangs,
   voices,
+  solo = false,
 }: {
   module: ModuleData;
-  handle: DragHandleProps;
+  handle?: DragHandleProps;
   blocks: BlockData[];
   quiz: QuizQuestionData[];
   operatorSlug: string;
@@ -183,12 +209,18 @@ function ModuleEditor({
   primaryLang: string;
   availableLangs: string[];
   voices: VoiceOption[];
+  solo?: boolean;
 }) {
   const tr = useTr();
   return (
-    <details className="group border-b border-white/[.04]" open={blocks.length === 0}>
-      <summary className="px-5 py-4 cursor-pointer flex items-center gap-3 hover:bg-white/[.02] list-none">
-        <GrabHandle handle={handle} />
+    <details className="group border-b border-white/[.04]" open={solo || blocks.length === 0}>
+      <summary
+        className={`px-5 py-4 flex items-center gap-3 list-none ${
+          solo ? "" : "cursor-pointer hover:bg-white/[.02]"
+        }`}
+        onClick={solo ? (e) => e.preventDefault() : undefined}
+      >
+        {!solo && handle ? <GrabHandle handle={handle} /> : null}
         <span className="text-[#86b69a] text-[14px] font-mono w-8">M{module.position}</span>
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-medium text-white truncate">{module.title}</div>
