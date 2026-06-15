@@ -10,7 +10,7 @@ import {
   listTopQuestions,
   getDailyActivity,
 } from "@/lib/operator-stats";
-import { UploadStub } from "./upload-stub";
+import { CreateCoursePanel } from "./create-course-panel";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
 import { ActivityChart } from "./activity-chart";
 import { t, fmt, type Dict } from "@/lib/i18n";
@@ -171,6 +171,13 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">{tr.op_d_blurb}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href={`/product/${slug}/settings`}
+              className="px-3 py-2 rounded-md border border-white/[.12] text-[#d8f0e1] text-[13px] hover:bg-white/[.06]"
+              title={tr.pp_heading}
+            >
+              ⚙ {tr.pp_nav_settings}
+            </Link>
             {operator.supplier_slug ? (
               <Link
                 href={`/supplier/${operator.supplier_slug}/voices`}
@@ -337,24 +344,8 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             </div>
           </section>
 
-          {/* Upload zone */}
-          <UploadStub
-            labels={{
-              title: tr.op_d_upload_title,
-              sub: tr.op_d_upload_sub,
-              dropzone_a: tr.op_d_upload_dropzone_a,
-              dropzone_b: tr.op_d_upload_dropzone_b,
-              dropzone_blurb: tr.op_d_upload_dropzone_blurb,
-              alert: tr.op_d_upload_alert,
-              state_pdf_done: tr.op_d_upload_state_pdf_done,
-              state_pptx_done: tr.op_d_upload_state_pptx_done,
-              state_video_done: tr.op_d_upload_state_video_done,
-              state_pptx_progress: tr.op_d_upload_state_pptx_progress,
-              state_video_progress: tr.op_d_upload_state_video_progress,
-              state_pdf_progress: tr.op_d_upload_state_pdf_progress,
-              done_chip: tr.op_d_upload_state_done_chip,
-            }}
-          />
+          {/* Upload content → generate course (real) */}
+          <CreateCoursePanel operatorSlug={operator.slug} />
         </div>
 
         {/* Learners + Top questions */}
@@ -506,7 +497,7 @@ function BrandingPanel({
 }) {
   const t = resolveTheme(operator);
   return (
-    <section className="mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
+    <section id="branding" className="scroll-mt-4 mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
       <header className="px-5 py-4 border-b border-white/[.06]">
         <div className="font-semibold text-[14px] text-white">{tr.br_title}</div>
         <div className="text-[12px] text-[#86b69a] mt-0.5">

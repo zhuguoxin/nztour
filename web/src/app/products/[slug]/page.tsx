@@ -56,6 +56,16 @@ export default async function ProductDetailPage({
         >
           {tr.prd_back}
         </Link>
+        {op.cover_r2_key || op.cover_image_url ? (
+          <div className="relative h-44 sm:h-60 rounded-2xl overflow-hidden border border-slate-200 mb-6 bg-slate-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={op.cover_r2_key ? `/api/product-cover?slug=${encodeURIComponent(op.slug)}` : op.cover_image_url!}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+        ) : null}
         <div className="flex items-start gap-4">
           <div className="text-[44px] leading-none">{op.emoji ?? "📚"}</div>
           <div className="min-w-0">
@@ -65,6 +75,19 @@ export default async function ProductDetailPage({
             <div className="mt-2 text-[14px] text-slate-500">
               {fmt(tr.card_courses_count_plural, { n: op.course_count })}
             </div>
+            {op.intro ? (
+              <p className="mt-3 text-[15px] text-slate-700 leading-relaxed max-w-2xl">{op.intro}</p>
+            ) : null}
+            {op.website ? (
+              <a
+                href={op.website}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-block mt-2 text-[14px] text-emerald-700 hover:underline"
+              >
+                {op.website.replace(/^https?:\/\//, "")}
+              </a>
+            ) : null}
           </div>
         </div>
       </section>
