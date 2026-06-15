@@ -131,10 +131,10 @@ const en = {
 
   // AI sidebar
   ai_sidebar_title: "Ask about this course",
-  ai_sidebar_subtitle: "Grounded in product content · EN / 中",
+  ai_sidebar_subtitle: "Grounded in supplier content · EN / 中",
   ai_thinking: "Thinking…",
   ai_no_answer:
-    "⚠ Not found in product content. Answer is from general knowledge.",
+    "⚠ Not found in supplier content. Answer is from general knowledge.",
   ai_empty_state: "Try asking about this course. Examples below.",
   ai_sidebar_placeholder: "Ask about {title}…",
 
@@ -169,8 +169,8 @@ const en = {
 
   // ===== /operator (picker — user-facing "Products") =====
   op_picker_label: "/PRODUCTS",
-  op_picker_title_admin: "All products",
-  op_picker_title_user: "Your products",
+  op_picker_title_admin: "All suppliers",
+  op_picker_title_user: "Your suppliers",
   op_picker_empty_blurb: "Nothing to manage yet.",
   op_picker_admin_blurb: "You can manage any of these {n} as platform admin.",
   op_picker_user_blurb_one:
@@ -217,8 +217,8 @@ const en = {
   op_d_new_course: "+ New course",
   op_d_new_course_disabled: "Course CRUD lands in v0.2",
   op_d_switch: "Switch",
-  op_d_switch_panel_title: "YOUR PRODUCTS · {n}",
-  op_d_switch_view_all: "View all products →",
+  op_d_switch_panel_title: "YOUR SUPPLIERS · {n}",
+  op_d_switch_view_all: "View all suppliers →",
 
   op_d_kpi_total_learners: "TOTAL LEARNERS",
   op_d_kpi_courses_published: "COURSES PUBLISHED",
@@ -320,7 +320,7 @@ const en = {
   op_d_topqs_view_all: "View all questions →",
 
   op_d_403_label: "403",
-  op_d_403_title: "No product access",
+  op_d_403_title: "No supplier access",
   op_d_403_body:
     "You don't have permission to manage {slug}. Ask the platform admin to grant you operator membership.",
   op_d_403_home: "← Home",
@@ -389,7 +389,7 @@ const en = {
   // ===== AskAI conversation =====
   ai_thinking_inline: "Thinking…",
   ai_no_answer_inline:
-    "⚠ Not found in product content. Answer is from general knowledge.",
+    "⚠ Not found in supplier content. Answer is from general knowledge.",
   ai_ask_button_inline: "Ask",
 
   // ===== Module reader / video block =====
@@ -666,7 +666,7 @@ const en = {
   br_reset: "Reset to Libretour default",
   br_colour_swatch: "{label} colour swatch",
   br_colour_placeholder: "#hex or blank to reset",
-  br_logo_alt: "Product logo",
+  br_logo_alt: "Supplier logo",
   br_logo_none: "No logo yet",
   br_logo_uploading: "Uploading…",
   br_logo_replace: "Replace logo",
@@ -1038,10 +1038,10 @@ const zhCN: Dict = {
 
   // AI sidebar
   ai_sidebar_title: "关于本课程提问",
-  ai_sidebar_subtitle: "基于产品内容 · 支持 EN / 中",
+  ai_sidebar_subtitle: "基于供应商内容 · 支持 EN / 中",
   ai_thinking: "思考中…",
   ai_no_answer:
-    "⚠ 产品内容中未找到相关信息。以下回答来自通用知识。",
+    "⚠ 供应商内容中未找到相关信息。以下回答来自通用知识。",
   ai_empty_state: "试试关于本课程的问题。下方有示例。",
   ai_sidebar_placeholder: "向我询问关于 {title} 的任何问题…",
 
@@ -1075,10 +1075,10 @@ const zhCN: Dict = {
 
   // ===== /operator (picker — user-facing "产品") =====
   op_picker_label: "/产品",
-  op_picker_title_admin: "全部产品",
-  op_picker_title_user: "你的产品",
+  op_picker_title_admin: "全部供应商",
+  op_picker_title_user: "你的供应商",
   op_picker_empty_blurb: "暂无可管理的产品。",
-  op_picker_admin_blurb: "作为平台管理员,你可管理以下 {n} 个产品。",
+  op_picker_admin_blurb: "作为平台管理员,你可管理以下 {n} 家供应商。",
   op_picker_user_blurb_one: "你拥有 {n} 个产品。点击进入后台。",
   op_picker_user_blurb_many: "你拥有 {n} 个产品。选择一个进入后台。",
   op_picker_none_title: "尚无产品权限",
@@ -1121,8 +1121,8 @@ const zhCN: Dict = {
   op_d_new_course: "+ 新建课程",
   op_d_new_course_disabled: "课程编辑器将于 v0.2 上线",
   op_d_switch: "切换",
-  op_d_switch_panel_title: "你的产品 · {n}",
-  op_d_switch_view_all: "查看全部产品 →",
+  op_d_switch_panel_title: "你的供应商 · {n}",
+  op_d_switch_view_all: "查看全部供应商 →",
 
   op_d_kpi_total_learners: "学员总数",
   op_d_kpi_courses_published: "已发布课程",
@@ -1223,7 +1223,7 @@ const zhCN: Dict = {
   op_d_topqs_view_all: "查看全部提问 →",
 
   op_d_403_label: "403",
-  op_d_403_title: "无产品访问权限",
+  op_d_403_title: "无供应商访问权限",
   op_d_403_body:
     "你没有管理 {slug} 的权限。请联系平台管理员授予 operator membership。",
   op_d_403_home: "← 返回首页",
@@ -1290,7 +1290,7 @@ const zhCN: Dict = {
 
   // ===== AskAI conversation =====
   ai_thinking_inline: "思考中…",
-  ai_no_answer_inline: "⚠ 产品内容中未找到相关信息。以下回答来自通用知识。",
+  ai_no_answer_inline: "⚠ 供应商内容中未找到相关信息。以下回答来自通用知识。",
   ai_ask_button_inline: "提问",
 
   // ===== Module reader / video block =====
@@ -1564,7 +1564,7 @@ const zhCN: Dict = {
   br_reset: "恢复 Libretour 默认",
   br_colour_swatch: "{label}取色器",
   br_colour_placeholder: "#十六进制,留空则重置",
-  br_logo_alt: "产品 Logo",
+  br_logo_alt: "供应商 Logo",
   br_logo_none: "尚未上传 Logo",
   br_logo_uploading: "上传中…",
   br_logo_replace: "替换 Logo",
