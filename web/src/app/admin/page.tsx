@@ -2,10 +2,22 @@ import Link from "next/link";
 import { TopBar } from "../_components/top-bar";
 import { getCurrentRole, requireAdmin } from "@/lib/roles";
 import { db } from "@/lib/db";
-import { grantMembership, revokeMembership } from "./actions";
+import {
+  grantMembership,
+  revokeMembership,
+  createSupplier,
+  createOperator,
+  grantSupplierMembership,
+  revokeSupplierMembership,
+} from "./actions";
 import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
+
+const adminField =
+  "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
+const adminBtn =
+  "px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700";
 
 export default async function AdminPage() {
   let userId: string;
@@ -18,11 +30,15 @@ export default async function AdminPage() {
 
   const [role, tr] = await Promise.all([getCurrentRole(), t()]);
 
-  // List operators (id, slug, name) + every user with current memberships count
-  const [opsRes, usersRes, membersRes] = await Promise.all([
+  // List operators + suppliers + every user with current memberships
+  const [opsRes, usersRes, membersRes, supsRes, supMemsRes] = await Promise.all([
     db()
-      .prepare(`SELECT id, slug, name, status FROM operators ORDER BY name`)
-      .all<{ id: string; slug: string; name: string; status: string }>(),
+      .prepare(
+        `SELECT o.id, o.slug, o.name, o.status, s.name AS supplier_name
+         FROM operators o LEFT JOIN suppliers s ON s.id = o.supplier_id
+         ORDER BY s.name, o.name`,
+      )
+      .all<{ id: string; slug: string; name: string; status: string; supplier_name: string | null }>(),
     db()
       .prepare(
         `SELECT id, email, name, agency_name, created_at FROM users ORDER BY created_at DESC LIMIT 100`,
@@ -36,17 +52,38 @@ export default async function AdminPage() {
          ORDER BY o.name`,
       )
       .all<{ user_id: string; operator_id: string; role: string; operator_name: string; operator_slug: string }>(),
+    db()
+      .prepare(
+        `SELECT s.id, s.slug, s.name, s.plan_tier,
+                (SELECT COUNT(*) FROM operators o WHERE o.supplier_id = s.id) AS product_count
+         FROM suppliers s ORDER BY s.name`,
+      )
+      .all<{ id: string; slug: string; name: string; plan_tier: string; product_count: number }>(),
+    db()
+      .prepare(
+        `SELECT sm.user_id, sm.supplier_id, sm.role, s.name AS supplier_name
+         FROM supplier_memberships sm JOIN suppliers s ON s.id = sm.supplier_id
+         ORDER BY s.name`,
+      )
+      .all<{ user_id: string; supplier_id: string; role: string; supplier_name: string }>(),
   ]);
 
   const operators = opsRes.results ?? [];
   const users = usersRes.results ?? [];
   const memberships = membersRes.results ?? [];
+  const suppliers = supsRes.results ?? [];
+  const supMemberships = supMemsRes.results ?? [];
 
   // Group memberships by user
   const membershipsByUser = new Map<string, typeof memberships>();
   for (const m of memberships) {
     if (!membershipsByUser.has(m.user_id)) membershipsByUser.set(m.user_id, []);
     membershipsByUser.get(m.user_id)!.push(m);
+  }
+  const supMembersBySupplier = new Map<string, typeof supMemberships>();
+  for (const m of supMemberships) {
+    if (!supMembersBySupplier.has(m.supplier_id)) supMembersBySupplier.set(m.supplier_id, []);
+    supMembersBySupplier.get(m.supplier_id)!.push(m);
   }
 
   return (
@@ -164,6 +201,122 @@ export default async function AdminPage() {
                 );
               })
             )}
+          </div>
+        </section>
+
+        {/* Onboarding: create suppliers & products + assign supplier managers */}
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <header className="px-5 py-4 border-b border-slate-200">
+            <div className="font-semibold text-[14px] text-slate-900">{tr.admin_onboard_title}</div>
+            <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_onboard_sub}</div>
+          </header>
+          <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Create supplier */}
+            <form action={createSupplier} className="rounded-xl border border-slate-200 p-4 space-y-2">
+              <div className="font-semibold text-[13px] text-slate-900">{tr.admin_new_supplier}</div>
+              <input name="name" required placeholder={tr.admin_f_name} className={adminField} />
+              <div className="grid grid-cols-2 gap-2">
+                <input name="slug" placeholder={tr.admin_f_slug} className={adminField} />
+                <select name="plan_tier" defaultValue="free" className={adminField}>
+                  <option value="free">free</option>
+                  <option value="starter">starter</option>
+                  <option value="pro">pro</option>
+                  <option value="enterprise">enterprise</option>
+                </select>
+              </div>
+              <button type="submit" className={adminBtn}>{tr.admin_create}</button>
+            </form>
+
+            {/* Create product */}
+            <form action={createOperator} className="rounded-xl border border-slate-200 p-4 space-y-2">
+              <div className="font-semibold text-[13px] text-slate-900">{tr.admin_new_product}</div>
+              <input name="name" required placeholder={tr.admin_f_name} className={adminField} />
+              <div className="grid grid-cols-2 gap-2">
+                <select name="supplier_id" required defaultValue="" className={adminField}>
+                  <option value="" disabled>{tr.admin_f_supplier}</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <input name="slug" placeholder={tr.admin_f_slug} className={adminField} />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <select name="category" defaultValue="" className={adminField}>
+                  <option value="">{tr.admin_f_category}</option>
+                  {["snow", "adventure", "cruise", "hiking", "stay", "entertainment"].map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select name="region" defaultValue="" className={adminField}>
+                  <option value="">{tr.admin_f_region}</option>
+                  {["queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia"].map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <select name="primary_lang" defaultValue="en" className={adminField}>
+                  {["en", "zh-CN", "ja", "ko", "es", "fr"].map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              <button type="submit" className={adminBtn}>{tr.admin_create}</button>
+            </form>
+          </div>
+
+          {/* Suppliers with their managers */}
+          <div className="border-t border-slate-200">
+            {suppliers.map((s) => {
+              const mgrs = supMembersBySupplier.get(s.id) ?? [];
+              return (
+                <div
+                  key={s.id}
+                  className="px-5 py-4 border-t border-slate-100 first:border-t-0 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[13.5px] text-slate-900">
+                      <Link href={`/supplier/${s.slug}`} className="hover:underline font-medium">{s.name}</Link>
+                      <span className="text-slate-500 text-[12px] ml-1.5">
+                        · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
+                      </span>
+                    </div>
+                    {mgrs.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {mgrs.map((m) => {
+                          const u = users.find((x) => x.id === m.user_id);
+                          return (
+                            <form key={m.user_id} action={revokeSupplierMembership}>
+                              <input type="hidden" name="user_id" value={m.user_id} />
+                              <input type="hidden" name="supplier_id" value={s.id} />
+                              <button
+                                type="submit"
+                                className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
+                              >
+                                {u?.email ?? m.user_id} · {m.role} <span className="opacity-60">✕</span>
+                              </button>
+                            </form>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                  <form action={grantSupplierMembership} className="flex items-center gap-1.5">
+                    <input type="hidden" name="supplier_id" value={s.id} />
+                    <select name="user_id" defaultValue="" className={adminField + " max-w-[180px]"}>
+                      <option value="" disabled>{tr.admin_pick_user}</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>{u.email}</option>
+                      ))}
+                    </select>
+                    <select name="role" defaultValue="manager" className={adminField}>
+                      <option value="manager">{tr.admin_role_manager}</option>
+                      <option value="owner">{tr.admin_role_owner}</option>
+                      <option value="viewer">{tr.admin_role_viewer}</option>
+                    </select>
+                    <button type="submit" className={adminBtn}>{tr.admin_sup_grant}</button>
+                  </form>
+                </div>
+              );
+            })}
           </div>
         </section>
 
