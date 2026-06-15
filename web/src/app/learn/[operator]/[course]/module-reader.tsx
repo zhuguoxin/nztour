@@ -277,12 +277,22 @@ function BlockView({
     case "video":
       return <VideoBlock block={block} fallback={videoFallback} />;
     case "image":
-      return (
+      return block.image_r2_key ? (
+        <figure>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/image?id=${block.id}`}
+            alt={block.caption ?? ""}
+            loading="lazy"
+            className="w-full rounded-xl border border-white/[.08] object-contain"
+          />
+          {block.caption ? (
+            <figcaption className="text-[12.5px] text-[#a7d4b6] mt-2 text-center">{block.caption}</figcaption>
+          ) : null}
+        </figure>
+      ) : (
         <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-center text-[#a7d4b6] text-sm">
           🖼️ {block.caption ?? dict.lr_block_image}
-          <div className="text-[11px] text-[#5d9279] mt-1 font-mono">
-            r2_key: {block.image_r2_key ?? "<not uploaded>"}
-          </div>
         </div>
       );
     case "pdf":

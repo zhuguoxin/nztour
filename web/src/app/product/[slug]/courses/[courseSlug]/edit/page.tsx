@@ -279,6 +279,7 @@ export default async function EditCoursePage({
             <EditorModules
               solo
               operatorSlug={slug}
+              supplierSlug={op.supplier_slug}
               courseSlug={course.slug}
               primaryLang={course.primary_lang}
               availableLangs={availableLangs}
@@ -329,6 +330,7 @@ export default async function EditCoursePage({
             <CoverImageField
               courseId={course.id}
               operatorSlug={slug}
+              supplierSlug={op.supplier_slug}
               courseSlug={course.slug}
               emoji={course.emoji}
               hasCover={!!course.cover_r2_key}

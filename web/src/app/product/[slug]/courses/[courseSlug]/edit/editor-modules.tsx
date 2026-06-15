@@ -20,6 +20,7 @@ import { SortableList, GrabHandle, type DragHandleProps } from "./sortable-list"
 import { langLabel } from "@/lib/translate";
 import { useTr } from "@/lib/i18n-provider";
 import { fmt } from "@/lib/i18n-shared";
+import { MediaPicker } from "@/app/_components/media-picker";
 
 export interface VoiceOption {
   id: string;
@@ -121,6 +122,7 @@ const inputClass =
  */
 export function EditorModules({
   operatorSlug,
+  supplierSlug,
   courseSlug,
   primaryLang,
   availableLangs,
@@ -131,6 +133,8 @@ export function EditorModules({
   solo = false,
 }: {
   operatorSlug: string;
+  /** Owning supplier slug — for the media library (image blocks). */
+  supplierSlug: string | null;
   courseSlug: string;
   primaryLang: string;
   availableLangs: string[];
@@ -157,6 +161,7 @@ export function EditorModules({
         blocks={blocksByModuleId[m.id] ?? []}
         quiz={quizByModuleId[m.id] ?? []}
         operatorSlug={operatorSlug}
+        supplierSlug={supplierSlug}
         courseSlug={courseSlug}
         primaryLang={primaryLang}
         availableLangs={availableLangs}
@@ -182,6 +187,7 @@ export function EditorModules({
           blocks={blocksByModuleId[m.id] ?? []}
           quiz={quizByModuleId[m.id] ?? []}
           operatorSlug={operatorSlug}
+          supplierSlug={supplierSlug}
           courseSlug={courseSlug}
           primaryLang={primaryLang}
           availableLangs={availableLangs}
@@ -198,6 +204,7 @@ function ModuleEditor({
   blocks,
   quiz,
   operatorSlug,
+  supplierSlug,
   courseSlug,
   primaryLang,
   availableLangs,
@@ -209,6 +216,7 @@ function ModuleEditor({
   blocks: BlockData[];
   quiz: QuizQuestionData[];
   operatorSlug: string;
+  supplierSlug: string | null;
   courseSlug: string;
   primaryLang: string;
   availableLangs: string[];
@@ -323,6 +331,7 @@ function ModuleEditor({
                 block={b}
                 handle={h}
                 operatorSlug={operatorSlug}
+                supplierSlug={supplierSlug}
                 courseSlug={courseSlug}
                 moduleId={module.id}
               />
@@ -597,12 +606,14 @@ function BlockEditor({
   block,
   handle,
   operatorSlug,
+  supplierSlug,
   courseSlug,
   moduleId,
 }: {
   block: BlockData;
   handle: DragHandleProps;
   operatorSlug: string;
+  supplierSlug: string | null;
   courseSlug: string;
   moduleId: string;
 }) {
@@ -671,8 +682,7 @@ function BlockEditor({
           <ImageUploader
             block={block}
             operatorSlug={operatorSlug}
-            courseSlug={courseSlug}
-            moduleId={moduleId}
+            supplierSlug={supplierSlug}
           />
         ) : null}
 
@@ -946,75 +956,31 @@ function ModuleNarration({
 }
 
 /**
- * Image block uploader. Renders preview + file picker; on file select, POSTs
- * to /api/upload/image which writes to R2 and updates the block's image_r2_key.
- * On success we refresh the page.
+ * Image block picker. Image blocks now pull from the supplier media library
+ * (pick existing or upload-new) via the shared MediaPicker, which writes the
+ * block's image_r2_key (block target).
  */
 function ImageUploader({
   block,
   operatorSlug,
-  courseSlug,
-  moduleId,
+  supplierSlug,
 }: {
   block: BlockData;
   operatorSlug: string;
-  courseSlug: string;
-  moduleId: string;
+  supplierSlug: string | null;
 }) {
   const tr = useTr();
-  const [pending, startTransition] = useTransition();
-
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("operator_slug", operatorSlug);
-    fd.append("course_slug", courseSlug);
-    fd.append("module_id", moduleId);
-    fd.append("block_id", block.id);
-    startTransition(async () => {
-      const r = await fetch("/api/upload/image", { method: "POST", body: fd });
-      if (r.ok) {
-        // Soft refresh — server re-renders with new image_r2_key.
-        window.location.reload();
-      } else {
-        const msg = await r.text().catch(() => tr.ui_upload_failed);
-        alert(msg.slice(0, 300));
-      }
-    });
+  if (!supplierSlug) {
+    return <div className="text-[11px] text-[#86b69a]">{tr.em_img_none}</div>;
   }
-
   return (
-    <div className="space-y-2">
-      {block.image_r2_key ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/api/image?id=${block.id}`}
-          alt={block.caption ?? ""}
-          className="max-h-48 rounded border border-white/[.08] object-contain"
-        />
-      ) : (
-        <div className="h-32 rounded border border-dashed border-white/[.10] flex items-center justify-center text-[12px] text-[#86b69a]">
-          {tr.em_img_none}
-        </div>
-      )}
-      <label className="flex items-center gap-2 text-[12px] text-[#d8f0e1] cursor-pointer">
-        <span className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] hover:bg-white/[.10]">
-          {pending ? tr.em_uploading : block.image_r2_key ? tr.em_replace_image : tr.em_choose_image}
-        </span>
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          disabled={pending}
-          onChange={onFileChange}
-          className="hidden"
-        />
-        <span className="text-[10px] text-[#86b69a]">
-          {tr.em_img_formats}
-        </span>
-      </label>
-    </div>
+    <MediaPicker
+      supplierSlug={supplierSlug}
+      target={{ target: "block", operatorSlug, blockId: block.id }}
+      currentUrl={block.image_r2_key ? `/api/image?id=${block.id}` : null}
+      aspect="video"
+      theme="dark"
+    />
   );
 }
 
