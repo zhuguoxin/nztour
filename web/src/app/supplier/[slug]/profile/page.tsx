@@ -75,7 +75,7 @@ export default async function SupplierProfilePage({
           </span>
         }
       />
-      <main className="px-5 sm:px-8 py-8 max-w-2xl mx-auto">
+      <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto">
         <Link href={`/supplier/${slug}`} className="text-[13px] text-emerald-700 hover:underline">
           {tr.sp_back_panel}
         </Link>
