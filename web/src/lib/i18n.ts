@@ -217,8 +217,8 @@ const en = {
   op_d_new_course: "+ New course",
   op_d_new_course_disabled: "Course CRUD lands in v0.2",
   op_d_switch: "Switch",
-  op_d_switch_panel_title: "YOUR OPERATORS · {n}",
-  op_d_switch_view_all: "View all operators →",
+  op_d_switch_panel_title: "YOUR PRODUCTS · {n}",
+  op_d_switch_view_all: "View all products →",
 
   op_d_kpi_total_learners: "TOTAL LEARNERS",
   op_d_kpi_courses_published: "COURSES PUBLISHED",
@@ -320,7 +320,7 @@ const en = {
   op_d_topqs_view_all: "View all questions →",
 
   op_d_403_label: "403",
-  op_d_403_title: "No operator access",
+  op_d_403_title: "No product access",
   op_d_403_body:
     "You don't have permission to manage {slug}. Ask the platform admin to grant you operator membership.",
   op_d_403_home: "← Home",
@@ -330,17 +330,36 @@ const en = {
   admin_breadcrumb: "Platform admin",
   admin_title: "Platform admin",
   admin_blurb:
-    "Manage users and grant operator memberships. Use sparingly — every action writes to D1.",
+    "Manage users and grant supplier memberships. Use sparingly — every action writes to D1.",
   admin_stat_users: "Users",
-  admin_stat_operators: "Operators",
+  admin_stat_suppliers: "Suppliers",
+  admin_stat_operators: "Products",
   admin_stat_memberships: "Memberships",
   admin_stat_you: "You",
   admin_you_admin: "✓ admin",
-  admin_users_title: "Users + memberships",
+  admin_suppliers_title: "Suppliers",
+  admin_suppliers_sub: "Manage suppliers, their managers, and their products.",
+  admin_suppliers_empty: "No suppliers yet — create one.",
+  admin_users_title: "Users",
   admin_users_sub:
-    "Last 100 by signup time. Submit the form on any row to grant a new operator membership.",
+    "Last 100 by signup time. Assign a user to a supplier as a manager (grants access to all that supplier's products).",
   admin_users_empty: "No users yet.",
-  admin_grant_placeholder: "Grant operator…",
+  admin_back: "← Back to admin",
+  admin_new_user: "New user",
+  admin_sup_legal: "Legal name",
+  admin_sup_website: "Website",
+  admin_sup_email: "Contact email",
+  admin_sup_plan: "Plan",
+  admin_sup_country: "Country",
+  admin_sup_manager: "Initial manager (optional)",
+  admin_manager_none: "— none —",
+  admin_manager_hint: "Manager can be assigned later. They get access to all of this supplier's products.",
+  admin_user_email: "Email",
+  admin_user_agency: "Agency / company",
+  admin_user_assign: "Assign to a supplier (optional)",
+  admin_user_invite_note:
+    "If they later sign up with this email, they'll inherit this access automatically.",
+  admin_grant_placeholder: "Grant supplier…",
   admin_grant_button: "Grant",
   admin_role_admin: "admin",
   admin_role_editor: "editor",
@@ -361,7 +380,7 @@ const en = {
   admin_role_owner: "Owner",
   admin_role_viewer: "Viewer",
   admin_sup_grant: "Add",
-  admin_operators_title: "Operators",
+  admin_operators_title: "Products",
   admin_operators_sub: "Tap to open the console as admin.",
   admin_403_title: "Admin only",
   admin_403_body:
@@ -647,7 +666,7 @@ const en = {
   br_reset: "Reset to Libretour default",
   br_colour_swatch: "{label} colour swatch",
   br_colour_placeholder: "#hex or blank to reset",
-  br_logo_alt: "Operator logo",
+  br_logo_alt: "Product logo",
   br_logo_none: "No logo yet",
   br_logo_uploading: "Uploading…",
   br_logo_replace: "Replace logo",
@@ -759,7 +778,7 @@ const en = {
   lr_language: "Language",
   lr_draft_label: "DRAFT",
   lr_draft_blurb:
-    "This course is auto-drafted from source files and pending operator review. Modules will appear once the operator publishes the parsed content.",
+    "This course is auto-drafted from source files and pending supplier review. Modules will appear once the supplier publishes the parsed content.",
   lr_back_to_courses_arrow: "← Back to courses",
 
   // Module reader
@@ -1019,10 +1038,10 @@ const zhCN: Dict = {
 
   // AI sidebar
   ai_sidebar_title: "关于本课程提问",
-  ai_sidebar_subtitle: "基于运营商内容 · 支持 EN / 中",
+  ai_sidebar_subtitle: "基于产品内容 · 支持 EN / 中",
   ai_thinking: "思考中…",
   ai_no_answer:
-    "⚠ 运营商内容中未找到相关信息。以下回答来自通用知识。",
+    "⚠ 产品内容中未找到相关信息。以下回答来自通用知识。",
   ai_empty_state: "试试关于本课程的问题。下方有示例。",
   ai_sidebar_placeholder: "向我询问关于 {title} 的任何问题…",
 
@@ -1102,8 +1121,8 @@ const zhCN: Dict = {
   op_d_new_course: "+ 新建课程",
   op_d_new_course_disabled: "课程编辑器将于 v0.2 上线",
   op_d_switch: "切换",
-  op_d_switch_panel_title: "你的运营商 · {n}",
-  op_d_switch_view_all: "查看全部运营商 →",
+  op_d_switch_panel_title: "你的产品 · {n}",
+  op_d_switch_view_all: "查看全部产品 →",
 
   op_d_kpi_total_learners: "学员总数",
   op_d_kpi_courses_published: "已发布课程",
@@ -1204,7 +1223,7 @@ const zhCN: Dict = {
   op_d_topqs_view_all: "查看全部提问 →",
 
   op_d_403_label: "403",
-  op_d_403_title: "无运营商访问权限",
+  op_d_403_title: "无产品访问权限",
   op_d_403_body:
     "你没有管理 {slug} 的权限。请联系平台管理员授予 operator membership。",
   op_d_403_home: "← 返回首页",
@@ -1214,17 +1233,35 @@ const zhCN: Dict = {
   admin_breadcrumb: "平台管理",
   admin_title: "平台管理",
   admin_blurb:
-    "管理用户与运营商权限。每个动作都会写入 D1,请谨慎操作。",
+    "管理用户与供应商权限。每个动作都会写入 D1,请谨慎操作。",
   admin_stat_users: "用户",
-  admin_stat_operators: "运营商",
+  admin_stat_suppliers: "供应商",
+  admin_stat_operators: "产品",
   admin_stat_memberships: "授权数",
   admin_stat_you: "当前",
   admin_you_admin: "✓ 管理员",
-  admin_users_title: "用户与授权",
+  admin_suppliers_title: "供应商管理",
+  admin_suppliers_sub: "管理供应商、其管理员与旗下产品。",
+  admin_suppliers_empty: "暂无供应商，请新建。",
+  admin_users_title: "用户管理",
   admin_users_sub:
-    "按注册时间倒序最近 100 位。提交任意一行的表单即可授予新的运营商权限。",
+    "按注册时间倒序最近 100 位。可把用户指派为某供应商的管理员（即获得该供应商全部产品的访问权）。",
   admin_users_empty: "暂无用户。",
-  admin_grant_placeholder: "授予运营商…",
+  admin_back: "← 返回平台管理",
+  admin_new_user: "新建用户",
+  admin_sup_legal: "法定名称",
+  admin_sup_website: "网址",
+  admin_sup_email: "联系邮箱",
+  admin_sup_plan: "套餐",
+  admin_sup_country: "国家",
+  admin_sup_manager: "初始管理员（可选）",
+  admin_manager_none: "— 无 —",
+  admin_manager_hint: "管理员也可稍后指派。其将获得该供应商全部产品的访问权。",
+  admin_user_email: "邮箱",
+  admin_user_agency: "所属机构 / 公司",
+  admin_user_assign: "指派到供应商（可选）",
+  admin_user_invite_note: "若该用户日后用此邮箱注册，将自动继承此权限。",
+  admin_grant_placeholder: "授予供应商…",
   admin_grant_button: "授予",
   admin_role_admin: "admin",
   admin_role_editor: "editor",
@@ -1245,7 +1282,7 @@ const zhCN: Dict = {
   admin_role_owner: "拥有者",
   admin_role_viewer: "查看者",
   admin_sup_grant: "添加",
-  admin_operators_title: "运营商列表",
+  admin_operators_title: "产品列表",
   admin_operators_sub: "点击任意一家,以管理员身份进入后台。",
   admin_403_title: "仅限管理员",
   admin_403_body:
@@ -1253,7 +1290,7 @@ const zhCN: Dict = {
 
   // ===== AskAI conversation =====
   ai_thinking_inline: "思考中…",
-  ai_no_answer_inline: "⚠ 运营商内容中未找到相关信息。以下回答来自通用知识。",
+  ai_no_answer_inline: "⚠ 产品内容中未找到相关信息。以下回答来自通用知识。",
   ai_ask_button_inline: "提问",
 
   // ===== Module reader / video block =====
@@ -1639,7 +1676,7 @@ const zhCN: Dict = {
   lr_language: "语言",
   lr_draft_label: "草稿",
   lr_draft_blurb:
-    "本课程由源文件自动生成草稿,正在等待运营商审核。运营商发布解析内容后,模块将会出现。",
+    "本课程由源文件自动生成草稿,正在等待供应商审核。供应商发布解析内容后,模块将会出现。",
   lr_back_to_courses_arrow: "← 返回课程列表",
 
   // Module reader

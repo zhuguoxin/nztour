@@ -2,14 +2,7 @@ import Link from "next/link";
 import { TopBar } from "../_components/top-bar";
 import { getCurrentRole, requireAdmin } from "@/lib/roles";
 import { db } from "@/lib/db";
-import {
-  grantMembership,
-  revokeMembership,
-  createSupplier,
-  createOperator,
-  grantSupplierMembership,
-  revokeSupplierMembership,
-} from "./actions";
+import { createOperator, grantSupplierMembership, revokeSupplierMembership } from "./actions";
 import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -18,73 +11,74 @@ const adminField =
   "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
 const adminBtn =
   "px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700";
+const CATEGORIES = ["snow", "adventure", "cruise", "hiking", "stay", "entertainment"];
+const REGIONS = ["queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia"];
+
+interface SupplierRow {
+  id: string;
+  slug: string;
+  name: string;
+  plan_tier: string;
+  product_count: number;
+}
+interface UserRow {
+  id: string;
+  email: string;
+  name: string | null;
+  agency_name: string | null;
+  created_at: number;
+}
+interface SupMem {
+  user_id: string;
+  supplier_id: string;
+  role: string;
+  supplier_name: string;
+}
 
 export default async function AdminPage() {
-  let userId: string;
   try {
-    userId = await requireAdmin();
+    await requireAdmin();
   } catch {
     return <Forbidden />;
   }
-  void userId;
 
   const [role, tr] = await Promise.all([getCurrentRole(), t()]);
 
-  // List operators + suppliers + every user with current memberships
-  const [opsRes, usersRes, membersRes, supsRes, supMemsRes] = await Promise.all([
-    db()
-      .prepare(
-        `SELECT o.id, o.slug, o.name, o.status, s.name AS supplier_name
-         FROM operators o LEFT JOIN suppliers s ON s.id = o.supplier_id
-         ORDER BY s.name, o.name`,
-      )
-      .all<{ id: string; slug: string; name: string; status: string; supplier_name: string | null }>(),
-    db()
-      .prepare(
-        `SELECT id, email, name, agency_name, created_at FROM users ORDER BY created_at DESC LIMIT 100`,
-      )
-      .all<{ id: string; email: string; name: string | null; agency_name: string | null; created_at: number }>(),
-    db()
-      .prepare(
-        `SELECT om.user_id, om.operator_id, om.role, o.name AS operator_name, o.slug AS operator_slug
-         FROM operator_memberships om
-         JOIN operators o ON o.id = om.operator_id
-         ORDER BY o.name`,
-      )
-      .all<{ user_id: string; operator_id: string; role: string; operator_name: string; operator_slug: string }>(),
+  const [supsRes, usersRes, supMemsRes, opCountRes] = await Promise.all([
     db()
       .prepare(
         `SELECT s.id, s.slug, s.name, s.plan_tier,
                 (SELECT COUNT(*) FROM operators o WHERE o.supplier_id = s.id) AS product_count
          FROM suppliers s ORDER BY s.name`,
       )
-      .all<{ id: string; slug: string; name: string; plan_tier: string; product_count: number }>(),
+      .all<SupplierRow>(),
+    db()
+      .prepare(
+        `SELECT id, email, name, agency_name, created_at FROM users ORDER BY created_at DESC LIMIT 100`,
+      )
+      .all<UserRow>(),
     db()
       .prepare(
         `SELECT sm.user_id, sm.supplier_id, sm.role, s.name AS supplier_name
          FROM supplier_memberships sm JOIN suppliers s ON s.id = sm.supplier_id
          ORDER BY s.name`,
       )
-      .all<{ user_id: string; supplier_id: string; role: string; supplier_name: string }>(),
+      .all<SupMem>(),
+    db().prepare(`SELECT COUNT(*) AS n FROM operators`).first<{ n: number }>(),
   ]);
 
-  const operators = opsRes.results ?? [];
-  const users = usersRes.results ?? [];
-  const memberships = membersRes.results ?? [];
   const suppliers = supsRes.results ?? [];
-  const supMemberships = supMemsRes.results ?? [];
+  const users = usersRes.results ?? [];
+  const supMems = supMemsRes.results ?? [];
+  const productCount = opCountRes?.n ?? 0;
 
-  // Group memberships by user
-  const membershipsByUser = new Map<string, typeof memberships>();
-  for (const m of memberships) {
-    if (!membershipsByUser.has(m.user_id)) membershipsByUser.set(m.user_id, []);
-    membershipsByUser.get(m.user_id)!.push(m);
+  const memsBySupplier = new Map<string, SupMem[]>();
+  const memsByUser = new Map<string, SupMem[]>();
+  for (const m of supMems) {
+    (memsBySupplier.get(m.supplier_id) ?? memsBySupplier.set(m.supplier_id, []).get(m.supplier_id)!).push(m);
+    (memsByUser.get(m.user_id) ?? memsByUser.set(m.user_id, []).get(m.user_id)!).push(m);
   }
-  const supMembersBySupplier = new Map<string, typeof supMemberships>();
-  for (const m of supMemberships) {
-    if (!supMembersBySupplier.has(m.supplier_id)) supMembersBySupplier.set(m.supplier_id, []);
-    supMembersBySupplier.get(m.supplier_id)!.push(m);
-  }
+  const userById = new Map(users.map((u) => [u.id, u]));
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
@@ -99,102 +93,99 @@ export default async function AdminPage() {
       />
 
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-lime-700/70">
-          {tr.admin_chrome_label}
-        </div>
-        <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">
-          {tr.admin_title}
-        </h1>
+        <div className="text-[11px] tracking-widest font-mono text-lime-700/70">{tr.admin_chrome_label}</div>
+        <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">{tr.admin_title}</h1>
         <p className="text-[13.5px] text-slate-600 mt-1.5">{tr.admin_blurb}</p>
 
+        {/* 1. Stats */}
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Stat label={tr.admin_stat_suppliers} value={suppliers.length.toString()} />
+          <Stat label={tr.admin_stat_operators} value={productCount.toString()} />
           <Stat label={tr.admin_stat_users} value={users.length.toString()} />
-          <Stat label={tr.admin_stat_operators} value={operators.length.toString()} />
-          <Stat label={tr.admin_stat_memberships} value={memberships.length.toString()} />
           <Stat label={tr.admin_stat_you} value={role.isAdmin ? tr.admin_you_admin : "—"} />
         </div>
 
+        {/* 2. Supplier management */}
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <header className="px-5 py-4 border-b border-slate-200">
-            <div className="font-semibold text-[14px] text-slate-900">{tr.admin_users_title}</div>
-            <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_users_sub}</div>
+          <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold text-[14px] text-slate-900">{tr.admin_suppliers_title}</div>
+              <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_suppliers_sub}</div>
+            </div>
+            <Link
+              href="/admin/suppliers/new"
+              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0"
+            >
+              + {tr.admin_new_supplier}
+            </Link>
           </header>
           <div>
-            {users.length === 0 ? (
-              <div className="px-5 py-8 text-center text-[13px] text-slate-500">
-                {tr.admin_users_empty}
-              </div>
+            {suppliers.length === 0 ? (
+              <div className="px-5 py-8 text-center text-[13px] text-slate-500">{tr.admin_suppliers_empty}</div>
             ) : (
-              users.map((u) => {
-                const userMems = membershipsByUser.get(u.id) ?? [];
+              suppliers.map((s) => {
+                const mgrs = memsBySupplier.get(s.id) ?? [];
                 return (
-                  <div
-                    key={u.id}
-                    className="px-5 py-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-[13.5px] text-slate-900">
-                        {u.name ?? u.email}{" "}
-                        {u.name ? <span className="text-slate-500 text-[12px]">({u.email})</span> : null}
-                      </div>
-                      <div className="text-[11.5px] text-slate-400 font-mono mt-0.5 truncate">
-                        {u.id}
-                      </div>
-                      {userMems.length > 0 ? (
-                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                          {userMems.map((m) => (
-                            <form key={`${m.user_id}_${m.operator_id}`} action={revokeMembership}>
-                              <input type="hidden" name="user_id" value={m.user_id} />
-                              <input type="hidden" name="operator_id" value={m.operator_id} />
-                              <button
-                                type="submit"
-                                className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
-                                title={fmt(tr.admin_revoke_tooltip, {
-                                  role: m.role,
-                                  operator: m.operator_name,
-                                })}
-                              >
-                                {m.operator_name} · {m.role} <span className="opacity-60">✕</span>
-                              </button>
-                            </form>
-                          ))}
+                  <div key={s.id} className="px-5 py-4 border-t border-slate-100">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="text-[13.5px] text-slate-900">
+                          <Link href={`/supplier/${s.slug}`} className="font-medium hover:underline">{s.name}</Link>
+                          <span className="text-slate-500 text-[12px] ml-1.5">
+                            · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
+                          </span>
                         </div>
-                      ) : null}
+                        {mgrs.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {mgrs.map((m) => {
+                              const u = userById.get(m.user_id);
+                              return (
+                                <form key={m.user_id} action={revokeSupplierMembership}>
+                                  <input type="hidden" name="user_id" value={m.user_id} />
+                                  <input type="hidden" name="supplier_id" value={s.id} />
+                                  <button
+                                    type="submit"
+                                    className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
+                                  >
+                                    {u?.email ?? m.user_id} · {m.role} <span className="opacity-60">✕</span>
+                                  </button>
+                                </form>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                      {/* Assign manager */}
+                      <form action={grantSupplierMembership} className="flex items-center gap-1.5 shrink-0">
+                        <input type="hidden" name="supplier_id" value={s.id} />
+                        <select name="user_id" defaultValue="" className={adminField + " max-w-[170px]"}>
+                          <option value="" disabled>{tr.admin_pick_user}</option>
+                          {users.map((u) => (
+                            <option key={u.id} value={u.id}>{u.email}</option>
+                          ))}
+                        </select>
+                        <select name="role" defaultValue="manager" className={adminField}>
+                          <option value="manager">{tr.admin_role_manager}</option>
+                          <option value="owner">{tr.admin_role_owner}</option>
+                          <option value="viewer">{tr.admin_role_viewer}</option>
+                        </select>
+                        <button type="submit" className={adminBtn}>{tr.admin_sup_grant}</button>
+                      </form>
                     </div>
-
-                    {/* Grant form */}
-                    <form
-                      action={grantMembership}
-                      className="flex items-center gap-1.5"
-                    >
-                      <input type="hidden" name="user_id" value={u.id} />
-                      <select
-                        name="operator_id"
-                        defaultValue=""
-                        className="bg-white border border-slate-300 rounded-md px-2 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500"
-                      >
-                        <option value="" disabled>
-                          {tr.admin_grant_placeholder}
-                        </option>
-                        {operators.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.name}
-                          </option>
-                        ))}
+                    {/* New product under this supplier */}
+                    <form action={createOperator} className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                      <input type="hidden" name="supplier_id" value={s.id} />
+                      <input name="name" required placeholder={tr.admin_new_product} className={adminField + " max-w-[200px]"} />
+                      <select name="category" defaultValue="" className={adminField}>
+                        <option value="">{tr.admin_f_category}</option>
+                        {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <select
-                        name="role"
-                        defaultValue="admin"
-                        className="bg-white border border-slate-300 rounded-md px-2 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500"
-                      >
-                        <option value="admin">{tr.admin_role_admin}</option>
-                        <option value="editor">{tr.admin_role_editor}</option>
+                      <select name="region" defaultValue="" className={adminField}>
+                        <option value="">{tr.admin_f_region}</option>
+                        {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                       </select>
-                      <button
-                        type="submit"
-                        className="px-2.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700"
-                      >
-                        {tr.admin_grant_button}
+                      <button type="submit" className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 font-semibold text-[12.5px] hover:bg-slate-50">
+                        + {tr.admin_new_product}
                       </button>
                     </form>
                   </div>
@@ -204,138 +195,75 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        {/* Onboarding: create suppliers & products + assign supplier managers */}
+        {/* 3. User management */}
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <header className="px-5 py-4 border-b border-slate-200">
-            <div className="font-semibold text-[14px] text-slate-900">{tr.admin_onboard_title}</div>
-            <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_onboard_sub}</div>
+          <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold text-[14px] text-slate-900">{tr.admin_users_title}</div>
+              <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_users_sub}</div>
+            </div>
+            <Link
+              href="/admin/users/new"
+              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0"
+            >
+              + {tr.admin_new_user}
+            </Link>
           </header>
-          <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Create supplier */}
-            <form action={createSupplier} className="rounded-xl border border-slate-200 p-4 space-y-2">
-              <div className="font-semibold text-[13px] text-slate-900">{tr.admin_new_supplier}</div>
-              <input name="name" required placeholder={tr.admin_f_name} className={adminField} />
-              <div className="grid grid-cols-2 gap-2">
-                <input name="slug" placeholder={tr.admin_f_slug} className={adminField} />
-                <select name="plan_tier" defaultValue="free" className={adminField}>
-                  <option value="free">free</option>
-                  <option value="starter">starter</option>
-                  <option value="pro">pro</option>
-                  <option value="enterprise">enterprise</option>
-                </select>
-              </div>
-              <button type="submit" className={adminBtn}>{tr.admin_create}</button>
-            </form>
-
-            {/* Create product */}
-            <form action={createOperator} className="rounded-xl border border-slate-200 p-4 space-y-2">
-              <div className="font-semibold text-[13px] text-slate-900">{tr.admin_new_product}</div>
-              <input name="name" required placeholder={tr.admin_f_name} className={adminField} />
-              <div className="grid grid-cols-2 gap-2">
-                <select name="supplier_id" required defaultValue="" className={adminField}>
-                  <option value="" disabled>{tr.admin_f_supplier}</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-                <input name="slug" placeholder={tr.admin_f_slug} className={adminField} />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <select name="category" defaultValue="" className={adminField}>
-                  <option value="">{tr.admin_f_category}</option>
-                  {["snow", "adventure", "cruise", "hiking", "stay", "entertainment"].map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <select name="region" defaultValue="" className={adminField}>
-                  <option value="">{tr.admin_f_region}</option>
-                  {["queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia"].map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-                <select name="primary_lang" defaultValue="en" className={adminField}>
-                  {["en", "zh-CN", "ja", "ko", "es", "fr"].map((l) => (
-                    <option key={l} value={l}>{l}</option>
-                  ))}
-                </select>
-              </div>
-              <button type="submit" className={adminBtn}>{tr.admin_create}</button>
-            </form>
-          </div>
-
-          {/* Suppliers with their managers */}
-          <div className="border-t border-slate-200">
-            {suppliers.map((s) => {
-              const mgrs = supMembersBySupplier.get(s.id) ?? [];
-              return (
-                <div
-                  key={s.id}
-                  className="px-5 py-4 border-t border-slate-100 first:border-t-0 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
-                >
-                  <div className="min-w-0">
-                    <div className="text-[13.5px] text-slate-900">
-                      <Link href={`/supplier/${s.slug}`} className="hover:underline font-medium">{s.name}</Link>
-                      <span className="text-slate-500 text-[12px] ml-1.5">
-                        · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
-                      </span>
-                    </div>
-                    {mgrs.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {mgrs.map((m) => {
-                          const u = users.find((x) => x.id === m.user_id);
-                          return (
-                            <form key={m.user_id} action={revokeSupplierMembership}>
-                              <input type="hidden" name="user_id" value={m.user_id} />
-                              <input type="hidden" name="supplier_id" value={s.id} />
+          <div>
+            {users.length === 0 ? (
+              <div className="px-5 py-8 text-center text-[13px] text-slate-500">{tr.admin_users_empty}</div>
+            ) : (
+              users.map((u) => {
+                const mems = memsByUser.get(u.id) ?? [];
+                return (
+                  <div
+                    key={u.id}
+                    className="px-5 py-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[13.5px] text-slate-900">
+                        {u.name ?? u.email}{" "}
+                        {u.name ? <span className="text-slate-500 text-[12px]">({u.email})</span> : null}
+                        {u.agency_name ? <span className="text-slate-400 text-[12px]"> · {u.agency_name}</span> : null}
+                      </div>
+                      <div className="text-[11.5px] text-slate-400 font-mono mt-0.5 truncate">{u.id}</div>
+                      {mems.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {mems.map((m) => (
+                            <form key={m.supplier_id} action={revokeSupplierMembership}>
+                              <input type="hidden" name="user_id" value={u.id} />
+                              <input type="hidden" name="supplier_id" value={m.supplier_id} />
                               <button
                                 type="submit"
                                 className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
                               >
-                                {u?.email ?? m.user_id} · {m.role} <span className="opacity-60">✕</span>
+                                {m.supplier_name} · {m.role} <span className="opacity-60">✕</span>
                               </button>
                             </form>
-                          );
-                        })}
-                      </div>
-                    ) : null}
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                    {/* Assign to supplier */}
+                    <form action={grantSupplierMembership} className="flex items-center gap-1.5">
+                      <input type="hidden" name="user_id" value={u.id} />
+                      <select name="supplier_id" defaultValue="" className={adminField + " max-w-[170px]"}>
+                        <option value="" disabled>{tr.admin_f_supplier}</option>
+                        {suppliers.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      <select name="role" defaultValue="manager" className={adminField}>
+                        <option value="manager">{tr.admin_role_manager}</option>
+                        <option value="owner">{tr.admin_role_owner}</option>
+                        <option value="viewer">{tr.admin_role_viewer}</option>
+                      </select>
+                      <button type="submit" className={adminBtn}>{tr.admin_sup_grant}</button>
+                    </form>
                   </div>
-                  <form action={grantSupplierMembership} className="flex items-center gap-1.5">
-                    <input type="hidden" name="supplier_id" value={s.id} />
-                    <select name="user_id" defaultValue="" className={adminField + " max-w-[180px]"}>
-                      <option value="" disabled>{tr.admin_pick_user}</option>
-                      {users.map((u) => (
-                        <option key={u.id} value={u.id}>{u.email}</option>
-                      ))}
-                    </select>
-                    <select name="role" defaultValue="manager" className={adminField}>
-                      <option value="manager">{tr.admin_role_manager}</option>
-                      <option value="owner">{tr.admin_role_owner}</option>
-                      <option value="viewer">{tr.admin_role_viewer}</option>
-                    </select>
-                    <button type="submit" className={adminBtn}>{tr.admin_sup_grant}</button>
-                  </form>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white">
-          <header className="px-5 py-4 border-b border-slate-200">
-            <div className="font-semibold text-[14px] text-slate-900">{tr.admin_operators_title}</div>
-            <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_operators_sub}</div>
-          </header>
-          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {operators.map((o) => (
-              <Link
-                key={o.id}
-                href={`/product/${o.slug}`}
-                className="px-3 py-2.5 rounded-md border border-slate-200 hover:border-emerald-300 text-[13px] text-slate-900 flex items-center justify-between"
-              >
-                <span>{o.name}</span>
-                <span className="text-[11px] text-slate-500">{o.status}</span>
-              </Link>
-            ))}
+                );
+              })
+            )}
           </div>
         </section>
       </main>

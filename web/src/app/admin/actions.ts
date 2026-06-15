@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/roles";
 
@@ -79,14 +80,87 @@ export async function createSupplier(form: FormData) {
   const plan = String(form.get("plan_tier") ?? "free");
   const planTier = ["free", "starter", "pro", "enterprise"].includes(plan) ? plan : "free";
   const country = String(form.get("country") ?? "NZ").trim().slice(0, 60) || "NZ";
+  const legalName = String(form.get("legal_name") ?? "").trim().slice(0, 200) || null;
+  const website = String(form.get("website") ?? "").trim().slice(0, 400) || null;
+  const contactEmail = String(form.get("contact_email") ?? "").trim().slice(0, 200) || null;
+  const supplierId = shortId("sup");
   await db()
     .prepare(
-      `INSERT INTO suppliers (id, slug, name, country, plan_tier, status)
-       VALUES (?, ?, ?, ?, ?, 'active')`,
+      `INSERT INTO suppliers (id, slug, name, legal_name, country, website, contact_email, plan_tier, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
     )
-    .bind(shortId("sup"), slug, name, country, planTier)
+    .bind(supplierId, slug, name, legalName, country, website, contactEmail, planTier)
     .run();
+
+  // Optional: assign an initial manager (existing user_id, may be blank).
+  const managerUserId = String(form.get("manager_user_id") ?? "").trim();
+  if (managerUserId) {
+    await db()
+      .prepare(
+        `INSERT INTO supplier_memberships (user_id, supplier_id, role)
+         VALUES (?, ?, 'manager')
+         ON CONFLICT(user_id, supplier_id) DO UPDATE SET role = excluded.role`,
+      )
+      .bind(managerUserId, supplierId)
+      .run();
+  }
   revalidatePath("/admin");
+  redirect("/admin");
+}
+
+/**
+ * Pre-create a user (invite-by-email) and optionally assign them as a
+ * supplier manager. The placeholder row is keyed by a generated id; when the
+ * person later signs up via Clerk with the same email, ensureUser() reconciles
+ * by email and migrates the membership to their real Clerk id.
+ */
+export async function createUser(form: FormData) {
+  await requireAdmin();
+  const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 200);
+  if (!email || !email.includes("@")) throw new Error("valid email required");
+  const name = String(form.get("name") ?? "").trim().slice(0, 200) || null;
+  const agency = String(form.get("agency_name") ?? "").trim().slice(0, 200) || null;
+
+  const existing = await db()
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .bind(email)
+    .first<{ id: string }>();
+
+  let userId: string;
+  if (existing) {
+    userId = existing.id;
+    await db()
+      .prepare(
+        `UPDATE users SET name = COALESCE(?, name), agency_name = COALESCE(?, agency_name) WHERE id = ?`,
+      )
+      .bind(name, agency, userId)
+      .run();
+  } else {
+    userId = shortId("usr");
+    await db()
+      .prepare(
+        `INSERT INTO users (id, email, name, agency_name, preferred_lang)
+         VALUES (?, ?, ?, ?, 'en')`,
+      )
+      .bind(userId, email, name, agency)
+      .run();
+  }
+
+  // Optional: assign to a supplier as a manager.
+  const supplierId = String(form.get("supplier_id") ?? "").trim();
+  const role = String(form.get("role") ?? "manager");
+  if (supplierId && ["owner", "manager", "viewer"].includes(role)) {
+    await db()
+      .prepare(
+        `INSERT INTO supplier_memberships (user_id, supplier_id, role)
+         VALUES (?, ?, ?)
+         ON CONFLICT(user_id, supplier_id) DO UPDATE SET role = excluded.role`,
+      )
+      .bind(userId, supplierId, role)
+      .run();
+  }
+  revalidatePath("/admin");
+  redirect("/admin");
 }
 
 export async function createOperator(form: FormData) {
