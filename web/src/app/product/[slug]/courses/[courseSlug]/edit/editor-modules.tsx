@@ -9,7 +9,6 @@ import {
   updateBlock,
   deleteBlock,
   generateBlockAudioAction,
-  clearBlockAudio,
   reorderModulesBulk,
   reorderBlocksBulk,
   createQuizQuestion,
@@ -604,8 +603,17 @@ function BlockEditor({
   const audioI18n = parseAudioI18n(
     (block as unknown as { audio_i18n?: string | null }).audio_i18n ?? null,
   );
-  // Show one row per available language with its current audio state.
-  const langsWithAudio = availableLangs.slice().sort((a, b) => (a === primaryLang ? -1 : b === primaryLang ? 1 : a.localeCompare(b)));
+  // Per-language audio map: primary lang from the block columns, other
+  // languages from audio_i18n — for the button-style voice-over control.
+  const audioByLang: Record<string, AudioI18nEntry> = { ...audioI18n };
+  if (hasAudio) {
+    audioByLang[primaryLang] = {
+      r2_key: block.audio_r2_key!,
+      voice_id: block.audio_voice ?? "voice_melotts_auto",
+      duration_s: block.audio_duration_s ?? 0,
+      generated_at: block.audio_generated_at ?? 0,
+    };
+  }
   return (
     <div className="bg-[#04241e] border border-white/[.08] rounded-lg p-3 space-y-3">
       <div className="flex items-center justify-between text-[11px]">
@@ -626,6 +634,18 @@ function BlockEditor({
             <span className="text-[10px] text-[#86b69a] font-mono">
               {fmtDuration(block.duration_s)}
             </span>
+          ) : null}
+          {isNarratable ? (
+            <BlockAudioControl
+              blockId={block.id}
+              moduleId={moduleId}
+              operatorSlug={operatorSlug}
+              courseSlug={courseSlug}
+              primaryLang={primaryLang}
+              availableLangs={availableLangs}
+              voices={voices}
+              audioByLang={audioByLang}
+            />
           ) : null}
         </div>
         <form action={deleteBlock} className="inline-flex">
@@ -702,88 +722,58 @@ function BlockEditor({
         </div>
       </form>
 
-      {isNarratable ? (
-        <div className="rounded-md border border-emerald-400/15 bg-emerald-400/[.04] p-2.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-emerald-300 font-semibold text-[11px]">
-            🎙️ {tr.em_audio_heading}
-            <span className="text-[10px] text-[#86b69a] font-normal">
-              {tr.em_audio_one_per_lang}
-            </span>
-          </div>
-
-          {langsWithAudio.map((lang) => {
-            const entry = lang === primaryLang
-              ? (hasAudio
-                  ? {
-                      r2_key: block.audio_r2_key!,
-                      voice_id: block.audio_voice ?? "voice_melotts_auto",
-                      duration_s: block.audio_duration_s ?? 0,
-                      generated_at: block.audio_generated_at ?? 0,
-                    }
-                  : audioI18n[lang])
-              : audioI18n[lang];
-            return (
-              <AudioLangRow
-                key={lang}
-                lang={lang}
-                isPrimary={lang === primaryLang}
-                entry={entry ?? null}
-                blockId={block.id}
-                moduleId={moduleId}
-                operatorSlug={operatorSlug}
-                courseSlug={courseSlug}
-                voices={voices}
-              />
-            );
-          })}
-
-          {hasAudio ? (
-            <form action={clearBlockAudio} className="inline-flex">
-              <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-              <input type="hidden" name="module_id" value={moduleId} />
-              <input type="hidden" name="block_id" value={block.id} />
-              <button
-                type="submit"
-                className="text-[10px] text-rose-300/80 hover:underline"
-                title={tr.em_audio_delete_title}
-              >
-                {tr.em_audio_clear_primary}
-              </button>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }
 
-function AudioLangRow({
-  lang,
-  isPrimary,
-  entry,
+/**
+ * Per-block voice-over control (button-style). Shows a "🎧 <lang>" chip for each
+ * language that already has audio (click to play inline), plus a "+ Voice-over"
+ * button that opens a small popover to pick a language + voice and generate.
+ */
+function BlockAudioControl({
   blockId,
   moduleId,
   operatorSlug,
   courseSlug,
+  primaryLang,
+  availableLangs,
   voices,
+  audioByLang,
 }: {
-  lang: string;
-  isPrimary: boolean;
-  entry: AudioI18nEntry | null;
   blockId: string;
   moduleId: string;
   operatorSlug: string;
   courseSlug: string;
+  primaryLang: string;
+  availableLangs: string[];
   voices: VoiceOption[];
+  audioByLang: Record<string, AudioI18nEntry>;
 }) {
   const tr = useTr();
-  const has = !!entry;
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [genLang, setGenLang] = useState(primaryLang);
+  const [voiceId, setVoiceId] = useState(() =>
+    defaultVoiceFor(voicesForLang(voices, primaryLang), primaryLang, audioByLang[primaryLang]?.voice_id),
+  );
   const [pending, startTransition] = useTransition();
-  // Only voices native for this language (plus universal/cloned ones).
-  const applicableVoices = voicesForLang(voices, lang);
-  const [voiceId, setVoiceId] = useState(defaultVoiceFor(applicableVoices, lang, entry?.voice_id));
   const [err, setErr] = useState<string | null>(null);
+
+  const langsWithAudio = availableLangs.filter((l) => audioByLang[l]);
+  const applicableVoices = voicesForLang(voices, genLang);
+
+  function audioSrc(lang: string, entry: AudioI18nEntry): string {
+    return lang === primaryLang
+      ? `/api/audio?id=${blockId}&t=${entry.generated_at}`
+      : `/api/audio?id=${blockId}&lang=${encodeURIComponent(lang)}&t=${entry.generated_at}`;
+  }
+
+  function pickLang(l: string) {
+    setGenLang(l);
+    setVoiceId(defaultVoiceFor(voicesForLang(voices, l), l, audioByLang[l]?.voice_id));
+  }
 
   function generate() {
     setErr(null);
@@ -794,11 +784,13 @@ function AudioLangRow({
           courseSlug,
           moduleId,
           blockId,
-          lang,
+          lang: genLang,
           voiceId,
         });
-        if (res.ok) router.refresh();
-        else setErr(res.error ?? tr.em_gen_failed);
+        if (res.ok) {
+          setOpen(false);
+          router.refresh();
+        } else setErr(res.error ?? tr.em_gen_failed);
       } catch (e) {
         setErr(e instanceof Error ? e.message : tr.em_gen_failed);
       }
@@ -806,58 +798,82 @@ function AudioLangRow({
   }
 
   return (
-    <div className="rounded border border-white/[.06] bg-black/[.10] p-2">
-      <div className="flex items-center gap-2 mb-1.5">
-        <span className="px-1.5 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/30 text-emerald-200 text-[10px] font-mono uppercase">
-          {langLabel(lang)}
-          {isPrimary ? tr.em_audio_primary_suffix : ""}
-        </span>
-        {has ? (
-          <span className="text-[10px] text-[#86b69a] font-mono">
-            {entry!.duration_s}s · {entry!.voice_id}
-          </span>
-        ) : (
-          <span className="text-[10px] text-[#86b69a]">{tr.em_audio_not_generated}</span>
-        )}
-      </div>
-      {has ? (
+    <div className="relative flex items-center gap-1.5 flex-wrap">
+      {langsWithAudio.map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => setPlaying(playing === l ? null : l)}
+          className={`px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${
+            playing === l
+              ? "bg-emerald-400 border-emerald-400 text-[#04241e]"
+              : "bg-emerald-400/15 border-emerald-400/30 text-emerald-200 hover:bg-emerald-400/25"
+          }`}
+        >
+          🎧 {langLabel(l)}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="px-2 py-0.5 rounded-full border border-white/[.12] text-[#a7d4b6] text-[10px] hover:bg-white/[.06]"
+      >
+        + {tr.em_audio_heading}
+      </button>
+
+      {playing && audioByLang[playing] ? (
         <audio
+          autoPlay
           controls
           preload="none"
-          src={
-            isPrimary
-              ? `/api/audio?id=${blockId}&t=${entry!.generated_at}`
-              : `/api/audio?id=${blockId}&lang=${encodeURIComponent(lang)}&t=${entry!.generated_at}`
-          }
-          className="w-full h-8 mb-1.5"
+          src={audioSrc(playing, audioByLang[playing])}
+          className="absolute left-0 top-7 z-20 w-72 h-8"
         />
       ) : null}
-      <div className="flex items-center gap-1.5">
-        <select
-          value={voiceId}
-          onChange={(e) => setVoiceId(e.target.value)}
-          disabled={pending}
-          className={inputClass + " flex-1 text-[11.5px] py-1"}
-        >
-          {applicableVoices.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-              {v.kind === "cloned" ? " · cloned" : ""}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={generate}
-          disabled={pending}
-          className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 shrink-0 disabled:opacity-50"
-        >
-          {pending ? "…" : has ? "↻" : tr.em_audio_gen_short}
-        </button>
-      </div>
-      {err ? (
-        <div className="mt-1.5 text-[10.5px] text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
-          {err}
+
+      {open ? (
+        <div className="absolute right-0 top-7 z-30 w-64 rounded-lg border border-white/[.12] bg-[#0a3a2f] p-2.5 space-y-2 shadow-xl">
+          <select
+            value={genLang}
+            onChange={(e) => pickLang(e.target.value)}
+            className={inputClass + " text-[11.5px] py-1.5"}
+          >
+            {availableLangs.map((l) => (
+              <option key={l} value={l}>
+                {langLabel(l)}
+                {audioByLang[l] ? " ✓" : ""}
+              </option>
+            ))}
+          </select>
+          <select
+            value={voiceId}
+            onChange={(e) => setVoiceId(e.target.value)}
+            className={inputClass + " text-[11.5px] py-1.5"}
+          >
+            {applicableVoices.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+                {v.kind === "cloned" ? " · cloned" : ""}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={generate}
+            disabled={pending}
+            className="w-full px-2.5 py-1.5 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 disabled:opacity-50"
+          >
+            {pending
+              ? tr.em_audio_generating
+              : audioByLang[genLang]
+                ? tr.em_audio_regenerate
+                : tr.em_audio_gen_short}
+          </button>
+          {err ? (
+            <div className="text-[10.5px] text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
+              {err}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
