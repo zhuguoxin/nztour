@@ -257,9 +257,17 @@ export default async function SupplierDashboard({ params }: Props) {
             </div>
 
             <div>
-              <h2 className="text-[18px] sm:text-[20px] font-semibold text-slate-900 mb-3">
-                {fmt(tr.sup_d_products_heading, { n: totalProducts })}
-              </h2>
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <h2 className="text-[18px] sm:text-[20px] font-semibold text-slate-900">
+                  {fmt(tr.sup_d_products_heading, { n: totalProducts })}
+                </h2>
+                <Link
+                  href={`/supplier/${supplier.slug}/products/new`}
+                  className="px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0 whitespace-nowrap"
+                >
+                  + {tr.admin_new_product}
+                </Link>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {products.map((p) => (
                   <Link

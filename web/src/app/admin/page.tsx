@@ -2,7 +2,7 @@ import Link from "next/link";
 import { TopBar } from "../_components/top-bar";
 import { getCurrentRole, requireAdmin } from "@/lib/roles";
 import { db } from "@/lib/db";
-import { createOperator, grantSupplierMembership, revokeSupplierMembership } from "./actions";
+import { grantSupplierMembership, revokeSupplierMembership } from "./actions";
 import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +11,6 @@ const adminField =
   "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
 const adminBtn =
   "px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700";
-const CATEGORIES = ["snow", "adventure", "cruise", "hiking", "stay", "entertainment"];
-const REGIONS = ["queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia"];
 
 interface SupplierRow {
   id: string;
@@ -119,73 +117,55 @@ export default async function AdminPage() {
               + {tr.admin_new_supplier}
             </Link>
           </header>
-          <div>
+          <div className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
             {suppliers.length === 0 ? (
-              <div className="px-5 py-8 text-center text-[13px] text-slate-500">{tr.admin_suppliers_empty}</div>
+              <div className="col-span-full px-2 py-8 text-center text-[13px] text-slate-500">{tr.admin_suppliers_empty}</div>
             ) : (
               suppliers.map((s) => {
                 const mgrs = memsBySupplier.get(s.id) ?? [];
                 return (
-                  <div key={s.id} className="px-5 py-4 border-t border-slate-100">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="min-w-0">
-                        <div className="text-[13.5px] text-slate-900">
-                          <Link href={`/supplier/${s.slug}`} className="font-medium hover:underline">{s.name}</Link>
-                          <span className="text-slate-500 text-[12px] ml-1.5">
-                            · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
-                          </span>
-                        </div>
-                        {mgrs.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {mgrs.map((m) => {
-                              const u = userById.get(m.user_id);
-                              return (
-                                <form key={m.user_id} action={revokeSupplierMembership}>
-                                  <input type="hidden" name="user_id" value={m.user_id} />
-                                  <input type="hidden" name="supplier_id" value={s.id} />
-                                  <button
-                                    type="submit"
-                                    className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
-                                  >
-                                    {u?.email ?? m.user_id} · {m.role} <span className="opacity-60">✕</span>
-                                  </button>
-                                </form>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-                      </div>
-                      {/* Assign manager */}
-                      <form action={grantSupplierMembership} className="flex items-center gap-1.5 shrink-0">
-                        <input type="hidden" name="supplier_id" value={s.id} />
-                        <select name="user_id" defaultValue="" className={adminField + " max-w-[170px]"}>
-                          <option value="" disabled>{tr.admin_pick_user}</option>
-                          {users.map((u) => (
-                            <option key={u.id} value={u.id}>{u.email}</option>
-                          ))}
-                        </select>
-                        <select name="role" defaultValue="manager" className={adminField}>
-                          <option value="manager">{tr.admin_role_manager}</option>
-                          <option value="owner">{tr.admin_role_owner}</option>
-                          <option value="viewer">{tr.admin_role_viewer}</option>
-                        </select>
-                        <button type="submit" className={adminBtn}>{tr.admin_sup_grant}</button>
-                      </form>
+                  <div key={s.id} className="rounded-xl border border-slate-200 p-4">
+                    <div className="text-[13.5px] text-slate-900">
+                      <Link href={`/supplier/${s.slug}`} className="font-medium hover:underline">{s.name}</Link>
+                      <span className="text-slate-500 text-[12px] ml-1.5">
+                        · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
+                      </span>
                     </div>
-                    {/* New product under this supplier */}
-                    <form action={createOperator} className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                    {mgrs.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {mgrs.map((m) => {
+                          const u = userById.get(m.user_id);
+                          return (
+                            <form key={m.user_id} action={revokeSupplierMembership}>
+                              <input type="hidden" name="user_id" value={m.user_id} />
+                              <input type="hidden" name="supplier_id" value={s.id} />
+                              <button
+                                type="submit"
+                                className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
+                              >
+                                {u?.email ?? m.user_id} · {m.role} <span className="opacity-60">✕</span>
+                              </button>
+                            </form>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                    {/* Assign manager */}
+                    <form action={grantSupplierMembership} className="mt-3 flex items-center gap-1.5">
                       <input type="hidden" name="supplier_id" value={s.id} />
-                      <input name="name" required placeholder={tr.admin_new_product} className={adminField + " max-w-[200px]"} />
-                      <select name="category" defaultValue="" className={adminField}>
-                        <option value="">{tr.admin_f_category}</option>
-                        {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      <select name="user_id" defaultValue="" className={adminField + " flex-1 min-w-0"}>
+                        <option value="" disabled>{tr.admin_pick_user}</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>{u.email}</option>
+                        ))}
                       </select>
-                      <select name="region" defaultValue="" className={adminField}>
-                        <option value="">{tr.admin_f_region}</option>
-                        {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                      <select name="role" defaultValue="manager" className={adminField + " w-auto shrink-0"}>
+                        <option value="manager">{tr.admin_role_manager}</option>
+                        <option value="owner">{tr.admin_role_owner}</option>
+                        <option value="viewer">{tr.admin_role_viewer}</option>
                       </select>
-                      <button type="submit" className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 font-semibold text-[12.5px] hover:bg-slate-50">
-                        + {tr.admin_new_product}
+                      <button type="submit" className="px-4 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0 whitespace-nowrap">
+                        {tr.admin_sup_grant}
                       </button>
                     </form>
                   </div>
