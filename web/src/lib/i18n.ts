@@ -766,6 +766,25 @@ const en = {
   bd_anon_learner: "A learner",
   bd_earned: "earned",
   bd_cta: "Start learning →",
+
+  // ===== Product taxonomy (category groups + region filter) =====
+  cat_snow: "Snow & Ski",
+  cat_adventure: "Adventure",
+  cat_cruise: "Scenic Cruises",
+  cat_hiking: "Walking & Hikes",
+  cat_stay: "Stays",
+  cat_entertainment: "Entertainment & Dining",
+  cat_other: "More",
+  pr_filter_region: "Region",
+  reg_all: "All regions",
+  reg_queenstown: "Queenstown",
+  reg_fiordland: "Fiordland",
+  reg_aoraki: "Aoraki / Mt Cook",
+  reg_rotorua: "Rotorua",
+  reg_auckland: "Auckland",
+  reg_waikato: "Waikato",
+  reg_canterbury: "Canterbury",
+  reg_australia: "Australia",
 };
 
 export type Dict = typeof en;
@@ -1487,6 +1506,25 @@ const zhCN: Dict = {
   bd_anon_learner: "某位学员",
   bd_earned: "获得了",
   bd_cta: "开始学习 →",
+
+  // ===== Product taxonomy (category groups + region filter) =====
+  cat_snow: "雪场滑雪",
+  cat_adventure: "探险活动",
+  cat_cruise: "观光游船",
+  cat_hiking: "徒步步道",
+  cat_stay: "住宿",
+  cat_entertainment: "娱乐餐饮",
+  cat_other: "更多",
+  pr_filter_region: "地区",
+  reg_all: "全部地区",
+  reg_queenstown: "皇后镇",
+  reg_fiordland: "峡湾",
+  reg_aoraki: "库克山",
+  reg_rotorua: "罗托鲁瓦",
+  reg_auckland: "奥克兰",
+  reg_waikato: "怀卡托",
+  reg_canterbury: "坎特伯雷",
+  reg_australia: "澳大利亚",
 };
 
 export const dict: Record<Locale, Dict> = {
