@@ -107,7 +107,8 @@ export default async function EditCoursePage({
 
   const { results: modules } = await db()
     .prepare(
-      `SELECT id, title, summary, est_minutes, position
+      `SELECT id, title, summary, est_minutes, position,
+              narration_md_i18n, narration_audio_i18n
        FROM modules WHERE course_id = ? ORDER BY position, id`,
     )
     .bind(course.id)

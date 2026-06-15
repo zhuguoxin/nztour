@@ -74,6 +74,8 @@ export interface ModuleRow {
   /** JSON map of lang code → translated title (excludes primary lang) */
   title_i18n?: string | null;
   summary_i18n?: string | null;
+  /** JSON {lang: {r2_key, voice_id, duration_s, generated_at}} — module narration audio */
+  narration_audio_i18n?: string | null;
 }
 
 export interface BlockRow {
@@ -255,7 +257,7 @@ export async function getCourseBySlug(
   const { results: modules } = await db()
     .prepare(
       `SELECT id, course_id, slug, title, summary, est_minutes, position,
-              title_i18n, summary_i18n
+              title_i18n, summary_i18n, narration_audio_i18n
        FROM modules WHERE course_id = ? ORDER BY position`,
     )
     .bind(row.id)

@@ -44,6 +44,8 @@ interface Props {
   /** Pre-shuffled questions for this attempt. Empty = no quiz configured;
    *  the legacy 30-second-dwell + button flow is used in that case. */
   quizQuestions: QuizQuestion[];
+  /** Module-level narration audio URL for the chosen language, or null. */
+  narrationSrc: string | null;
 }
 
 export function ModuleReader({
@@ -57,6 +59,7 @@ export function ModuleReader({
   onComplete,
   tr,
   quizQuestions,
+  narrationSrc,
 }: Props) {
   const router = useRouter();
   const dict = useTr();
@@ -129,6 +132,15 @@ export function ModuleReader({
       </h2>
       {module.summary ? (
         <p className="text-[15px] text-[#a7d4b6] mb-6 leading-relaxed">{module.summary}</p>
+      ) : null}
+
+      {narrationSrc ? (
+        <div className="mb-6 flex items-center gap-2 rounded-lg bg-emerald-400/[.06] border border-emerald-400/20 p-2.5">
+          <span className="text-[11px] text-emerald-300/80 font-mono uppercase tracking-widest shrink-0">
+            🎧 {dict.lr_voiceover}
+          </span>
+          <audio controls preload="none" src={narrationSrc} className="flex-1 h-9" />
+        </div>
       ) : null}
 
       <article className="space-y-4">

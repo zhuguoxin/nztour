@@ -191,6 +191,25 @@ export default async function CoursePage({ params, searchParams }: Props) {
         })()),
   }));
 
+  // Module narration audio for the chosen language (sibling Mandarin fallback,
+  // mirroring block audio). No cross-language fallback: if the learner's
+  // language has no narration we show no player rather than the wrong language.
+  const narrationSrc = ((): string | null => {
+    try {
+      const map = JSON.parse(active.narration_audio_i18n ?? "{}");
+      const candidates = [chosenLang, ...(SIBLING_AUDIO[chosenLang] ?? [])];
+      for (const cand of candidates) {
+        const e = map?.[cand];
+        if (e?.r2_key) {
+          return `/api/module-audio?id=${active.id}&lang=${encodeURIComponent(cand)}&t=${e.generated_at ?? 0}`;
+        }
+      }
+    } catch {
+      // no narration
+    }
+    return null;
+  })();
+
   async function onComplete(dwellSeconds: number): Promise<{ verifyCode?: string }> {
     "use server";
     return completeModuleAction({
@@ -326,6 +345,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
           modules={localizedModules}
           courseId={course.id}
           quizQuestions={quizQuestions}
+          narrationSrc={narrationSrc}
           isCompleted={!!progressMap.get(active.id)?.completed_at}
           onComplete={onComplete}
           tr={{

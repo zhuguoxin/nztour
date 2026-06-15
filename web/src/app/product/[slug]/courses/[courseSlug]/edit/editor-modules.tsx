@@ -8,12 +8,13 @@ import {
   createBlock,
   updateBlock,
   deleteBlock,
-  generateBlockAudioAction,
   reorderModulesBulk,
   reorderBlocksBulk,
   createQuizQuestion,
   deleteQuizQuestion,
   generateModuleQuiz,
+  saveModuleNarration,
+  generateModuleAudioAction,
 } from "../../actions";
 import { SortableList, GrabHandle, type DragHandleProps } from "./sortable-list";
 import { langLabel } from "@/lib/translate";
@@ -82,6 +83,10 @@ export interface ModuleData {
   summary: string | null;
   est_minutes: number | null;
   position: number;
+  /** JSON {lang: "script"} — module narration script per language. */
+  narration_md_i18n?: string | null;
+  /** JSON {lang: {r2_key, voice_id, duration_s, generated_at}} — narration audio. */
+  narration_audio_i18n?: string | null;
 }
 
 export interface BlockData {
@@ -288,6 +293,19 @@ function ModuleEditor({
           </div>
         </form>
 
+        {/* Module narration (voice-over) — one script per module */}
+        <ModuleNarration
+          moduleId={module.id}
+          operatorSlug={operatorSlug}
+          courseSlug={courseSlug}
+          primaryLang={primaryLang}
+          availableLangs={availableLangs}
+          voices={voices}
+          narrationByLang={parseNarrationScripts(module.narration_md_i18n)}
+          audioByLang={parseAudioI18n(module.narration_audio_i18n)}
+          blocks={blocks}
+        />
+
         {/* Blocks — nested sortable */}
         <SortableList
           items={blocks}
@@ -307,9 +325,6 @@ function ModuleEditor({
                 operatorSlug={operatorSlug}
                 courseSlug={courseSlug}
                 moduleId={module.id}
-                primaryLang={primaryLang}
-                availableLangs={availableLangs}
-                voices={voices}
               />
             </div>
           )}
@@ -584,36 +599,15 @@ function BlockEditor({
   operatorSlug,
   courseSlug,
   moduleId,
-  primaryLang,
-  availableLangs,
-  voices,
 }: {
   block: BlockData;
   handle: DragHandleProps;
   operatorSlug: string;
   courseSlug: string;
   moduleId: string;
-  primaryLang: string;
-  availableLangs: string[];
-  voices: VoiceOption[];
 }) {
   const tr = useTr();
   const isNarratable = block.kind === "text" || block.kind === "callout";
-  const hasAudio = !!block.audio_r2_key;
-  const audioI18n = parseAudioI18n(
-    (block as unknown as { audio_i18n?: string | null }).audio_i18n ?? null,
-  );
-  // Per-language audio map: primary lang from the block columns, other
-  // languages from audio_i18n — for the button-style voice-over control.
-  const audioByLang: Record<string, AudioI18nEntry> = { ...audioI18n };
-  if (hasAudio) {
-    audioByLang[primaryLang] = {
-      r2_key: block.audio_r2_key!,
-      voice_id: block.audio_voice ?? "voice_melotts_auto",
-      duration_s: block.audio_duration_s ?? 0,
-      generated_at: block.audio_generated_at ?? 0,
-    };
-  }
   return (
     <div className="bg-[#04241e] border border-white/[.08] rounded-lg p-3 space-y-3">
       <div className="flex items-center justify-between text-[11px]">
@@ -634,18 +628,6 @@ function BlockEditor({
             <span className="text-[10px] text-[#86b69a] font-mono">
               {fmtDuration(block.duration_s)}
             </span>
-          ) : null}
-          {isNarratable ? (
-            <BlockAudioControl
-              blockId={block.id}
-              moduleId={moduleId}
-              operatorSlug={operatorSlug}
-              courseSlug={courseSlug}
-              primaryLang={primaryLang}
-              availableLangs={availableLangs}
-              voices={voices}
-              audioByLang={audioByLang}
-            />
           ) : null}
         </div>
         <form action={deleteBlock} className="inline-flex">
@@ -726,48 +708,90 @@ function BlockEditor({
   );
 }
 
+function parseNarrationScripts(json: string | null | undefined): Record<string, string> {
+  if (!json) return {};
+  try {
+    const v = JSON.parse(json);
+    if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+    const out: Record<string, string> = {};
+    for (const [k, val] of Object.entries(v)) if (typeof val === "string") out[k] = val;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 /**
- * Per-block voice-over control (button-style). Shows a "🎧 <lang>" chip for each
- * language that already has audio (click to play inline), plus a "+ Voice-over"
- * button that opens a small popover to pick a language + voice and generate.
+ * Module-level narration (voice-over). One script per module, authored in the
+ * course's primary language; the "Import" button seeds it from the module's
+ * text/callout blocks. Audio generates per language (other languages auto-
+ * translate the primary script — Scheme A). 🎧 chips play generated audio.
  */
-function BlockAudioControl({
-  blockId,
+function ModuleNarration({
   moduleId,
   operatorSlug,
   courseSlug,
   primaryLang,
   availableLangs,
   voices,
+  narrationByLang,
   audioByLang,
+  blocks,
 }: {
-  blockId: string;
   moduleId: string;
   operatorSlug: string;
   courseSlug: string;
   primaryLang: string;
   availableLangs: string[];
   voices: VoiceOption[];
+  narrationByLang: Record<string, string>;
   audioByLang: Record<string, AudioI18nEntry>;
+  blocks: BlockData[];
 }) {
   const tr = useTr();
   const router = useRouter();
+  const [script, setScript] = useState(narrationByLang[primaryLang] ?? "");
+  const [saving, startSave] = useTransition();
+  const [saved, setSaved] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+
   const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
   const [genLang, setGenLang] = useState(primaryLang);
   const [voiceId, setVoiceId] = useState(() =>
     defaultVoiceFor(voicesForLang(voices, primaryLang), primaryLang, audioByLang[primaryLang]?.voice_id),
   );
-  const [pending, startTransition] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
+  const [pending, startGen] = useTransition();
+  const [genErr, setGenErr] = useState<string | null>(null);
 
   const langsWithAudio = availableLangs.filter((l) => audioByLang[l]);
   const applicableVoices = voicesForLang(voices, genLang);
 
-  function audioSrc(lang: string, entry: AudioI18nEntry): string {
-    return lang === primaryLang
-      ? `/api/audio?id=${blockId}&t=${entry.generated_at}`
-      : `/api/audio?id=${blockId}&lang=${encodeURIComponent(lang)}&t=${entry.generated_at}`;
+  function importFromBlocks() {
+    const text = blocks
+      .filter((b) => (b.kind === "text" || b.kind === "callout") && (b.text_md ?? "").trim())
+      .map((b) => (b.text_md ?? "").trim())
+      .join("\n\n");
+    setScript((prev) => (prev.trim() ? prev + "\n\n" + text : text));
+    setSaved(false);
+  }
+
+  function save() {
+    setSaveErr(null);
+    setSaved(false);
+    startSave(async () => {
+      const fd = new FormData();
+      fd.set("operator_slug", operatorSlug);
+      fd.set("course_slug", courseSlug);
+      fd.set("module_id", moduleId);
+      fd.set("lang", primaryLang);
+      fd.set("script", script);
+      const res = await saveModuleNarration(fd);
+      if (res.ok) {
+        setSaved(true);
+        router.refresh();
+      } else setSaveErr(res.error ?? tr.em_gen_failed);
+    });
   }
 
   function pickLang(l: string) {
@@ -776,107 +800,148 @@ function BlockAudioControl({
   }
 
   function generate() {
-    setErr(null);
-    startTransition(async () => {
+    setGenErr(null);
+    startGen(async () => {
       try {
-        const res = await generateBlockAudioAction({
+        const res = await generateModuleAudioAction({
           operatorSlug,
           courseSlug,
           moduleId,
-          blockId,
           lang: genLang,
           voiceId,
         });
         if (res.ok) {
           setOpen(false);
           router.refresh();
-        } else setErr(res.error ?? tr.em_gen_failed);
+        } else setGenErr(res.error ?? tr.em_gen_failed);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : tr.em_gen_failed);
+        setGenErr(e instanceof Error ? e.message : tr.em_gen_failed);
       }
     });
   }
 
   return (
-    <div className="relative flex items-center gap-1.5 flex-wrap">
-      {langsWithAudio.map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => setPlaying(playing === l ? null : l)}
-          className={`px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${
-            playing === l
-              ? "bg-emerald-400 border-emerald-400 text-[#04241e]"
-              : "bg-emerald-400/15 border-emerald-400/30 text-emerald-200 hover:bg-emerald-400/25"
-          }`}
-        >
-          🎧 {langLabel(l)}
-        </button>
-      ))}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="px-2 py-0.5 rounded-full border border-white/[.12] text-[#a7d4b6] text-[10px] hover:bg-white/[.06]"
-      >
-        + {tr.em_audio_heading}
-      </button>
-
-      {playing && audioByLang[playing] ? (
-        <audio
-          autoPlay
-          controls
-          preload="none"
-          src={audioSrc(playing, audioByLang[playing])}
-          className="absolute left-0 top-7 z-20 w-72 h-8"
-        />
-      ) : null}
-
-      {open ? (
-        <div className="absolute right-0 top-7 z-30 w-64 rounded-lg border border-white/[.12] bg-[#0a3a2f] p-2.5 space-y-2 shadow-xl">
-          <select
-            value={genLang}
-            onChange={(e) => pickLang(e.target.value)}
-            className={inputClass + " text-[11.5px] py-1.5"}
-          >
-            {availableLangs.map((l) => (
-              <option key={l} value={l}>
-                {langLabel(l)}
-                {audioByLang[l] ? " ✓" : ""}
-              </option>
-            ))}
-          </select>
-          <select
-            value={voiceId}
-            onChange={(e) => setVoiceId(e.target.value)}
-            className={inputClass + " text-[11.5px] py-1.5"}
-          >
-            {applicableVoices.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-                {v.kind === "cloned" ? " · cloned" : ""}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={generate}
-            disabled={pending}
-            className="w-full px-2.5 py-1.5 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 disabled:opacity-50"
-          >
-            {pending
-              ? tr.em_audio_generating
-              : audioByLang[genLang]
-                ? tr.em_audio_regenerate
-                : tr.em_audio_gen_short}
-          </button>
-          {err ? (
-            <div className="text-[10.5px] text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
-              {err}
-            </div>
-          ) : null}
+    <section className="rounded-lg border border-emerald-400/20 bg-emerald-400/[.04] p-3 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="text-[12px] font-semibold text-emerald-300">
+          🎧 {tr.em_narration_heading}
         </div>
-      ) : null}
-    </div>
+        <button
+          type="button"
+          onClick={importFromBlocks}
+          className="px-2.5 py-1 rounded border border-emerald-400/40 text-emerald-200 hover:bg-emerald-400/10 text-[11px]"
+          title={tr.em_narration_import_title}
+        >
+          {tr.em_narration_import}
+        </button>
+      </div>
+
+      <textarea
+        rows={4}
+        value={script}
+        onChange={(e) => {
+          setScript(e.target.value);
+          setSaved(false);
+        }}
+        placeholder={fmt(tr.em_narration_ph, { lang: langLabel(primaryLang) })}
+        className={inputClass + " resize-y text-[12.5px] leading-relaxed"}
+      />
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="px-3 py-1.5 rounded bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300 disabled:opacity-50"
+        >
+          {saving ? tr.em_narration_saving : tr.em_narration_save}
+        </button>
+        {saved ? <span className="text-[11px] text-emerald-300">{tr.em_narration_saved}</span> : null}
+        {saveErr ? <span className="text-[11px] text-rose-300">{saveErr}</span> : null}
+      </div>
+
+      {/* Voice-over: per-language audio chips + generate popover */}
+      <div className="relative flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/[.06]">
+        <span className="text-[11px] text-[#86b69a] mr-1">{tr.em_audio_heading}:</span>
+        {langsWithAudio.map((l) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setPlaying(playing === l ? null : l)}
+            className={`px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${
+              playing === l
+                ? "bg-emerald-400 border-emerald-400 text-[#04241e]"
+                : "bg-emerald-400/15 border-emerald-400/30 text-emerald-200 hover:bg-emerald-400/25"
+            }`}
+          >
+            🎧 {langLabel(l)}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="px-2 py-0.5 rounded-full border border-white/[.12] text-[#a7d4b6] text-[10px] hover:bg-white/[.06]"
+        >
+          + {tr.em_audio_gen_short}
+        </button>
+
+        {playing && audioByLang[playing] ? (
+          <audio
+            autoPlay
+            controls
+            preload="none"
+            src={`/api/module-audio?id=${moduleId}&lang=${encodeURIComponent(playing)}&t=${audioByLang[playing].generated_at}`}
+            className="absolute left-0 top-7 z-20 w-72 h-8"
+          />
+        ) : null}
+
+        {open ? (
+          <div className="absolute left-0 top-7 z-30 w-64 rounded-lg border border-white/[.12] bg-[#0a3a2f] p-2.5 space-y-2 shadow-xl">
+            <select
+              value={genLang}
+              onChange={(e) => pickLang(e.target.value)}
+              className={inputClass + " text-[11.5px] py-1.5"}
+            >
+              {availableLangs.map((l) => (
+                <option key={l} value={l}>
+                  {langLabel(l)}
+                  {audioByLang[l] ? " ✓" : ""}
+                </option>
+              ))}
+            </select>
+            <select
+              value={voiceId}
+              onChange={(e) => setVoiceId(e.target.value)}
+              className={inputClass + " text-[11.5px] py-1.5"}
+            >
+              {applicableVoices.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                  {v.kind === "cloned" ? " · cloned" : ""}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={generate}
+              disabled={pending}
+              className="w-full px-2.5 py-1.5 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 disabled:opacity-50"
+            >
+              {pending
+                ? tr.em_audio_generating
+                : audioByLang[genLang]
+                  ? tr.em_audio_regenerate
+                  : tr.em_audio_gen_short}
+            </button>
+            {genErr ? (
+              <div className="text-[10.5px] text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
+                {genErr}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
