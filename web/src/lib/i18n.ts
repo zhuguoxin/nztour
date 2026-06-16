@@ -634,6 +634,7 @@ const en = {
 
   // ===== Cover image / attachments =====
   ci_cover_image: "Cover image",
+  ci_no_supplier: "Link this product to a supplier to set a cover image.",
   ci_emoji_ph: "Emoji, e.g. 🏔️",
   ci_replace_image: "Replace image",
   ci_upload_image: "Upload image",
@@ -1576,6 +1577,7 @@ const zhCN: Dict = {
 
   // ===== Cover image / attachments =====
   ci_cover_image: "封面图",
+  ci_no_supplier: "请先把该产品关联到供应商,才能设置封面图。",
   ci_emoji_ph: "表情符号,例如 🏔️",
   ci_replace_image: "替换图片",
   ci_upload_image: "上传图片",

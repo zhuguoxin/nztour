@@ -1,62 +1,37 @@
 "use client";
 
-import { useState } from "react";
 import { useTr } from "@/lib/i18n-provider";
 import { MediaPicker } from "@/app/_components/media-picker";
 
 /**
- * Cover image control for a course. The cover can be EITHER:
- *   • an emoji (typed into the small input), or
- *   • an image picked from the supplier media library (takes precedence).
- *
- * The emoji input carries name="emoji" and submits with the surrounding
- * course-details form. The image is chosen via the shared MediaPicker (course
- * target), which writes courses.cover_r2_key. "Remove" reverts to the emoji.
+ * Cover image control for a course. The cover is an image picked from the
+ * supplier media library (or uploaded), persisted via the shared MediaPicker
+ * (course target → courses.cover_r2_key). No emoji fallback.
  */
 export function CoverImageField({
   courseId,
   operatorSlug,
   supplierSlug,
-  courseSlug,
-  emoji,
   hasCover,
 }: {
   courseId: string;
   operatorSlug: string;
   supplierSlug: string | null;
-  courseSlug: string;
-  emoji: string | null;
   hasCover: boolean;
 }) {
-  const [emojiVal, setEmojiVal] = useState(emoji ?? "");
   const tr = useTr();
 
+  if (!supplierSlug) {
+    return <div className="text-[11.5px] text-slate-400">{tr.ci_no_supplier}</div>;
+  }
+
   return (
-    <div>
-      <div className="text-[12px] font-semibold text-slate-700 mb-1.5">{tr.ci_cover_image}</div>
-
-      {supplierSlug ? (
-        <MediaPicker
-          supplierSlug={supplierSlug}
-          target={{ target: "course", operatorSlug, courseId }}
-          currentUrl={hasCover ? `/api/course-cover?id=${courseId}` : null}
-          aspect="video"
-          theme="light"
-          className="mb-2.5"
-        />
-      ) : null}
-
-      <div className="text-[11px] font-medium text-slate-600 mb-1">{tr.ci_emoji_ph}</div>
-      <input
-        name="emoji"
-        value={emojiVal}
-        onChange={(e) => setEmojiVal(e.target.value)}
-        maxLength={4}
-        placeholder={tr.ci_emoji_ph}
-        disabled={hasCover}
-        className="w-full bg-white border border-slate-300 rounded-md px-3 py-1.5 text-[18px] text-slate-900 outline-none focus:border-emerald-400/60 disabled:opacity-40"
-      />
-      <div className="text-[10.5px] text-slate-400 mt-1">{tr.ci_hint}</div>
-    </div>
+    <MediaPicker
+      supplierSlug={supplierSlug}
+      target={{ target: "course", operatorSlug, courseId }}
+      currentUrl={hasCover ? `/api/course-cover?id=${courseId}` : null}
+      aspect="video"
+      theme="light"
+    />
   );
 }

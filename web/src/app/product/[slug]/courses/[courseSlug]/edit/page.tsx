@@ -229,8 +229,6 @@ export default async function EditCoursePage({
               courseId={course.id}
               operatorSlug={slug}
               supplierSlug={op.supplier_slug}
-              courseSlug={course.slug}
-              emoji={course.emoji}
               hasCover={!!course.cover_r2_key}
             />
           </div>

@@ -204,26 +204,16 @@ function ManualForm({ operatorSlug }: { operatorSlug: string }) {
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label={tr.nc_f_emoji} hint={tr.nc_f_emoji_hint}>
-            <input
-              name="emoji"
-              maxLength={4}
-              placeholder="⛷️"
-              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[20px] text-slate-900 outline-none focus:border-emerald-400/60"
-            />
-          </Field>
-          <Field label={tr.nc_f_est} hint={tr.nc_f_est_hint}>
-            <input
-              name="est_minutes"
-              type="number"
-              min={1}
-              max={600}
-              placeholder="25"
-              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60"
-            />
-          </Field>
-        </div>
+        <Field label={tr.nc_f_est} hint={tr.nc_f_est_hint}>
+          <input
+            name="est_minutes"
+            type="number"
+            min={1}
+            max={600}
+            placeholder="25"
+            className="w-full max-w-[200px] bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60"
+          />
+        </Field>
 
         <Field label={tr.nc_f_lang} hint={tr.nc_f_lang_hint}>
           <select

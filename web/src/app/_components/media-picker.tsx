@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTr } from "@/lib/i18n-provider";
 import { listSupplierMedia, listPlatformMedia, setCoverFromMedia, type MediaAsset } from "../_actions/media";
@@ -146,6 +147,11 @@ function PickerModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierSlug]);
 
+  // Portal to <body> so the overlay isn't trapped (clipped / painted under the
+  // page) by a sticky rail or any ancestor that establishes a containing block.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const current = tab === "platform" ? platform : assets;
   const serveBase = tab === "platform" ? "/api/platform-media" : "/api/media";
 
@@ -173,9 +179,11 @@ function PickerModal({
     })();
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -253,6 +261,7 @@ function PickerModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

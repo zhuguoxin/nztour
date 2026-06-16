@@ -31,7 +31,6 @@ export async function createCourse(form: FormData) {
   const access = await requireOperatorMembership(operatorSlug);
   const title = String(form.get("title") ?? "").trim().slice(0, 200);
   const summary = String(form.get("summary") ?? "").trim().slice(0, 1000) || null;
-  const emoji = String(form.get("emoji") ?? "").trim().slice(0, 8) || null;
   const lang = String(form.get("primary_lang") ?? "en");
   const est = parseInt(String(form.get("est_minutes") ?? "0"), 10) || null;
   if (!title) throw new Error("title required");
@@ -49,10 +48,10 @@ export async function createCourse(form: FormData) {
   await db()
     .prepare(
       `INSERT INTO courses
-         (id, operator_id, slug, title, summary, emoji, primary_lang, status, est_minutes, position)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, 0)`,
+         (id, operator_id, slug, title, summary, primary_lang, status, est_minutes, position)
+       VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, 0)`,
     )
-    .bind(id, access.operatorId, slug, title, summary, emoji, lang, est)
+    .bind(id, access.operatorId, slug, title, summary, lang, est)
     .run();
 
   revalidatePath(`/product/${operatorSlug}`);
@@ -73,19 +72,19 @@ async function saveCourseInternal(form: FormData, forceStatus?: "draft" | "publi
 
   const title = String(form.get("title") ?? "").trim().slice(0, 200);
   const summary = String(form.get("summary") ?? "").trim().slice(0, 1000) || null;
-  const emoji = String(form.get("emoji") ?? "").trim().slice(0, 8) || null;
   const formStatus = String(form.get("status") ?? "draft");
   const status = forceStatus ?? (["draft", "published"].includes(formStatus) ? formStatus : "draft");
   const est = parseInt(String(form.get("est_minutes") ?? "0"), 10) || null;
   if (!title) throw new Error("title required");
 
+  // Emoji is no longer an editable cover option; leave any stored value alone.
   await db()
     .prepare(
       `UPDATE courses
-         SET title = ?, summary = ?, emoji = ?, status = ?, est_minutes = ?, updated_at = unixepoch()
+         SET title = ?, summary = ?, status = ?, est_minutes = ?, updated_at = unixepoch()
        WHERE id = ?`,
     )
-    .bind(title, summary, emoji, status, est, course.id)
+    .bind(title, summary, status, est, course.id)
     .run();
 
   revalidatePath(`/product/${operatorSlug}`);
