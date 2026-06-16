@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { requireSupplierMembership, requireOperatorMembership } from "@/lib/roles";
+import { requireSupplierMembership, requireOperatorMembership, requireAdmin } from "@/lib/roles";
 import { revalidatePath } from "next/cache";
 
 export interface MediaAsset {
@@ -10,6 +10,32 @@ export interface MediaAsset {
   filename: string | null;
   mime: string;
   created_at: number;
+}
+
+export interface PlatformMediaAsset extends MediaAsset {
+  supplier_id: string;
+  supplier_name: string;
+  supplier_slug: string;
+}
+
+/** Platform-wide media: every supplier's library, aggregated. Admin only. */
+export async function listAllMedia(
+  q?: string,
+): Promise<{ ok: boolean; assets?: PlatformMediaAsset[]; error?: string }> {
+  try {
+    await requireAdmin();
+    const query = (q ?? "").trim();
+    const base = `SELECT m.id, m.r2_key, m.filename, m.mime, m.created_at,
+              m.supplier_id, s.name AS supplier_name, s.slug AS supplier_slug
+       FROM media_assets m JOIN suppliers s ON s.id = m.supplier_id`;
+    const stmt = query
+      ? db().prepare(`${base} WHERE s.name LIKE ? OR m.filename LIKE ? ORDER BY m.created_at DESC`).bind(`%${query}%`, `%${query}%`)
+      : db().prepare(`${base} ORDER BY m.created_at DESC`);
+    const { results = [] } = await stmt.all<PlatformMediaAsset>();
+    return { ok: true, assets: results };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
 }
 
 /** List a supplier's media library (newest first). */

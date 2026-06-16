@@ -18,6 +18,7 @@ interface SupplierRow {
   slug: string;
   name: string;
   plan_tier: string;
+  cover_r2_key: string | null;
   product_count: number;
 }
 interface UserRow {
@@ -34,23 +35,32 @@ interface SupMem {
   supplier_name: string;
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   try {
     await requireAdmin();
   } catch {
     return <Forbidden />;
   }
 
+  const { q } = await searchParams;
+  const query = (q ?? "").trim();
   const [role, tr] = await Promise.all([getCurrentRole(), t()]);
 
-  const [supsRes, usersRes, supMemsRes, opCountRes] = await Promise.all([
-    db()
-      .prepare(
-        `SELECT s.id, s.slug, s.name, s.plan_tier,
+  const supBase = `SELECT s.id, s.slug, s.name, s.plan_tier, s.cover_r2_key,
                 (SELECT COUNT(*) FROM operators o WHERE o.supplier_id = s.id) AS product_count
-         FROM suppliers s ORDER BY s.name`,
-      )
-      .all<SupplierRow>(),
+         FROM suppliers s`;
+  const supStmt = query
+    ? db()
+        .prepare(`${supBase} WHERE s.name LIKE ? OR s.slug LIKE ? ORDER BY s.name`)
+        .bind(`%${query}%`, `%${query}%`)
+    : db().prepare(`${supBase} ORDER BY s.name`);
+
+  const [supsRes, usersRes, supMemsRes, opCountRes] = await Promise.all([
+    supStmt.all<SupplierRow>(),
     db()
       .prepare(
         `SELECT id, email, name, agency_name, created_at FROM users ORDER BY created_at DESC LIMIT 100`,
@@ -92,9 +102,19 @@ export default async function AdminPage() {
       />
 
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-lime-700/70">{tr.admin_chrome_label}</div>
-        <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">{tr.admin_title}</h1>
-        <p className="text-[13.5px] text-slate-600 mt-1.5">{tr.admin_blurb}</p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <div className="text-[11px] tracking-widest font-mono text-lime-700/70">{tr.admin_chrome_label}</div>
+            <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">{tr.admin_title}</h1>
+            <p className="text-[13.5px] text-slate-600 mt-1.5">{tr.admin_blurb}</p>
+          </div>
+          <Link
+            href="/admin/media"
+            className="px-3 py-2 rounded-md border border-slate-300 text-slate-700 text-[13px] hover:bg-slate-50 shrink-0"
+          >
+            🖼 {tr.admin_media_library}
+          </Link>
+        </div>
 
         {/* 1. Stats */}
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -106,17 +126,34 @@ export default async function AdminPage() {
 
         {/* 2. Supplier management */}
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
+          <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
             <div>
               <div className="font-semibold text-[14px] text-slate-900">{tr.admin_suppliers_title}</div>
               <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_suppliers_sub}</div>
             </div>
-            <Link
-              href="/admin/suppliers/new"
-              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0"
-            >
-              + {tr.admin_new_supplier}
-            </Link>
+            <div className="flex items-center gap-2">
+              <form method="get" className="flex items-center gap-1.5">
+                <input
+                  type="search"
+                  name="q"
+                  defaultValue={query}
+                  placeholder={tr.admin_search_ph}
+                  className="w-44 bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="submit"
+                  className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 text-[12.5px] hover:bg-slate-50"
+                >
+                  🔍
+                </button>
+              </form>
+              <Link
+                href="/admin/suppliers/new"
+                className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0"
+              >
+                + {tr.admin_new_supplier}
+              </Link>
+            </div>
           </header>
           <div className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
             {suppliers.length === 0 ? (
@@ -126,11 +163,26 @@ export default async function AdminPage() {
                 const mgrs = memsBySupplier.get(s.id) ?? [];
                 return (
                   <div key={s.id} className="rounded-xl border border-slate-200 p-4">
-                    <div className="text-[13.5px] text-slate-900">
-                      <Link href={`/supplier/${s.slug}`} className="font-medium hover:underline">{s.name}</Link>
-                      <span className="text-slate-500 text-[12px] ml-1.5">
-                        · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      {/* Supplier cover (read-only; set on the supplier's own profile) */}
+                      <div className="w-16 h-11 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-300 text-[16px]">
+                        {s.cover_r2_key ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={`/api/supplier-cover?slug=${encodeURIComponent(s.slug)}`}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          "🏢"
+                        )}
+                      </div>
+                      <div className="min-w-0 text-[13.5px] text-slate-900">
+                        <Link href={`/supplier/${s.slug}`} className="font-medium hover:underline">{s.name}</Link>
+                        <span className="text-slate-500 text-[12px] ml-1.5">
+                          · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
+                        </span>
+                      </div>
                     </div>
                     {mgrs.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5 mt-2">
