@@ -5,6 +5,8 @@ import { requireSupplierMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
 import { VoicesModal } from "./voices-modal";
+import { GlossaryModal } from "./glossary-modal";
+import { BillingModal } from "./billing-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -240,18 +242,30 @@ export default async function SupplierDashboard({ params }: Props) {
                 </span>
                 <span className="text-slate-400 text-[16px] shrink-0">›</span>
               </VoicesModal>
-              <ManageCard
-                href={`/supplier/${supplier.slug}/glossary`}
-                icon="📖"
-                title={tr.sp_p_nav_glossary}
-                desc={fmt(tr.sp_hub_glossary_desc, { n: glossaryCount })}
-              />
-              <ManageCard
-                href={`/supplier/${supplier.slug}/billing`}
-                icon="💳"
-                title={tr.sp_hub_billing_card}
-                desc={tr.sp_hub_billing_desc}
-              />
+              <GlossaryModal
+                supplierSlug={supplier.slug}
+                className="w-full text-left flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-emerald-300 hover:shadow-[0_4px_18px_rgba(15,23,42,0.06)] transition"
+              >
+                <span className="text-[22px] leading-none shrink-0">📖</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-[14px] text-slate-900">{tr.sp_p_nav_glossary}</span>
+                  <span className="block text-[12px] text-slate-500 truncate">
+                    {fmt(tr.sp_hub_glossary_desc, { n: glossaryCount })}
+                  </span>
+                </span>
+                <span className="text-slate-400 text-[16px] shrink-0">›</span>
+              </GlossaryModal>
+              <BillingModal
+                supplierSlug={supplier.slug}
+                className="w-full text-left flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-emerald-300 hover:shadow-[0_4px_18px_rgba(15,23,42,0.06)] transition"
+              >
+                <span className="text-[22px] leading-none shrink-0">💳</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-[14px] text-slate-900">{tr.sp_hub_billing_card}</span>
+                  <span className="block text-[12px] text-slate-500 truncate">{tr.sp_hub_billing_desc}</span>
+                </span>
+                <span className="text-slate-400 text-[16px] shrink-0">›</span>
+              </BillingModal>
             </div>
           </div>
 
@@ -308,32 +322,6 @@ export default async function SupplierDashboard({ params }: Props) {
         </div>
       </main>
     </div>
-  );
-}
-
-function ManageCard({
-  href,
-  icon,
-  title,
-  desc,
-}: {
-  href: string;
-  icon: string;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-emerald-300 hover:shadow-[0_4px_18px_rgba(15,23,42,0.06)] transition"
-    >
-      <span className="text-[22px] leading-none shrink-0">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-[14px] text-slate-900">{title}</span>
-        <span className="block text-[12px] text-slate-500 truncate">{desc}</span>
-      </span>
-      <span className="text-slate-400 text-[16px] shrink-0">›</span>
-    </Link>
   );
 }
 

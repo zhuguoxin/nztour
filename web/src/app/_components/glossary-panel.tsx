@@ -58,14 +58,18 @@ export function GlossaryPanel({
   entries,
   languages,
   inheritedCount,
+  onChanged,
 }: {
   scope: "supplier" | "operator";
   slug: string;
   entries: GlossaryRow[];
   languages: LangOption[];
   inheritedCount?: number;
+  /** Called after a mutation; defaults to a full reload (modal hosts re-fetch). */
+  onChanged?: () => void;
 }) {
   const tr = useTr();
+  const refresh = onChanged ?? (() => window.location.reload());
   const [paste, setPaste] = useState("");
   const [parsed, setParsed] = useState<Parsed | null>(null);
   const [pending, setPending] = useState(false);
@@ -90,7 +94,7 @@ export function GlossaryPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scope, slug, entries: parsed.entries }),
     });
-    if (r.ok) window.location.reload();
+    if (r.ok) refresh();
     else {
       setErr((await r.text().catch(() => tr.gl_failed)).slice(0, 300));
       setPending(false);
@@ -104,7 +108,7 @@ export function GlossaryPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scope, slug, action: "delete", id }),
     });
-    if (r.ok) window.location.reload();
+    if (r.ok) refresh();
     else setPending(false);
   }
 

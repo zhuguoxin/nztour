@@ -6,6 +6,36 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { hasMiniMaxKey } from "@/lib/minimax";
 import type { VoiceRow } from "./voices-panel";
+import { listGlossaryEntries, type GlossaryRow } from "@/lib/glossary";
+
+/** Glossary entries for the supplier (for the glossary modal). */
+export async function listSupplierGlossary(
+  supplierSlug: string,
+): Promise<{ ok: boolean; entries?: GlossaryRow[]; error?: string }> {
+  try {
+    const access = await requireSupplierMembership(supplierSlug);
+    const entries = await listGlossaryEntries({ supplierId: access.supplierId });
+    return { ok: true, entries };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+/** Billing fields for the supplier (for the billing modal). */
+export async function getSupplierBilling(
+  supplierSlug: string,
+): Promise<{ ok: boolean; billing_email?: string | null; plan_tier?: string; error?: string }> {
+  try {
+    const access = await requireSupplierMembership(supplierSlug);
+    const row = await db()
+      .prepare(`SELECT plan_tier, billing_email FROM suppliers WHERE id = ?`)
+      .bind(access.supplierId)
+      .first<{ plan_tier: string; billing_email: string | null }>();
+    return { ok: true, billing_email: row?.billing_email ?? null, plan_tier: row?.plan_tier ?? "free" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
 
 /** List a supplier's voices (cloned + platform stock) for the voices modal. */
 export async function listSupplierVoices(
