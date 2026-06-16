@@ -510,6 +510,11 @@ const en = {
   ln_visible_need_gen: "Generate this language first — then you can show it to learners.",
   ed_lang_narration: "🌐 Languages & narration",
   ed_ln_card_sub: "Applies to the whole course — translates the text and generates narration for every module together.",
+  ed_regen_heading: "Module: {title}",
+  ed_regen_sub: "Re-translate this module and regenerate its narration in every enabled language (same voices).",
+  ed_regen_module: "🔄 Regenerate module",
+  ed_regenerating: "Regenerating…",
+  ed_regen_done: "Done — this module's translations and narration are refreshed.",
 
   // ===== Course editor (page + duration + modules) =====
   ed_cover_label: "Cover image",
@@ -1458,6 +1463,11 @@ const zhCN: Dict = {
   ln_visible_need_gen: "请先生成该语言,生成后即可对学员显示。",
   ed_lang_narration: "🌐 语言与旁白",
   ed_ln_card_sub: "作用于整门课程——同时翻译文本并为每个模块生成旁白。",
+  ed_regen_heading: "模块:{title}",
+  ed_regen_sub: "重新翻译本模块,并为所有已启用语言重新生成旁白(沿用原音色)。",
+  ed_regen_module: "🔄 重新生成本模块",
+  ed_regenerating: "重新生成中…",
+  ed_regen_done: "完成——本模块的翻译与旁白已刷新。",
 
   // ===== Course editor (page + duration + modules) =====
   ed_cover_label: "封面图",

@@ -829,6 +829,141 @@ async function generateModuleAudioCore(input: {
   revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
 
+/**
+ * Per-module regenerate — re-translates ONE module's text into every enabled
+ * language and regenerates ONLY that module's narration audio (reusing each
+ * language's existing voice). Lets a supplier refresh a single module after an
+ * edit without re-running the whole course. Storage is per-module/per-block, so
+ * this overwrites just this module's i18n columns + its audio R2 objects.
+ */
+export async function regenerateModule(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+}): Promise<{ ok: boolean; error?: string; langs?: number }> {
+  try {
+    const { operatorSlug, courseSlug, moduleId } = input;
+    const { courseId } = await authModule(operatorSlug, courseSlug, moduleId);
+
+    const course = await db()
+      .prepare(`SELECT id, primary_lang, available_langs, operator_id FROM courses WHERE id = ?`)
+      .bind(courseId)
+      .first<{ id: string; primary_lang: string; available_langs: string; operator_id: string }>();
+    if (!course) throw new Error("not_found");
+
+    const primary = course.primary_lang;
+    const avail = (() => {
+      try {
+        const a = JSON.parse(course.available_langs);
+        return Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [];
+      } catch {
+        return [];
+      }
+    })();
+    const targets = Array.from(new Set(avail)).filter((l) => l && l !== primary);
+
+    const mod = await db()
+      .prepare(
+        `SELECT id, title, summary, title_i18n, summary_i18n, narration_audio_i18n
+         FROM modules WHERE id = ?`,
+      )
+      .bind(moduleId)
+      .first<{
+        id: string;
+        title: string;
+        summary: string | null;
+        title_i18n: string;
+        summary_i18n: string;
+        narration_audio_i18n: string;
+      }>();
+    if (!mod) throw new Error("not_found");
+
+    const { results: blocks = [] } = await db()
+      .prepare(
+        `SELECT id, text_md, caption, text_md_i18n, caption_i18n
+         FROM content_blocks WHERE module_id = ? ORDER BY position`,
+      )
+      .bind(moduleId)
+      .all<{
+        id: string;
+        text_md: string | null;
+        caption: string | null;
+        text_md_i18n: string;
+        caption_i18n: string;
+      }>();
+
+    // 1) Re-translate this module's text into each enabled language.
+    for (const toLang of targets) {
+      const glossary = await glossaryForTranslation(course.operator_id, toLang);
+      const batch = [
+        { id: "m:title", text: mod.title },
+        { id: "m:summary", text: mod.summary ?? "" },
+        ...blocks.flatMap((b) => [
+          { id: `b:${b.id}:text`, text: b.text_md ?? "" },
+          { id: `b:${b.id}:caption`, text: b.caption ?? "" },
+        ]),
+      ];
+      const out = await translateBatch(primary, toLang, batch, glossary);
+      const byId = new Map(out.map((r) => [r.id, r.translation]));
+
+      mod.title_i18n = writeI18nMap({ ...readI18nMap(mod.title_i18n), [toLang]: byId.get("m:title") ?? "" });
+      mod.summary_i18n = writeI18nMap({
+        ...readI18nMap(mod.summary_i18n),
+        [toLang]: byId.get("m:summary") ?? "",
+      });
+      await db()
+        .prepare(`UPDATE modules SET title_i18n = ?, summary_i18n = ? WHERE id = ?`)
+        .bind(mod.title_i18n, mod.summary_i18n, moduleId)
+        .run();
+
+      const stmts = blocks.map((b) => {
+        b.text_md_i18n = writeI18nMap({ ...readI18nMap(b.text_md_i18n), [toLang]: byId.get(`b:${b.id}:text`) ?? "" });
+        b.caption_i18n = writeI18nMap({ ...readI18nMap(b.caption_i18n), [toLang]: byId.get(`b:${b.id}:caption`) ?? "" });
+        return db()
+          .prepare(`UPDATE content_blocks SET text_md_i18n = ?, caption_i18n = ? WHERE id = ?`)
+          .bind(b.text_md_i18n, b.caption_i18n, b.id);
+      });
+      if (stmts.length) await db().batch(stmts);
+    }
+
+    // 2) Regenerate narration for primary + each enabled language, reusing the
+    //    voice already chosen for this module/lang where one exists.
+    const audioMap = (() => {
+      try {
+        const v = JSON.parse(mod.narration_audio_i18n ?? "{}");
+        return v && typeof v === "object" && !Array.isArray(v)
+          ? (v as Record<string, { voice_id?: string }>)
+          : {};
+      } catch {
+        return {};
+      }
+    })();
+    const audioLangs = [primary, ...targets];
+    let langs = 0;
+    for (const lang of audioLangs) {
+      try {
+        await generateModuleAudioCore({
+          operatorSlug,
+          courseSlug,
+          moduleId,
+          lang,
+          voiceId: audioMap[lang]?.voice_id ?? "",
+        });
+        langs++;
+      } catch {
+        // Skip a language that can't be narrated (e.g. module has no text) but
+        // keep going for the rest.
+      }
+    }
+
+    revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+    revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+    return { ok: true, langs };
+  } catch (e) {
+    return { ok: false, error: (e instanceof Error ? e.message : "failed").slice(0, 500) };
+  }
+}
+
 export async function generateModuleQuiz(form: FormData) {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");

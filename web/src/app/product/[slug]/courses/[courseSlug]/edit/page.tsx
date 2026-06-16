@@ -13,6 +13,7 @@ import {
 } from "./editor-modules";
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
 import { LangNarrationModal } from "./lang-narration-modal";
+import { RegenerateModuleButton } from "./regenerate-module-button";
 import { CoverImageField } from "./cover-image-field";
 import { CourseSwitcher } from "./course-switcher";
 import { ModuleNav } from "./module-nav";
@@ -263,38 +264,14 @@ export default async function EditCoursePage({
             </Field>
           </form>
 
-          {/* Languages & narration — sits with the content (centre), not in
-              the right-rail metadata. Applies to the whole course (all modules):
-              translates the text AND generates narration audio together. */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 flex items-center justify-between gap-4 flex-wrap">
-            <div className="min-w-0">
-              <div className="font-semibold text-[14px] text-slate-900">{tr.ed_lang_narration}</div>
-              <div className="text-[12px] text-slate-500 mt-0.5">{tr.ed_ln_card_sub}</div>
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              {op.supplier_slug ? (
-                <VoicesModal
-                  supplierSlug={op.supplier_slug}
-                  className="text-[12px] text-emerald-700 hover:underline"
-                >
-                  {tr.ed_manage_voices}
-                </VoicesModal>
-              ) : null}
-              <LangNarrationModal
-                operatorSlug={slug}
-                courseSlug={course.slug}
-                primaryLang={course.primary_lang}
-                voices={voices ?? []}
-                enabledLangs={availableLangs}
-                translatedLangs={translatedLangs}
-                audioCountByLang={audioCountByLang}
-                moduleCount={moduleList.length}
-                triggerClassName="px-4 py-2.5 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-800 font-semibold text-[13px] hover:bg-emerald-100"
-              >
-                {tr.ed_lang_narration}
-              </LangNarrationModal>
-            </div>
-          </section>
+          {activeModule ? (
+            <RegenerateModuleButton
+              operatorSlug={slug}
+              courseSlug={course.slug}
+              moduleId={activeModule.id}
+              moduleTitle={activeModule.title}
+            />
+          ) : null}
 
           <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
             <EditorModules
@@ -384,6 +361,21 @@ export default async function EditCoursePage({
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
             <div className="font-semibold text-[13px] text-slate-900">{tr.ed_course_details}</div>
 
+            {/* Languages & narration — whole-course translate + narration. */}
+            <LangNarrationModal
+              operatorSlug={slug}
+              courseSlug={course.slug}
+              primaryLang={course.primary_lang}
+              voices={voices ?? []}
+              enabledLangs={availableLangs}
+              translatedLangs={translatedLangs}
+              audioCountByLang={audioCountByLang}
+              moduleCount={moduleList.length}
+              triggerClassName="w-full px-4 py-2.5 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-800 font-semibold text-[13px] hover:bg-emerald-100"
+            >
+              {tr.ed_lang_narration}
+            </LangNarrationModal>
+
             <Field label={tr.ed_minutes}>
               <input
                 name="est_minutes"
@@ -398,6 +390,15 @@ export default async function EditCoursePage({
             {/* Status is set by the Publish / Unpublish buttons above; this
                 hidden field preserves the current status on a plain Save. */}
             <input type="hidden" name="status" form="course-form" defaultValue={course.status} />
+
+            {op.supplier_slug ? (
+              <VoicesModal
+                supplierSlug={op.supplier_slug}
+                className="block text-left text-[12px] text-emerald-700 hover:underline"
+              >
+                {tr.ed_manage_voices}
+              </VoicesModal>
+            ) : null}
           </div>
 
           <DurationBanner totalS={totalDurationS} totalMin={totalMin} totalSec={totalSec} tr={tr} />
