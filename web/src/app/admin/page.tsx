@@ -7,10 +7,11 @@ import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
-const adminField =
-  "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
-const adminBtn =
-  "px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700";
+// Width-less base for inline rows where flex/explicit widths control sizing.
+const fieldBase =
+  "bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
+const grantBtn =
+  "px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0 whitespace-nowrap";
 
 interface SupplierRow {
   id: string;
@@ -153,20 +154,18 @@ export default async function AdminPage() {
                     {/* Assign manager */}
                     <form action={grantSupplierMembership} className="mt-3 flex items-center gap-1.5">
                       <input type="hidden" name="supplier_id" value={s.id} />
-                      <select name="user_id" defaultValue="" className={adminField + " flex-1 min-w-0"}>
+                      <select name="user_id" defaultValue="" className={fieldBase + " flex-1 min-w-0"}>
                         <option value="" disabled>{tr.admin_pick_user}</option>
                         {users.map((u) => (
                           <option key={u.id} value={u.id}>{u.email}</option>
                         ))}
                       </select>
-                      <select name="role" defaultValue="manager" className={adminField + " w-auto shrink-0"}>
+                      <select name="role" defaultValue="manager" className={fieldBase + " w-[5.5rem] shrink-0"}>
                         <option value="manager">{tr.admin_role_manager}</option>
                         <option value="owner">{tr.admin_role_owner}</option>
                         <option value="viewer">{tr.admin_role_viewer}</option>
                       </select>
-                      <button type="submit" className="px-4 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0 whitespace-nowrap">
-                        {tr.admin_sup_grant}
-                      </button>
+                      <button type="submit" className={grantBtn}>{tr.admin_sup_grant}</button>
                     </form>
                   </div>
                 );
@@ -201,7 +200,7 @@ export default async function AdminPage() {
                     className="px-5 py-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
                   >
                     <div className="min-w-0">
-                      <div className="text-[13.5px] text-slate-900">
+                      <div className="text-[13.5px] text-slate-900 truncate">
                         {u.name ?? u.email}{" "}
                         {u.name ? <span className="text-slate-500 text-[12px]">({u.email})</span> : null}
                         {u.agency_name ? <span className="text-slate-400 text-[12px]"> · {u.agency_name}</span> : null}
@@ -225,20 +224,20 @@ export default async function AdminPage() {
                       ) : null}
                     </div>
                     {/* Assign to supplier */}
-                    <form action={grantSupplierMembership} className="flex items-center gap-1.5">
+                    <form action={grantSupplierMembership} className="flex items-center gap-1.5 shrink-0">
                       <input type="hidden" name="user_id" value={u.id} />
-                      <select name="supplier_id" defaultValue="" className={adminField + " max-w-[170px]"}>
+                      <select name="supplier_id" defaultValue="" className={fieldBase + " w-[150px] shrink-0"}>
                         <option value="" disabled>{tr.admin_f_supplier}</option>
                         {suppliers.map((s) => (
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
-                      <select name="role" defaultValue="manager" className={adminField}>
+                      <select name="role" defaultValue="manager" className={fieldBase + " w-[5.5rem] shrink-0"}>
                         <option value="manager">{tr.admin_role_manager}</option>
                         <option value="owner">{tr.admin_role_owner}</option>
                         <option value="viewer">{tr.admin_role_viewer}</option>
                       </select>
-                      <button type="submit" className={adminBtn}>{tr.admin_sup_grant}</button>
+                      <button type="submit" className={grantBtn}>{tr.admin_sup_grant}</button>
                     </form>
                   </div>
                 );
