@@ -130,6 +130,7 @@ export function EditorModules({
   blocksByModuleId,
   quizByModuleId,
   solo = false,
+  moduleOptionsSlot,
 }: {
   operatorSlug: string;
   /** Owning supplier slug — for the media library (image blocks). */
@@ -144,6 +145,9 @@ export function EditorModules({
   /** Single-module view (3-column editor): render just the one module,
    *  expanded, no drag handle / reorder list. */
   solo?: boolean;
+  /** Solo only: rendered inside the module, under its title fields and before
+   *  the first block (e.g. the per-module language & narration panel). */
+  moduleOptionsSlot?: React.ReactNode;
 }) {
   const tr = useTr();
   if (solo) {
@@ -165,6 +169,7 @@ export function EditorModules({
         primaryLang={primaryLang}
         availableLangs={availableLangs}
         voices={voices}
+        optionsSlot={moduleOptionsSlot}
       />
     );
   }
@@ -209,6 +214,7 @@ function ModuleEditor({
   availableLangs,
   voices,
   solo = false,
+  optionsSlot,
 }: {
   module: ModuleData;
   handle?: DragHandleProps;
@@ -221,6 +227,7 @@ function ModuleEditor({
   availableLangs: string[];
   voices: VoiceOption[];
   solo?: boolean;
+  optionsSlot?: React.ReactNode;
 }) {
   const tr = useTr();
   return (
@@ -300,8 +307,9 @@ function ModuleEditor({
           </div>
         </form>
 
-        {/* Module narration (voice-over) lives in the editor's right rail
-            (see the course edit page), not here. */}
+        {/* Per-module language & narration options (solo view) — sits under the
+            module's title fields, before the first block. */}
+        {optionsSlot}
 
         {/* Blocks — nested sortable */}
         <SortableList

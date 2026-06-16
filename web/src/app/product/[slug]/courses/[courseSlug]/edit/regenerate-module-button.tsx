@@ -47,7 +47,7 @@ export function RegenerateModuleButton({
   const playingEntry = narration.find((n) => n.lang === playing);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white px-5 py-4 space-y-3">
+    <section className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5 space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="text-[13px] font-semibold text-slate-900">{tr.ed_regen_heading}</div>

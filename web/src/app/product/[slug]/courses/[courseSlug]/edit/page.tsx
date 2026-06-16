@@ -279,15 +279,6 @@ export default async function EditCoursePage({
             </Field>
           </form>
 
-          {activeModule ? (
-            <RegenerateModuleButton
-              operatorSlug={slug}
-              courseSlug={course.slug}
-              moduleId={activeModule.id}
-              narration={activeNarration}
-            />
-          ) : null}
-
           <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
             <EditorModules
               solo
@@ -300,6 +291,16 @@ export default async function EditCoursePage({
               modules={activeModule ? [activeModule] : []}
               blocksByModuleId={blocksByModule}
               quizByModuleId={quizByModule}
+              moduleOptionsSlot={
+                activeModule ? (
+                  <RegenerateModuleButton
+                    operatorSlug={slug}
+                    courseSlug={course.slug}
+                    moduleId={activeModule.id}
+                    narration={activeNarration}
+                  />
+                ) : null
+              }
             />
           </section>
 
