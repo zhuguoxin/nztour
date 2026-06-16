@@ -301,18 +301,8 @@ function ModuleEditor({
           </div>
         </form>
 
-        {/* Module narration (voice-over) — one script per module */}
-        <ModuleNarration
-          moduleId={module.id}
-          operatorSlug={operatorSlug}
-          courseSlug={courseSlug}
-          primaryLang={primaryLang}
-          availableLangs={availableLangs}
-          voices={voices}
-          narrationByLang={parseNarrationScripts(module.narration_md_i18n)}
-          audioByLang={parseAudioI18n(module.narration_audio_i18n)}
-          blocks={blocks}
-        />
+        {/* Module narration (voice-over) lives in the editor's right rail
+            (see the course edit page), not here. */}
 
         {/* Blocks — nested sortable */}
         <SortableList
@@ -737,15 +727,15 @@ function parseNarrationScripts(json: string | null | undefined): Record<string, 
  * text/callout blocks. Audio generates per language (other languages auto-
  * translate the primary script — Scheme A). 🎧 chips play generated audio.
  */
-function ModuleNarration({
+export function ModuleNarration({
   moduleId,
   operatorSlug,
   courseSlug,
   primaryLang,
   availableLangs,
   voices,
-  narrationByLang,
-  audioByLang,
+  narrationMdI18n,
+  narrationAudioI18n,
   blocks,
 }: {
   moduleId: string;
@@ -754,12 +744,14 @@ function ModuleNarration({
   primaryLang: string;
   availableLangs: string[];
   voices: VoiceOption[];
-  narrationByLang: Record<string, string>;
-  audioByLang: Record<string, AudioI18nEntry>;
+  narrationMdI18n: string | null;
+  narrationAudioI18n: string | null;
   blocks: BlockData[];
 }) {
   const tr = useTr();
   const router = useRouter();
+  const narrationByLang = parseNarrationScripts(narrationMdI18n);
+  const audioByLang = parseAudioI18n(narrationAudioI18n);
   const [script, setScript] = useState(narrationByLang[primaryLang] ?? "");
   const [saving, startSave] = useTransition();
   const [saved, setSaved] = useState(false);

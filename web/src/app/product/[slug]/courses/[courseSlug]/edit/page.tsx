@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { updateCourse, deleteCourse } from "../../actions";
 import {
   EditorModules,
+  ModuleNarration,
   type BlockData,
   type ModuleData,
   type QuizQuestionData,
@@ -354,6 +355,22 @@ export default async function EditCoursePage({
                 </select>
               </Field>
             </div>
+            {activeModule ? (
+              <div className="border-t border-white/[.06] pt-3">
+                <ModuleNarration
+                  moduleId={activeModule.id}
+                  operatorSlug={slug}
+                  courseSlug={course.slug}
+                  primaryLang={course.primary_lang}
+                  availableLangs={availableLangs}
+                  voices={voices ?? []}
+                  narrationMdI18n={activeModule.narration_md_i18n ?? null}
+                  narrationAudioI18n={activeModule.narration_audio_i18n ?? null}
+                  blocks={blocksByModule[activeModule.id] ?? []}
+                />
+              </div>
+            ) : null}
+
             {op.supplier_slug ? (
               <Link
                 href={`/supplier/${op.supplier_slug}/voices`}
