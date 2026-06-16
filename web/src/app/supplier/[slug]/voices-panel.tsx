@@ -95,12 +95,17 @@ export function VoicesPanel({
   supplierSlug,
   voices,
   hasXIKey,
+  onChanged,
 }: {
   supplierSlug: string;
   voices: VoiceRow[];
   hasXIKey: boolean;
+  /** Called after a mutation. In a full page this reloads; in a modal the host
+   *  re-fetches the list so nothing navigates. Defaults to a full reload. */
+  onChanged?: () => void;
 }) {
   const tr = useTr();
+  const refresh = onChanged ?? (() => window.location.reload());
   // Only cloned voices are listed — the model's stock voices are available
   // automatically when generating audio and don't need to crowd this panel.
   const cloned = voices.filter((v) => v.kind === "cloned");
@@ -134,6 +139,7 @@ export function VoicesPanel({
                 voice={v}
                 supplierSlug={supplierSlug}
                 disabled={!hasXIKey}
+                onChanged={refresh}
               />
             ))}
           </ul>
@@ -143,7 +149,7 @@ export function VoicesPanel({
       {/* Add a new voice */}
       <div className="px-5 py-4 border-t border-slate-200 bg-slate-50/60 rounded-b-2xl">
         <div className="font-semibold text-[13.5px] text-slate-900">{tr.voi_new_heading}</div>
-        <CloneForm supplierSlug={supplierSlug} disabled={!hasXIKey} />
+        <CloneForm supplierSlug={supplierSlug} disabled={!hasXIKey} onChanged={refresh} />
       </div>
     </section>
   );
@@ -422,10 +428,12 @@ function ClonedVoiceItem({
   voice,
   supplierSlug,
   disabled,
+  onChanged,
 }: {
   voice: VoiceRow;
   supplierSlug: string;
   disabled: boolean;
+  onChanged: () => void;
 }) {
   const tr = useTr();
   const [editing, setEditing] = useState(false);
@@ -460,7 +468,7 @@ function ClonedVoiceItem({
     fd.append("langs", JSON.stringify(langs));
     startTransition(async () => {
       const r = await fetch("/api/voice/update", { method: "POST", body: fd });
-      if (r.ok) window.location.reload();
+      if (r.ok) onChanged();
       else setErr((await r.text().catch(() => "Save failed")).slice(0, 400));
     });
   }
@@ -477,7 +485,7 @@ function ClonedVoiceItem({
     fd.append("langs", JSON.stringify(langs));
     startTransition(async () => {
       const r = await fetch("/api/voice/clone", { method: "POST", body: fd });
-      if (r.ok) window.location.reload();
+      if (r.ok) onChanged();
       else setErr((await r.text().catch(() => "Re-record failed")).slice(0, 400));
     });
   }
@@ -615,7 +623,15 @@ function ClonedVoiceItem({
 //  New voice — languages + name + gender + record
 // ---------------------------------------------------------------------------
 
-function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled: boolean }) {
+function CloneForm({
+  supplierSlug,
+  disabled,
+  onChanged,
+}: {
+  supplierSlug: string;
+  disabled: boolean;
+  onChanged: () => void;
+}) {
   const tr = useTr();
   const [name, setName] = useState("");
   const [gender, setGender] = useState("neutral");
@@ -638,7 +654,7 @@ function CloneForm({ supplierSlug, disabled }: { supplierSlug: string; disabled:
     fd.append("langs", JSON.stringify(langs));
     startTransition(async () => {
       const r = await fetch("/api/voice/clone", { method: "POST", body: fd });
-      if (r.ok) window.location.reload();
+      if (r.ok) onChanged();
       else setErr((await r.text().catch(() => "Clone failed")).slice(0, 400));
     });
   }

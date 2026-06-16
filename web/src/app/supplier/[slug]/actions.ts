@@ -4,6 +4,28 @@ import { db } from "@/lib/db";
 import { requireSupplierMembership } from "@/lib/roles";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { hasMiniMaxKey } from "@/lib/minimax";
+import type { VoiceRow } from "./voices-panel";
+
+/** List a supplier's voices (cloned + platform stock) for the voices modal. */
+export async function listSupplierVoices(
+  supplierSlug: string,
+): Promise<{ ok: boolean; voices?: VoiceRow[]; hasXIKey?: boolean; error?: string }> {
+  try {
+    const access = await requireSupplierMembership(supplierSlug);
+    const { results = [] } = await db()
+      .prepare(
+        `SELECT id, name, provider, external_id, kind, gender, langs, status, status_detail, created_at
+         FROM voice_profiles WHERE supplier_id = ? OR supplier_id IS NULL
+         ORDER BY (supplier_id IS NULL) DESC, created_at DESC`,
+      )
+      .bind(access.supplierId)
+      .all<VoiceRow>();
+    return { ok: true, voices: results, hasXIKey: hasMiniMaxKey() };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
 
 const CATEGORY_SET = new Set(["snow", "adventure", "cruise", "hiking", "stay", "entertainment"]);
 const REGION_SET = new Set([

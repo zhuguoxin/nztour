@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { TopBar } from "../../../../../_components/top-bar";
 import { requireOperatorMembership } from "@/lib/roles";
-import { withReturnTo } from "@/lib/nav";
+import { VoicesModal } from "@/app/supplier/[slug]/voices-modal";
 import { db } from "@/lib/db";
 import { updateCourse, deleteCourse } from "../../actions";
 import {
@@ -373,16 +373,12 @@ export default async function EditCoursePage({
             ) : null}
 
             {op.supplier_slug ? (
-              <Link
-                href={withReturnTo(
-                  `/supplier/${op.supplier_slug}/voices`,
-                  `/product/${slug}/courses/${course.slug}/edit${activeModule ? `?m=${activeModule.id}` : ""}`,
-                )}
-                className="block text-[12px] text-emerald-300 hover:underline"
-                title={tr.ed_voices_title}
+              <VoicesModal
+                supplierSlug={op.supplier_slug}
+                className="block text-left text-[12px] text-emerald-300 hover:underline"
               >
                 {tr.ed_manage_voices}
-              </Link>
+              </VoicesModal>
             ) : null}
           </div>
 

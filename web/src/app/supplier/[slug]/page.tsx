@@ -4,6 +4,7 @@ import { TopBar } from "../../_components/top-bar";
 import { requireSupplierMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
+import { VoicesModal } from "./voices-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -226,12 +227,19 @@ export default async function SupplierDashboard({ params }: Props) {
               <div className="text-[11px] font-mono uppercase tracking-widest text-slate-400 px-1">
                 {tr.sp_hub_manage}
               </div>
-              <ManageCard
-                href={`/supplier/${supplier.slug}/voices`}
-                icon="🎙"
-                title={tr.sp_p_nav_voices}
-                desc={fmt(tr.sp_hub_voices_desc, { n: voicesCount })}
-              />
+              <VoicesModal
+                supplierSlug={supplier.slug}
+                className="w-full text-left flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-emerald-300 hover:shadow-[0_4px_18px_rgba(15,23,42,0.06)] transition"
+              >
+                <span className="text-[22px] leading-none shrink-0">🎙</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-[14px] text-slate-900">{tr.sp_p_nav_voices}</span>
+                  <span className="block text-[12px] text-slate-500 truncate">
+                    {fmt(tr.sp_hub_voices_desc, { n: voicesCount })}
+                  </span>
+                </span>
+                <span className="text-slate-400 text-[16px] shrink-0">›</span>
+              </VoicesModal>
               <ManageCard
                 href={`/supplier/${supplier.slug}/glossary`}
                 icon="📖"
