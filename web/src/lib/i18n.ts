@@ -998,6 +998,65 @@ const en = {
   gl_col_source: "Source",
   gl_delete: "Delete",
   gl_failed: "Import failed",
+
+  // ===== Registration: /join + onboarding =====
+  join_title: "Create your account",
+  join_blurb: "Choose how you'll use Libretour.",
+  join_card_customer_title: "I'm a supplier",
+  join_card_customer_desc:
+    "A NZ tourism operator that wants to publish training for travel sellers.",
+  join_card_customer_cta: "Register as a supplier",
+  join_card_user_title: "I'm a learner",
+  join_card_user_desc:
+    "A travel agent or seller who wants to take supplier training and earn badges.",
+  join_card_user_cta: "Register as a learner",
+  join_have_account: "Already have an account?",
+  join_sign_in: "Sign in",
+
+  ob_choose_title: "Complete your registration",
+  ob_choose_blurb: "Tell us which kind of account to set up.",
+  ob_email: "Email",
+  ob_email_readonly_note: "From your sign-in — contact us to change it.",
+  ob_select_ph: "Select…",
+  ob_submit: "Submit",
+
+  ob_l_title: "Your details",
+  ob_l_blurb: "This helps suppliers tailor training to your market.",
+  ob_l_first: "First name",
+  ob_l_middle: "Middle name",
+  ob_l_last: "Last name",
+  ob_l_company: "Company name",
+  ob_l_job_title: "Job title",
+  ob_l_city: "City",
+  ob_l_country: "Country / Region",
+  ob_l_business_profile: "Business profile",
+  ob_l_marketing: "I'd like to receive news and updates from Libretour.",
+  ob_l_terms:
+    "I agree to the collection and processing of my personal information by Libretour and its partners for direct marketing purposes, in accordance with the privacy policy and terms.",
+  ob_link_privacy: "Privacy policy",
+  ob_link_terms: "Terms & conditions",
+
+  ob_c_title: "Supplier registration",
+  ob_c_blurb:
+    "Register your tourism business. A platform admin reviews it before it goes live.",
+  ob_c_company: "Company name",
+  ob_c_rto_legend: "Regional Tourism Organisations (RTOs) you operate in",
+  ob_c_rto_select_all: "Select all",
+  ob_c_rto_clear: "Clear",
+  ob_c_pending_note:
+    "After you submit, our team reviews your registration before your supplier account is activated.",
+
+  // ===== Admin: pending supplier approvals =====
+  admin_pending_title: "Pending supplier approvals",
+  admin_pending_sub: "Self-serve supplier registrations awaiting review.",
+  admin_pending_no_rto: "No RTOs selected",
+  admin_pending_approve: "Approve",
+  admin_pending_reject: "Reject",
+
+  // ===== Supplier panel: pending banner =====
+  sp_pending_banner_title: "Your supplier account is under review",
+  sp_pending_banner_body:
+    "You can set things up now, but your products stay hidden until a platform admin approves your account.",
 };
 
 export type Dict = typeof en;
@@ -1948,6 +2007,60 @@ const zhCN: Dict = {
   gl_col_source: "原文",
   gl_delete: "删除",
   gl_failed: "导入失败",
+
+  // ===== Registration: /join + onboarding =====
+  join_title: "创建账户",
+  join_blurb: "请选择你使用 Libretour 的方式。",
+  join_card_customer_title: "我是供应商",
+  join_card_customer_desc: "希望发布培训课程、面向旅行销售方的新西兰旅游运营方。",
+  join_card_customer_cta: "注册为供应商",
+  join_card_user_title: "我是学员",
+  join_card_user_desc: "希望学习供应商培训并获得徽章的旅行社代理或销售人员。",
+  join_card_user_cta: "注册为学员",
+  join_have_account: "已有账户？",
+  join_sign_in: "登录",
+
+  ob_choose_title: "完成注册",
+  ob_choose_blurb: "请告诉我们要创建哪一类账户。",
+  ob_email: "邮箱",
+  ob_email_readonly_note: "来自你的登录账号——如需修改请联系我们。",
+  ob_select_ph: "请选择…",
+  ob_submit: "提交",
+
+  ob_l_title: "你的资料",
+  ob_l_blurb: "这有助于供应商针对你的市场定制培训。",
+  ob_l_first: "名 (First name)",
+  ob_l_middle: "中间名 (Middle name)",
+  ob_l_last: "姓 (Last name)",
+  ob_l_company: "公司名称",
+  ob_l_job_title: "职位",
+  ob_l_city: "城市",
+  ob_l_country: "国家 / 地区",
+  ob_l_business_profile: "业务类型",
+  ob_l_marketing: "我愿意订阅 Libretour 的资讯与更新。",
+  ob_l_terms:
+    "我同意根据隐私政策与条款，出于直接营销目的，由 Libretour 及其合作伙伴收集和处理我的个人信息。",
+  ob_link_privacy: "隐私政策",
+  ob_link_terms: "条款与条件",
+
+  ob_c_title: "供应商注册",
+  ob_c_blurb: "注册你的旅游企业。提交后需平台管理员审核通过才会上线。",
+  ob_c_company: "公司名称",
+  ob_c_rto_legend: "你所经营的地方旅游局 (RTO)",
+  ob_c_rto_select_all: "全选",
+  ob_c_rto_clear: "清除",
+  ob_c_pending_note: "提交后，我们的团队会先审核你的注册，通过后供应商账户即被激活。",
+
+  // ===== Admin: pending supplier approvals =====
+  admin_pending_title: "待审核供应商",
+  admin_pending_sub: "等待审核的自助供应商注册。",
+  admin_pending_no_rto: "未选择 RTO",
+  admin_pending_approve: "通过",
+  admin_pending_reject: "拒绝",
+
+  // ===== Supplier panel: pending banner =====
+  sp_pending_banner_title: "你的供应商账户正在审核中",
+  sp_pending_banner_body: "你现在可以先进行设置，但在平台管理员审核通过前，你的产品不会公开显示。",
 };
 
 export const dict: Record<Locale, Dict> = {

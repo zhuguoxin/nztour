@@ -14,6 +14,7 @@ import { TopBar } from "../../../_components/top-bar";
 import { AskAI } from "../../../_components/ask-ai";
 import { FeedbackWidget } from "./feedback-widget";
 import { t, fmt } from "@/lib/i18n";
+import { requireOnboarded } from "@/lib/onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
 
   const { userId } = await auth();
   if (!userId) notFound();
+  await requireOnboarded();
 
   const user = await currentUser();
   await ensureUser({

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { db, type CourseWithOperator } from "@/lib/db";
 import { TopBar } from "../_components/top-bar";
 import { bootstrapAdminFromEmailList } from "@/lib/roles";
+import { requireOnboarded } from "@/lib/onboarding";
 import { t, fmt, type Dict } from "@/lib/i18n";
 import { FavoriteButton } from "./favorite-button";
 
@@ -55,6 +56,7 @@ export default async function LearnHome({
   // sign-in. Letting failures bubble surfaces them via the /learn error
   // boundary so we don't silently lose admin promotion again.
   await bootstrapAdminFromEmailList();
+  await requireOnboarded();
   const [paramsResult, userResult, authResult, trResult] = await Promise.allSettled([
     searchParams,
     currentUser(),

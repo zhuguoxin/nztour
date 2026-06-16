@@ -5,6 +5,7 @@ import { PageBreadcrumb } from "../_components/page-breadcrumb";
 import { getCurrentRole } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
+import { requireOnboarded } from "@/lib/onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ interface SupRow {
  * dashboard auto-folds the layer when product_count = 1.
  */
 export default async function SupplierIndex() {
+  await requireOnboarded();
   const [role, tr] = await Promise.all([getCurrentRole(), t()]);
   if (!role.userId) redirect("/sign-in");
 

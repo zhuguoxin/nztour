@@ -2,7 +2,12 @@ import Link from "next/link";
 import { TopBar } from "../_components/top-bar";
 import { getCurrentRole, requireAdmin } from "@/lib/roles";
 import { db } from "@/lib/db";
-import { grantSupplierMembership, revokeSupplierMembership } from "./actions";
+import {
+  grantSupplierMembership,
+  revokeSupplierMembership,
+  approveSupplier,
+  rejectSupplier,
+} from "./actions";
 import { PageBreadcrumb } from "../_components/page-breadcrumb";
 import { t, fmt } from "@/lib/i18n";
 
@@ -35,6 +40,16 @@ interface SupMem {
   role: string;
   supplier_name: string;
 }
+interface PendingRow {
+  id: string;
+  slug: string;
+  name: string;
+  rto_json: string;
+  contact_email: string | null;
+  poc_name: string | null;
+  created_at: number;
+  owner_email: string | null;
+}
 
 export default async function AdminPage({
   searchParams,
@@ -60,7 +75,7 @@ export default async function AdminPage({
         .bind(`%${query}%`, `%${query}%`)
     : db().prepare(`${supBase} ORDER BY s.name`);
 
-  const [supsRes, usersRes, supMemsRes, opCountRes] = await Promise.all([
+  const [supsRes, usersRes, supMemsRes, opCountRes, pendingRes] = await Promise.all([
     supStmt.all<SupplierRow>(),
     db()
       .prepare(
@@ -75,12 +90,21 @@ export default async function AdminPage({
       )
       .all<SupMem>(),
     db().prepare(`SELECT COUNT(*) AS n FROM operators`).first<{ n: number }>(),
+    db()
+      .prepare(
+        `SELECT s.id, s.slug, s.name, s.rto_json, s.contact_email, s.poc_name, s.created_at,
+                (SELECT u.email FROM supplier_memberships m JOIN users u ON u.id = m.user_id
+                 WHERE m.supplier_id = s.id AND m.role = 'owner' LIMIT 1) AS owner_email
+         FROM suppliers s WHERE s.status = 'pending' ORDER BY s.created_at DESC`,
+      )
+      .all<PendingRow>(),
   ]);
 
   const suppliers = supsRes.results ?? [];
   const users = usersRes.results ?? [];
   const supMems = supMemsRes.results ?? [];
   const productCount = opCountRes?.n ?? 0;
+  const pending = pendingRes.results ?? [];
 
   const memsBySupplier = new Map<string, SupMem[]>();
   const memsByUser = new Map<string, SupMem[]>();
@@ -120,6 +144,77 @@ export default async function AdminPage({
           <Stat label={tr.admin_stat_users} value={users.length.toString()} />
           <Stat label={tr.admin_stat_you} value={role.isAdmin ? tr.admin_you_admin : "—"} />
         </div>
+
+        {/* 1.5 Pending supplier approvals (self-serve customer registrations) */}
+        {pending.length > 0 ? (
+          <section className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/40 overflow-hidden">
+            <header className="px-5 py-4 border-b border-amber-200">
+              <div className="font-semibold text-[14px] text-slate-900">
+                {tr.admin_pending_title} <span className="text-amber-700">({pending.length})</span>
+              </div>
+              <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_pending_sub}</div>
+            </header>
+            <div>
+              {pending.map((p) => {
+                let rtos: string[] = [];
+                try {
+                  const v = JSON.parse(p.rto_json || "[]");
+                  if (Array.isArray(v)) rtos = v.filter((x): x is string => typeof x === "string");
+                } catch {
+                  /* ignore */
+                }
+                return (
+                  <div
+                    key={p.id}
+                    className="px-5 py-4 border-t border-amber-200/70 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-medium text-slate-900">{p.name}</div>
+                      <div className="text-[12px] text-slate-600 mt-0.5">
+                        {p.poc_name ? `${p.poc_name} · ` : ""}
+                        {p.owner_email ?? p.contact_email ?? "—"}
+                      </div>
+                      {rtos.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {rtos.map((r) => (
+                            <span
+                              key={r}
+                              className="px-2 py-0.5 rounded-full bg-white border border-amber-200 text-amber-800 text-[11px]"
+                            >
+                              {r}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[11.5px] text-slate-400 mt-1">{tr.admin_pending_no_rto}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <form action={approveSupplier}>
+                        <input type="hidden" name="supplier_id" value={p.id} />
+                        <button
+                          type="submit"
+                          className="px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700"
+                        >
+                          {tr.admin_pending_approve}
+                        </button>
+                      </form>
+                      <form action={rejectSupplier}>
+                        <input type="hidden" name="supplier_id" value={p.id} />
+                        <button
+                          type="submit"
+                          className="px-3.5 py-1.5 rounded-md border border-slate-300 text-slate-600 text-[12.5px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700"
+                        >
+                          {tr.admin_pending_reject}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         {/* 2. Supplier management */}
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">

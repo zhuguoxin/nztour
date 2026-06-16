@@ -10,6 +10,7 @@ import { BillingModal } from "./billing-modal";
 import { PageBreadcrumb } from "../../_components/page-breadcrumb";
 import { MemberManager } from "../../_components/member-manager";
 import { listSupplierMembers, addSupplierMember, removeSupplierMember } from "./actions";
+import { requireOnboarded } from "@/lib/onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ interface SupplierRow {
   poc_title: string | null;
   poc_email: string | null;
   poc_phone: string | null;
+  status: string;
 }
 
 interface ProductKpiRow {
@@ -71,6 +73,7 @@ interface ProductKpiRow {
  */
 export default async function SupplierDashboard({ params }: Props) {
   const { slug } = await params;
+  await requireOnboarded();
 
   let access;
   try {
@@ -87,7 +90,7 @@ export default async function SupplierDashboard({ params }: Props) {
     .prepare(
       `SELECT id, slug, name, legal_name, country, hq_city, website, intro, plan_tier, contact_email,
               cover_r2_key, phone, address, billing_email, links_json, default_lang, timezone,
-              poc_name, poc_title, poc_email, poc_phone
+              poc_name, poc_title, poc_email, poc_phone, status
        FROM suppliers WHERE id = ?`,
     )
     .bind(access.supplierId)
@@ -146,6 +149,12 @@ export default async function SupplierDashboard({ params }: Props) {
             { label: supplier.name },
           ]}
         />
+        {supplier.status === "pending" ? (
+          <div className="mb-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+            <div className="text-[13px] font-semibold text-amber-900">{tr.sp_pending_banner_title}</div>
+            <div className="text-[12.5px] text-amber-800 mt-0.5">{tr.sp_pending_banner_body}</div>
+          </div>
+        ) : null}
         {/* Cover hero — shown on entry to the supplier panel */}
         <div className="relative h-40 sm:h-52 rounded-2xl overflow-hidden border border-slate-200 mb-6 bg-gradient-to-br from-slate-800 to-slate-600">
           {supplier.cover_r2_key ? (

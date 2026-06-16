@@ -220,3 +220,33 @@ export async function revokeSupplierMembership(form: FormData) {
     .run();
   revalidatePath("/admin");
 }
+
+// ---------------------------------------------------------------------------
+//  Self-serve supplier onboarding — approval queue.
+//  Customer (supplier) self-registration creates suppliers.status='pending';
+//  these let a platform admin approve (→active) or reject (→suspended).
+// ---------------------------------------------------------------------------
+
+export async function approveSupplier(form: FormData) {
+  await requireAdmin();
+  const id = String(form.get("supplier_id") ?? "");
+  if (!id) throw new Error("missing supplier_id");
+  await db()
+    .prepare(`UPDATE suppliers SET status = 'active' WHERE id = ? AND status = 'pending'`)
+    .bind(id)
+    .run();
+  revalidatePath("/admin");
+}
+
+export async function rejectSupplier(form: FormData) {
+  await requireAdmin();
+  const id = String(form.get("supplier_id") ?? "");
+  if (!id) throw new Error("missing supplier_id");
+  // Soft reject: suspend (keeps owner membership + data for appeal) rather than
+  // delete, which would CASCADE the owner's membership away.
+  await db()
+    .prepare(`UPDATE suppliers SET status = 'suspended' WHERE id = ?`)
+    .bind(id)
+    .run();
+  revalidatePath("/admin");
+}

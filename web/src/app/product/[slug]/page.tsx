@@ -21,6 +21,7 @@ import { updateOperatorTheme, resetOperatorTheme } from "./branding-actions";
 import { ColourField } from "./colour-field";
 import { LogoUploader } from "./logo-uploader";
 import { MediaPicker } from "../../_components/media-picker";
+import { requireOnboarded } from "@/lib/onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ function parseDateParam(s: string | undefined, endOfDay = false): number | null 
 
 export default async function OperatorDashboard({ params, searchParams }: Props) {
   const { slug } = await params;
+  await requireOnboarded();
   const { from: fromParam, to: toParam } = await searchParams;
 
   // Default window: last 30 days. Date pickers narrow it.

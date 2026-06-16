@@ -22,6 +22,7 @@ const isProtected = createRouteMatcher([
   "/operator(/.*)?", // legacy — redirected to /product, kept protected during the move
   "/supplier(/.*)?",
   "/admin(/.*)?",
+  "/onboarding(.*)", // requires a signed-in user; the page handles D1-based gating
   "/api/qa(.*)",
 ]);
 
