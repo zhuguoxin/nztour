@@ -33,7 +33,7 @@ export function CoverImageField({
 
   return (
     <div>
-      <div className="text-[12px] font-semibold text-[#e6f5ec] mb-1.5">{tr.ci_cover_image}</div>
+      <div className="text-[12px] font-semibold text-slate-700 mb-1.5">{tr.ci_cover_image}</div>
 
       {supplierSlug ? (
         <MediaPicker
@@ -41,12 +41,12 @@ export function CoverImageField({
           target={{ target: "course", operatorSlug, courseId }}
           currentUrl={hasCover ? `/api/course-cover?id=${courseId}` : null}
           aspect="video"
-          theme="dark"
+          theme="light"
           className="mb-2.5"
         />
       ) : null}
 
-      <div className="text-[11px] font-medium text-[#a7d4b6] mb-1">{tr.ci_emoji_ph}</div>
+      <div className="text-[11px] font-medium text-slate-600 mb-1">{tr.ci_emoji_ph}</div>
       <input
         name="emoji"
         value={emojiVal}
@@ -54,9 +54,9 @@ export function CoverImageField({
         maxLength={4}
         placeholder={tr.ci_emoji_ph}
         disabled={hasCover}
-        className="w-full bg-[#04241e] border border-white/[.10] rounded-md px-3 py-1.5 text-[18px] text-white outline-none focus:border-emerald-400/60 disabled:opacity-40"
+        className="w-full bg-white border border-slate-300 rounded-md px-3 py-1.5 text-[18px] text-slate-900 outline-none focus:border-emerald-400/60 disabled:opacity-40"
       />
-      <div className="text-[10.5px] text-[#5d9279] mt-1">{tr.ci_hint}</div>
+      <div className="text-[10.5px] text-slate-400 mt-1">{tr.ci_hint}</div>
     </div>
   );
 }

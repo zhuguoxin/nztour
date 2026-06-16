@@ -62,33 +62,33 @@ export function AttachmentsPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
-      <header className="px-5 py-4 border-b border-white/[.06]">
-        <div className="font-semibold text-[14px] text-white">
+    <section className="rounded-2xl border border-slate-200 bg-white">
+      <header className="px-5 py-4 border-b border-slate-200">
+        <div className="font-semibold text-[14px] text-slate-900">
           {tr.at_title}
-          <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] uppercase font-mono">
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-600 text-[10px] uppercase font-mono">
             {tr.at_ai_only}
           </span>
         </div>
-        <div className="text-[12px] text-[#86b69a] mt-0.5">
+        <div className="text-[12px] text-slate-500 mt-0.5">
           {tr.at_subtitle}
         </div>
       </header>
 
-      <div className="divide-y divide-white/[.04]">
+      <div className="divide-y divide-slate-100">
         {attachments.length === 0 ? (
-          <div className="px-5 py-6 text-center text-[13px] text-[#86b69a]">
+          <div className="px-5 py-6 text-center text-[13px] text-slate-500">
             {tr.at_empty}
           </div>
         ) : (
           attachments.map((a) => (
             <div key={a.id} className="px-5 py-3 flex items-center gap-3">
-              <span className="text-[#86b69a] text-[18px] w-6 text-center" aria-hidden>
+              <span className="text-slate-500 text-[18px] w-6 text-center" aria-hidden>
                 {iconFor(a.mime_type)}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-[13.5px] text-white truncate">{a.filename}</div>
-                <div className="text-[11px] text-[#86b69a] flex items-center gap-2">
+                <div className="text-[13.5px] text-slate-900 truncate">{a.filename}</div>
+                <div className="text-[11px] text-slate-500 flex items-center gap-2">
                   <span>{fmtBytes(a.size_bytes)}</span>
                   <span className="text-[#395a4a]">·</span>
                   <RagBadge status={a.rag_status} />
@@ -102,7 +102,7 @@ export function AttachmentsPanel({
                 <input type="hidden" name="attachment_id" value={a.id} />
                 <button
                   type="submit"
-                  className="px-2 py-1 rounded text-rose-300/80 hover:bg-rose-400/10 text-[11px]"
+                  className="px-2 py-1 rounded text-rose-600/80 hover:bg-rose-400/10 text-[11px]"
                   title={tr.at_delete}
                 >
                   ✕
@@ -113,12 +113,12 @@ export function AttachmentsPanel({
         )}
       </div>
 
-      <div className="px-5 py-4 border-t border-white/[.04]">
-        <label className="flex items-center gap-3 text-[12px] text-[#d8f0e1] cursor-pointer">
-          <span className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300">
+      <div className="px-5 py-4 border-t border-slate-100">
+        <label className="flex items-center gap-3 text-[12px] text-slate-700 cursor-pointer">
+          <span className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12px] hover:bg-emerald-700">
             {pending ? tr.at_uploading : tr.at_add_file}
           </span>
-          <span className="text-[11px] text-[#86b69a]">
+          <span className="text-[11px] text-slate-500">
             {tr.at_add_hint}
           </span>
           <input
@@ -138,10 +138,10 @@ function RagBadge({ status }: { status: string }) {
   const tr = useTr();
   const cfg =
     status === "ready"
-      ? { cls: "border-emerald-400/30 text-emerald-300 bg-emerald-400/[.06]", label: tr.at_rag_ready }
+      ? { cls: "border-emerald-400/30 text-emerald-700 bg-emerald-600/[.06]", label: tr.at_rag_ready }
       : status === "failed"
-        ? { cls: "border-rose-400/30 text-rose-300 bg-rose-400/[.06]", label: tr.at_rag_failed }
-        : { cls: "border-amber-400/30 text-amber-300 bg-amber-400/[.06]", label: tr.at_rag_pending };
+        ? { cls: "border-rose-200 text-rose-600 bg-rose-400/[.06]", label: tr.at_rag_failed }
+        : { cls: "border-amber-400/30 text-amber-600 bg-amber-400/[.06]", label: tr.at_rag_pending };
   return (
     <span className={`px-1.5 py-0.5 rounded border text-[10px] font-mono uppercase ${cfg.cls}`}>
       {cfg.label}

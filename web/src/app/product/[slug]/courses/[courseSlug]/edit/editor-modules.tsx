@@ -108,7 +108,7 @@ export interface BlockData {
 }
 
 const inputClass =
-  "w-full bg-[#04241e] border border-white/[.10] rounded-md px-3 py-2 text-[14px] text-white outline-none focus:border-emerald-400/60";
+  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] text-slate-900 outline-none focus:border-emerald-400/60";
 
 /**
  * Client wrapper for the modules-and-blocks portion of the editor.
@@ -151,7 +151,7 @@ export function EditorModules({
     const m = modules[0];
     if (!m) {
       return (
-        <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">{tr.em_no_modules}</div>
+        <div className="px-5 py-8 text-center text-[13px] text-slate-500">{tr.em_no_modules}</div>
       );
     }
     return (
@@ -176,7 +176,7 @@ export function EditorModules({
         reorderModulesBulk({ operatorSlug, courseSlug, orderedIds })
       }
       emptyState={
-        <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">
+        <div className="px-5 py-8 text-center text-[13px] text-slate-500">
           {tr.em_no_modules}
         </div>
       }
@@ -225,30 +225,30 @@ function ModuleEditor({
 }) {
   const tr = useTr();
   return (
-    <details className="group border-b border-white/[.04]" open={solo || blocks.length === 0}>
+    <details className="group border-b border-slate-100" open={solo || blocks.length === 0}>
       <summary
         className={`px-5 py-4 flex items-center gap-3 list-none ${
-          solo ? "" : "cursor-pointer hover:bg-white/[.02]"
+          solo ? "" : "cursor-pointer hover:bg-slate-50"
         }`}
         onClick={solo ? (e) => e.preventDefault() : undefined}
       >
         {!solo && handle ? <GrabHandle handle={handle} /> : null}
-        <span className="text-[#86b69a] text-[14px] font-mono w-8">M{module.position}</span>
+        <span className="text-slate-500 text-[14px] font-mono w-8">M{module.position}</span>
         <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-medium text-white truncate">{module.title}</div>
-          <div className="text-[11.5px] text-[#86b69a]">
+          <div className="text-[14px] font-medium text-slate-900 truncate">{module.title}</div>
+          <div className="text-[11.5px] text-slate-500">
             {blocks.length} block{blocks.length === 1 ? "" : "s"}
             {module.est_minutes ? ` · ${module.est_minutes} min` : ""}
           </div>
         </div>
-        <span className="text-[#a7d4b6] text-[12px] ml-1 group-open:rotate-180 transition-transform inline-block">
+        <span className="text-slate-600 text-[12px] ml-1 group-open:rotate-180 transition-transform inline-block">
           ⌄
         </span>
       </summary>
 
       <div className="px-5 pb-5 space-y-4">
         {/* Module meta */}
-        <form action={updateModule} className="space-y-3 bg-[#062b22] rounded-lg p-3">
+        <form action={updateModule} className="space-y-3 bg-slate-50 rounded-lg p-3">
           <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
           <input type="hidden" name="module_id" value={module.id} />
           <Field label={tr.em_field_title}>
@@ -283,7 +283,7 @@ function ModuleEditor({
           <div className="flex items-center justify-between gap-2">
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12.5px] hover:bg-emerald-300"
+              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700"
             >
               {tr.em_save_module}
             </button>
@@ -294,7 +294,7 @@ function ModuleEditor({
             <button
               type="submit"
               formAction={deleteModule}
-              className="px-3 py-1.5 rounded-md border border-rose-400/30 text-rose-300 text-[12px] hover:bg-rose-400/10"
+              className="px-3 py-1.5 rounded-md border border-rose-200 text-rose-600 text-[12px] hover:bg-rose-400/10"
             >
               {tr.em_delete_module}
             </button>
@@ -311,7 +311,7 @@ function ModuleEditor({
             reorderBlocksBulk({ operatorSlug, courseSlug, moduleId: module.id, orderedIds })
           }
           emptyState={
-            <div className="text-[12px] text-[#86b69a] text-center py-3">
+            <div className="text-[12px] text-slate-500 text-center py-3">
               {tr.em_no_blocks_add}
             </div>
           }
@@ -345,14 +345,14 @@ function ModuleEditor({
               <input type="hidden" name="kind" value={kind} />
               <button
                 type="submit"
-                className="w-full px-3 py-2 rounded-md border border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06] text-left"
+                className="w-full px-3 py-2 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 text-left"
               >
                 {label}
               </button>
             </form>
           ))}
         </div>
-        <p className="text-[11px] text-[#86b69a] leading-relaxed">
+        <p className="text-[11px] text-slate-500 leading-relaxed">
           {fmt(tr.em_block_tip, {
             text: tr.em_block_tip_text,
             callout: tr.em_block_tip_callout,
@@ -386,9 +386,9 @@ function ModuleQuizAuthor({
   return (
     <section className="rounded-lg border border-amber-400/20 bg-amber-400/[.04] p-3">
       <div className="flex items-baseline justify-between mb-2">
-        <div className="text-[12px] font-semibold text-amber-300">
+        <div className="text-[12px] font-semibold text-amber-600">
           {tr.em_quiz_heading}
-          <span className="ml-1.5 text-[10px] text-[#86b69a] font-normal">
+          <span className="ml-1.5 text-[10px] text-slate-500 font-normal">
             {fmt(questions.length === 1 ? tr.em_quiz_count_one : tr.em_quiz_count_many, {
               n: questions.length,
             })}
@@ -409,7 +409,7 @@ function ModuleQuizAuthor({
       </div>
 
       {questions.length === 0 ? (
-        <div className="text-[11.5px] text-[#86b69a] mb-2">
+        <div className="text-[11.5px] text-slate-500 mb-2">
           {tr.em_quiz_empty}
         </div>
       ) : (
@@ -424,13 +424,13 @@ function ModuleQuizAuthor({
             return (
               <li
                 key={q.id}
-                className="bg-black/20 rounded border border-white/[.05] px-2.5 py-1.5 flex items-start gap-2"
+                className="bg-slate-100 rounded border border-slate-200 px-2.5 py-1.5 flex items-start gap-2"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-[12.5px] text-white truncate">{q.prompt}</div>
-                  <div className="text-[10.5px] text-[#86b69a] truncate">
+                  <div className="text-[12.5px] text-slate-900 truncate">{q.prompt}</div>
+                  <div className="text-[10.5px] text-slate-500 truncate">
                     {choices.map((c, i) => (
-                      <span key={i} className={i === q.correct_idx ? "text-emerald-300" : ""}>
+                      <span key={i} className={i === q.correct_idx ? "text-emerald-700" : ""}>
                         {i === q.correct_idx ? "✓ " : ""}
                         {c}
                         {i < choices.length - 1 ? " · " : ""}
@@ -444,7 +444,7 @@ function ModuleQuizAuthor({
                   <input type="hidden" name="question_id" value={q.id} />
                   <button
                     type="submit"
-                    className="px-1.5 py-0.5 rounded text-rose-300/80 hover:bg-rose-400/10 text-[10px]"
+                    className="px-1.5 py-0.5 rounded text-rose-600/80 hover:bg-rose-400/10 text-[10px]"
                     title={tr.em_quiz_delete_q}
                   >
                     ✕
@@ -521,7 +521,7 @@ function NewQuestionForm({
         />
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-[11px] text-[#a7d4b6]">{tr.em_quiz_correct}:</label>
+        <label className="text-[11px] text-slate-600">{tr.em_quiz_correct}:</label>
         <select name="correct_idx" defaultValue="0" className={inputClass + " w-20 text-[12px]"}>
           <option value="0">A</option>
           <option value="1">B</option>
@@ -538,7 +538,7 @@ function NewQuestionForm({
         <SubmitChoicesAsJson />
         <button
           type="submit"
-          className="px-3 py-1.5 rounded bg-amber-400 text-[#04241e] font-semibold text-[12px] hover:bg-amber-300 shrink-0"
+          className="px-3 py-1.5 rounded bg-amber-400 text-slate-900 font-semibold text-[12px] hover:bg-amber-300 shrink-0"
         >
           {tr.em_quiz_add_short}
         </button>
@@ -610,23 +610,23 @@ function BlockEditor({
   const tr = useTr();
   const isNarratable = block.kind === "text" || block.kind === "callout";
   return (
-    <div className="bg-[#04241e] border border-white/[.08] rounded-lg p-3 space-y-3">
+    <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-3">
       <div className="flex items-center justify-between text-[11px]">
         <div className="flex items-center gap-2">
           <GrabHandle handle={handle} />
-          <span className="px-2 py-0.5 rounded-full bg-white/[.04] border border-white/[.08] text-[#a7d4b6] uppercase font-mono">
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 uppercase font-mono">
             {block.kind}
           </span>
           {block.visibility === "assistant_only" ? (
             <span
-              className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 uppercase font-mono"
+              className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-600 uppercase font-mono"
               title={tr.em_block_training}
             >
               {tr.em_ai_only}
             </span>
           ) : null}
           {block.duration_s ? (
-            <span className="text-[10px] text-[#86b69a] font-mono">
+            <span className="text-[10px] text-slate-500 font-mono">
               {fmtDuration(block.duration_s)}
             </span>
           ) : null}
@@ -637,7 +637,7 @@ function BlockEditor({
           <input type="hidden" name="block_id" value={block.id} />
           <button
             type="submit"
-            className="px-2 py-0.5 rounded text-rose-300/80 hover:bg-rose-400/10 text-[11px]"
+            className="px-2 py-0.5 rounded text-rose-600/80 hover:bg-rose-400/10 text-[11px]"
           >
             {tr.em_block_delete_short}
           </button>
@@ -686,7 +686,7 @@ function BlockEditor({
         ) : null}
 
         <div className="flex items-center justify-between gap-2">
-          <label className="flex items-center gap-2 text-[11.5px] text-[#a7d4b6] select-none">
+          <label className="flex items-center gap-2 text-[11.5px] text-slate-600 select-none">
             <input
               type="checkbox"
               name="visibility_assistant_only"
@@ -697,7 +697,7 @@ function BlockEditor({
           </label>
           <button
             type="submit"
-            className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] text-[#e6f5ec] text-[12px] hover:bg-white/[.10]"
+            className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-200"
           >
             {tr.em_save_block}
           </button>
@@ -845,15 +845,15 @@ export function ModuleNarration({
   }
 
   return (
-    <section className="rounded-lg border border-emerald-400/20 bg-emerald-400/[.04] p-3 space-y-2.5">
+    <section className="rounded-lg border border-emerald-400/20 bg-emerald-600/[.04] p-3 space-y-2.5">
       <div className="flex items-center justify-between">
-        <div className="text-[12px] font-semibold text-emerald-300">
+        <div className="text-[12px] font-semibold text-emerald-700">
           🎧 {tr.em_narration_heading}
         </div>
         <button
           type="button"
           onClick={importFromBlocks}
-          className="px-2.5 py-1 rounded border border-emerald-400/40 text-emerald-200 hover:bg-emerald-400/10 text-[11px]"
+          className="px-2.5 py-1 rounded border border-emerald-400/40 text-emerald-700 hover:bg-emerald-600/10 text-[11px]"
           title={tr.em_narration_import_title}
         >
           {tr.em_narration_import}
@@ -876,17 +876,17 @@ export function ModuleNarration({
           type="button"
           onClick={save}
           disabled={saving}
-          className="px-3 py-1.5 rounded bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300 disabled:opacity-50"
+          className="px-3 py-1.5 rounded bg-emerald-600 text-white font-semibold text-[12px] hover:bg-emerald-700 disabled:opacity-50"
         >
           {saving ? tr.em_narration_saving : tr.em_narration_save}
         </button>
-        {saved ? <span className="text-[11px] text-emerald-300">{tr.em_narration_saved}</span> : null}
-        {saveErr ? <span className="text-[11px] text-rose-300">{saveErr}</span> : null}
+        {saved ? <span className="text-[11px] text-emerald-700">{tr.em_narration_saved}</span> : null}
+        {saveErr ? <span className="text-[11px] text-rose-600">{saveErr}</span> : null}
       </div>
 
       {/* Voice-over: per-language audio chips + generate popover */}
-      <div className="relative flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/[.06]">
-        <span className="text-[11px] text-[#86b69a] mr-1">{tr.em_audio_heading}:</span>
+      <div className="relative flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200">
+        <span className="text-[11px] text-slate-500 mr-1">{tr.em_audio_heading}:</span>
         {langsWithAudio.map((l) => (
           <button
             key={l}
@@ -894,8 +894,8 @@ export function ModuleNarration({
             onClick={() => setPlaying(playing === l ? null : l)}
             className={`px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${
               playing === l
-                ? "bg-emerald-400 border-emerald-400 text-[#04241e]"
-                : "bg-emerald-400/15 border-emerald-400/30 text-emerald-200 hover:bg-emerald-400/25"
+                ? "bg-emerald-600 border-emerald-400 text-slate-900"
+                : "bg-emerald-600/15 border-emerald-400/30 text-emerald-700 hover:bg-emerald-600/25"
             }`}
           >
             🎧 {langLabel(l)}
@@ -904,13 +904,13 @@ export function ModuleNarration({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="px-2 py-0.5 rounded-full border border-white/[.12] text-[#a7d4b6] text-[10px] hover:bg-white/[.06]"
+          className="px-2 py-0.5 rounded-full border border-slate-300 text-slate-600 text-[10px] hover:bg-slate-50"
         >
           + {tr.em_audio_gen_short}
         </button>
 
         {playing && audioByLang[playing] ? (
-          <div className="absolute left-0 top-7 z-20 flex items-center gap-1 rounded-md border border-white/[.12] bg-[#0a3a2f] p-1 shadow-xl">
+          <div className="absolute left-0 top-7 z-20 flex items-center gap-1 rounded-md border border-slate-300 bg-white p-1 shadow-xl">
             <audio
               autoPlay
               controls
@@ -923,7 +923,7 @@ export function ModuleNarration({
               onClick={() => setPlaying(null)}
               aria-label={tr.mp_close}
               title={tr.mp_close}
-              className="w-6 h-6 shrink-0 rounded text-[#a7d4b6] hover:bg-white/[.08] flex items-center justify-center text-[12px]"
+              className="w-6 h-6 shrink-0 rounded text-slate-600 hover:bg-slate-100 flex items-center justify-center text-[12px]"
             >
               ✕
             </button>
@@ -931,7 +931,7 @@ export function ModuleNarration({
         ) : null}
 
         {open ? (
-          <div className="absolute left-0 top-7 z-30 w-64 rounded-lg border border-white/[.12] bg-[#0a3a2f] p-2.5 space-y-2 shadow-xl">
+          <div className="absolute left-0 top-7 z-30 w-64 rounded-lg border border-slate-300 bg-white p-2.5 space-y-2 shadow-xl">
             <select
               value={genLang}
               onChange={(e) => pickLang(e.target.value)}
@@ -960,7 +960,7 @@ export function ModuleNarration({
               type="button"
               onClick={generate}
               disabled={pending}
-              className="w-full px-2.5 py-1.5 rounded bg-emerald-400 text-[#04241e] font-semibold text-[11.5px] hover:bg-emerald-300 disabled:opacity-50"
+              className="w-full px-2.5 py-1.5 rounded bg-emerald-600 text-white font-semibold text-[11.5px] hover:bg-emerald-700 disabled:opacity-50"
             >
               {pending
                 ? tr.em_audio_generating
@@ -969,7 +969,7 @@ export function ModuleNarration({
                   : tr.em_audio_gen_short}
             </button>
             {genErr ? (
-              <div className="text-[10.5px] text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
+              <div className="text-[10.5px] text-rose-600 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
                 {genErr}
               </div>
             ) : null}
@@ -996,7 +996,7 @@ function ImageUploader({
 }) {
   const tr = useTr();
   if (!supplierSlug) {
-    return <div className="text-[11px] text-[#86b69a]">{tr.em_img_none}</div>;
+    return <div className="text-[11px] text-slate-500">{tr.em_img_none}</div>;
   }
   return (
     <MediaPicker
@@ -1004,7 +1004,7 @@ function ImageUploader({
       target={{ target: "block", operatorSlug, blockId: block.id }}
       currentUrl={block.image_r2_key ? `/api/image?id=${block.id}` : null}
       aspect="video"
-      theme="dark"
+      theme="light"
     />
   );
 }
@@ -1012,7 +1012,7 @@ function ImageUploader({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="text-[12px] font-semibold text-[#e6f5ec] mb-1.5">{label}</div>
+      <div className="text-[12px] font-semibold text-slate-700 mb-1.5">{label}</div>
       {children}
     </label>
   );

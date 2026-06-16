@@ -20,7 +20,7 @@ export function ModuleNav({
   const tr = useTr();
   return (
     <div>
-      <div className="text-[11px] tracking-widest font-mono text-emerald-300/70 mb-2">
+      <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
         {tr.ed_modules}
       </div>
       <div className="space-y-1">
@@ -30,16 +30,16 @@ export function ModuleNav({
             href={`/product/${operatorSlug}/courses/${courseSlug}/edit?m=${m.id}`}
             className={`block px-3 py-2 rounded-md text-[13px] truncate border-l-2 ${
               m.id === activeId
-                ? "bg-emerald-400/15 text-white border-emerald-400"
-                : "text-[#a7d4b6] hover:bg-white/[.05] border-transparent"
+                ? "bg-emerald-600/15 text-slate-900 border-emerald-400"
+                : "text-slate-600 hover:bg-slate-100 border-transparent"
             }`}
           >
-            <span className="text-[#86b69a] font-mono mr-1.5">{i + 1}.</span>
+            <span className="text-slate-500 font-mono mr-1.5">{i + 1}.</span>
             {m.title}
           </Link>
         ))}
         {modules.length === 0 ? (
-          <div className="text-[12px] text-[#86b69a] px-1 py-2">{tr.em_no_modules}</div>
+          <div className="text-[12px] text-slate-500 px-1 py-2">{tr.em_no_modules}</div>
         ) : null}
       </div>
 
@@ -51,12 +51,12 @@ export function ModuleNav({
           required
           maxLength={200}
           placeholder={tr.ed_new_module_ph}
-          className="flex-1 min-w-0 bg-[#0a3a2f] border border-white/[.10] rounded-md px-2.5 py-1.5 text-[12.5px] text-white outline-none focus:border-emerald-400/60"
+          className="flex-1 min-w-0 bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-400/60"
         />
         <button
           type="submit"
           title={tr.ed_add_module}
-          className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[15px] leading-none hover:bg-emerald-300 shrink-0"
+          className="px-2.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[15px] leading-none hover:bg-emerald-700 shrink-0"
         >
           +
         </button>

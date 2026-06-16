@@ -90,7 +90,7 @@ export function SortableList<T extends SortableItem>({
   return (
     <>
       {error ? (
-        <div className="mb-2 text-[12px] text-rose-300 bg-rose-950/40 border border-rose-500/30 rounded-md px-2 py-1">
+        <div className="mb-2 text-[12px] text-rose-600 bg-rose-950/40 border border-rose-500/30 rounded-md px-2 py-1">
           {error}
         </div>
       ) : null}
@@ -159,7 +159,7 @@ export function GrabHandle({ handle }: { handle: DragHandleProps }) {
       {...handle.listeners}
       type="button"
       aria-label={tr.em_drag_reorder}
-      className="cursor-grab active:cursor-grabbing text-[#86b69a] hover:text-emerald-300 px-1.5 py-1 rounded-md hover:bg-white/[.05] touch-none"
+      className="cursor-grab active:cursor-grabbing text-slate-500 hover:text-emerald-700 px-1.5 py-1 rounded-md hover:bg-slate-100 touch-none"
       title={tr.em_drag_reorder}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>

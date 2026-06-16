@@ -78,10 +78,10 @@ export function TranslationsPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
-      <header className="px-5 py-4 border-b border-white/[.06]">
-        <div className="font-semibold text-[14px] text-white">{tr.tp_title}</div>
-        <div className="text-[12px] text-[#86b69a] mt-0.5">
+    <section className="rounded-2xl border border-slate-200 bg-white">
+      <header className="px-5 py-4 border-b border-slate-200">
+        <div className="font-semibold text-[14px] text-slate-900">{tr.tp_title}</div>
+        <div className="text-[12px] text-slate-500 mt-0.5">
           {fmt(tr.tp_sub, { lang: primaryLang })}
         </div>
       </header>
@@ -95,7 +95,7 @@ export function TranslationsPanel({
             return (
               <span
                 key={lang.code}
-                className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px]"
+                className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12px]"
                 title={tr.tp_source}
               >
                 {lang.nativeLabel} · {tr.tp_source}
@@ -111,7 +111,7 @@ export function TranslationsPanel({
                   type="button"
                   onClick={() => toggle(lang.code, false, false)}
                   disabled={pending}
-                  className="px-3 py-1.5 rounded-md border border-emerald-400/50 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/15 text-[12px] font-medium disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-md border border-emerald-400/50 bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600/15 text-[12px] font-medium disabled:opacity-50"
                   title={tr.tp_enabled_title}
                 >
                   {lang.nativeLabel} ✓
@@ -120,7 +120,7 @@ export function TranslationsPanel({
                   href={`/learn/${operatorSlug}/${courseSlug}?preview=1&lang=${lang.code}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-2 py-1.5 rounded-md border border-white/[.10] text-[#a7d4b6] hover:bg-white/[.06] text-[11px]"
+                  className="px-2 py-1.5 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 text-[11px]"
                   title={fmt(tr.tp_preview_title, { lang: lang.label })}
                 >
                   ↗
@@ -129,7 +129,7 @@ export function TranslationsPanel({
                   type="button"
                   onClick={() => retranslate(lang.code)}
                   disabled={pending}
-                  className="px-2 py-1.5 rounded-md border border-white/[.10] text-[#a7d4b6] hover:bg-white/[.06] text-[11px] disabled:opacity-40"
+                  className="px-2 py-1.5 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 text-[11px] disabled:opacity-40"
                   title={tr.tp_retranslate_title}
                 >
                   ↻
@@ -146,7 +146,7 @@ export function TranslationsPanel({
                 type="button"
                 onClick={() => toggle(lang.code, true, false)}
                 disabled={pending}
-                className="px-3 py-1.5 rounded-md border border-white/[.12] text-[#86b69a] hover:bg-white/[.06] hover:text-[#d8f0e1] text-[12px] disabled:opacity-40"
+                className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-500 hover:bg-slate-50 hover:text-slate-700 text-[12px] disabled:opacity-40"
                 title={fmt(tr.tp_disabled_title, { lang: lang.label })}
               >
                 {lang.nativeLabel} ○
@@ -161,7 +161,7 @@ export function TranslationsPanel({
               type="button"
               onClick={() => toggle(lang.code, true, true)}
               disabled={pending}
-              className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#a7d4b6] hover:bg-white/[.06] hover:text-white hover:border-emerald-400/40 text-[12px] disabled:opacity-40"
+              className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-emerald-400/40 text-[12px] disabled:opacity-40"
               title={fmt(tr.tp_translate_title, { lang: lang.label })}
             >
               + {lang.nativeLabel}
@@ -170,14 +170,14 @@ export function TranslationsPanel({
         })}
       </div>
       {pending && busyLang ? (
-        <div className="px-5 pb-4 text-[12px] text-amber-300 flex items-center gap-2">
+        <div className="px-5 pb-4 text-[12px] text-amber-600 flex items-center gap-2">
           <span className="inline-block w-3 h-3 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
           {tr.tp_translating}
         </div>
       ) : null}
       {error ? (
         <div className="px-5 pb-4">
-          <div className="text-[12px] text-rose-200 bg-rose-500/10 border border-rose-400/30 rounded-md px-3 py-2 break-words">
+          <div className="text-[12px] text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 break-words">
             {error}
           </div>
         </div>

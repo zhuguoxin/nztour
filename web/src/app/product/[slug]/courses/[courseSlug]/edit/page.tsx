@@ -196,7 +196,7 @@ export default async function EditCoursePage({
     }>();
 
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0 text-[14px]">
@@ -259,7 +259,7 @@ export default async function EditCoursePage({
           <form
             id="course-form"
             action={updateCourse}
-            className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-5 space-y-4"
+            className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4"
           >
             <input type="hidden" name="operator_slug" value={slug} />
             <input type="hidden" name="course_slug" value={course.slug} />
@@ -277,7 +277,7 @@ export default async function EditCoursePage({
             </Field>
           </form>
 
-          <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
+          <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
             <EditorModules
               solo
               operatorSlug={slug}
@@ -297,12 +297,12 @@ export default async function EditCoursePage({
 
         {/* ============ Right rail (sticky): one save button + course settings ============ */}
         <aside className="lg:sticky lg:top-[76px] space-y-5 order-2 lg:order-3">
-          <div className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-4 space-y-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
             {/* Single save button for the whole course (associated to #course-form). */}
             <button
               type="submit"
               form="course-form"
-              className="w-full px-4 py-2.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[14px] hover:bg-emerald-300"
+              className="w-full px-4 py-2.5 rounded-md bg-emerald-600 text-white font-semibold text-[14px] hover:bg-emerald-700"
             >
               {tr.ed_save_changes}
             </button>
@@ -310,7 +310,7 @@ export default async function EditCoursePage({
               <Link
                 href={`/learn/${slug}/${course.slug}?preview=1`}
                 target="_blank"
-                className="text-amber-300 hover:underline"
+                className="text-amber-600 hover:underline"
                 title={tr.ed_preview_title}
               >
                 {tr.ed_preview}
@@ -319,7 +319,7 @@ export default async function EditCoursePage({
                 <Link
                   href={`/learn/${slug}/${course.slug}`}
                   target="_blank"
-                  className="text-emerald-300 hover:underline"
+                  className="text-emerald-700 hover:underline"
                 >
                   {tr.ed_view_live}
                 </Link>
@@ -327,8 +327,8 @@ export default async function EditCoursePage({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-4 space-y-4">
-            <div className="font-semibold text-[13px] text-white">{tr.ed_course_details}</div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
+            <div className="font-semibold text-[13px] text-slate-900">{tr.ed_course_details}</div>
             <CoverImageField
               courseId={course.id}
               operatorSlug={slug}
@@ -357,7 +357,7 @@ export default async function EditCoursePage({
               </Field>
             </div>
             {activeModule ? (
-              <div className="border-t border-white/[.06] pt-3">
+              <div className="border-t border-slate-200 pt-3">
                 <ModuleNarration
                   moduleId={activeModule.id}
                   operatorSlug={slug}
@@ -375,7 +375,7 @@ export default async function EditCoursePage({
             {op.supplier_slug ? (
               <VoicesModal
                 supplierSlug={op.supplier_slug}
-                className="block text-left text-[12px] text-emerald-300 hover:underline"
+                className="block text-left text-[12px] text-emerald-700 hover:underline"
               >
                 {tr.ed_manage_voices}
               </VoicesModal>
@@ -387,7 +387,7 @@ export default async function EditCoursePage({
           <form action={deleteCourse} className="px-1">
             <input type="hidden" name="operator_slug" value={slug} />
             <input type="hidden" name="course_slug" value={course.slug} />
-            <button type="submit" className="text-[12px] text-rose-300 hover:underline">
+            <button type="submit" className="text-[12px] text-rose-600 hover:underline">
               {tr.ed_delete_course}
             </button>
           </form>
@@ -418,7 +418,7 @@ function DurationBanner({
   else band = "over";
   const cls = {
     low: "bg-slate-400",
-    good: "bg-emerald-400",
+    good: "bg-emerald-600",
     warn: "bg-amber-400",
     over: "bg-rose-400",
   }[band];
@@ -430,16 +430,16 @@ function DurationBanner({
   }[band];
   const fmt = `${totalMin}:${totalSec.toString().padStart(2, "0")}`;
   return (
-    <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-4">
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-baseline justify-between mb-2">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">{tr.ed_len_label}</div>
-        <div className="text-[12px] text-[#a7d4b6]">{tr.ed_len_target}</div>
+        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">{tr.ed_len_label}</div>
+        <div className="text-[12px] text-slate-600">{tr.ed_len_target}</div>
       </div>
       <div className="flex items-end justify-between gap-3">
-        <div className="font-mono text-[28px] text-white tabular-nums leading-none">{fmt}</div>
-        <div className="text-[12px] text-[#a7d4b6] flex-1 ml-4 mb-1">{tip}</div>
+        <div className="font-mono text-[28px] text-slate-900 tabular-nums leading-none">{fmt}</div>
+        <div className="text-[12px] text-slate-600 flex-1 ml-4 mb-1">{tip}</div>
       </div>
-      <div className="h-2 rounded-full bg-white/[.06] overflow-hidden mt-3 relative">
+      <div className="h-2 rounded-full bg-slate-100 overflow-hidden mt-3 relative">
         <div className={`${cls} h-full transition-all`} style={{ width: `${pct}%` }} />
         <div
           className="absolute top-0 bottom-0 w-px bg-white/40"
@@ -452,12 +452,12 @@ function DurationBanner({
 }
 
 const inputClass =
-  "w-full bg-[#04241e] border border-white/[.10] rounded-md px-3 py-2 text-[14px] text-white outline-none focus:border-emerald-400/60";
+  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] text-slate-900 outline-none focus:border-emerald-400/60";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="text-[12px] font-semibold text-[#e6f5ec] mb-1.5">{label}</div>
+      <div className="text-[12px] font-semibold text-slate-700 mb-1.5">{label}</div>
       {children}
     </label>
   );

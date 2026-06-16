@@ -66,11 +66,13 @@ export function ModuleReader({
   const [dwell, setDwell] = useState(0);
   const [isPending, startTransition] = useTransition();
   const [awardedCode, setAwardedCode] = useState<string | null>(null);
+  const [narrationHidden, setNarrationHidden] = useState(false);
   const startRef = useRef<number>(Date.now());
 
   useEffect(() => {
     setDwell(0);
     setAwardedCode(null);
+    setNarrationHidden(false);
     startRef.current = Date.now();
     const i = setInterval(() => {
       if (document.visibilityState === "visible") {
@@ -134,12 +136,21 @@ export function ModuleReader({
         <p className="text-[15px] text-[#a7d4b6] mb-6 leading-relaxed">{module.summary}</p>
       ) : null}
 
-      {narrationSrc ? (
+      {narrationSrc && !narrationHidden ? (
         <div className="mb-6 flex items-center gap-2 rounded-lg bg-emerald-400/[.06] border border-emerald-400/20 p-2.5">
           <span className="text-[11px] text-emerald-300/80 font-mono uppercase tracking-widest shrink-0">
             🎧 {dict.lr_voiceover}
           </span>
           <audio controls preload="none" src={narrationSrc} className="flex-1 h-9" />
+          <button
+            type="button"
+            onClick={() => setNarrationHidden(true)}
+            aria-label={dict.mp_close}
+            title={dict.mp_close}
+            className="w-7 h-7 shrink-0 rounded-md text-[#a7d4b6] hover:bg-white/[.08] flex items-center justify-center text-[13px]"
+          >
+            ✕
+          </button>
         </div>
       ) : null}
 
@@ -423,7 +434,8 @@ function VideoBlock({
  */
 function AudioPlayer({ block, compact = false }: { block: BlockRow; compact?: boolean }) {
   const dict = useTr();
-  if (!block.audio_r2_key) return null;
+  const [hidden, setHidden] = useState(false);
+  if (!block.audio_r2_key || hidden) return null;
   // When viewing a non-primary language, the page sets _audio_lang_query so we
   // request the localised audio (/api/audio?lang=…) instead of the primary
   // column. Without it the player would serve the wrong language (or 404 when
@@ -442,6 +454,15 @@ function AudioPlayer({ block, compact = false }: { block: BlockRow; compact?: bo
         🎙 {dict.lr_voiceover}
       </span>
       <audio controls preload="none" src={src} className="flex-1 h-8" />
+      <button
+        type="button"
+        onClick={() => setHidden(true)}
+        aria-label={dict.mp_close}
+        title={dict.mp_close}
+        className="w-6 h-6 shrink-0 rounded text-[#a7d4b6] hover:bg-white/[.08] flex items-center justify-center text-[12px]"
+      >
+        ✕
+      </button>
     </div>
   );
 }
