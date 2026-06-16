@@ -7,6 +7,7 @@ import { t, fmt } from "@/lib/i18n";
 import { VoicesModal } from "./voices-modal";
 import { GlossaryModal } from "./glossary-modal";
 import { BillingModal } from "./billing-modal";
+import { PageBreadcrumb } from "../../_components/page-breadcrumb";
 
 export const dynamic = "force-dynamic";
 
@@ -130,22 +131,17 @@ export default async function SupplierDashboard({ params }: Props) {
 
   return (
     <div className="min-h-screen font-sans antialiased text-[16px] bg-white text-slate-900">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2">
-            <Link href="/" className="hover:text-white">{tr.nav_home}</Link>
-            <span className="text-white/20">/</span>
-            <span className="text-white">{fmt(tr.sp_breadcrumb, { name: supplier.name })}</span>
-            {access.isAdmin ? (
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
-                {tr.op_d_view_as_admin}
-              </span>
-            ) : null}
-          </span>
-        }
-      />
+      <TopBar />
 
       <main className="px-5 sm:px-8 py-8 max-w-7xl mx-auto">
+        <PageBreadcrumb
+          className="mb-3"
+          items={[
+            { href: "/", label: tr.nav_home },
+            ...(access.isAdmin ? [{ href: "/supplier", label: tr.sup_picker_title_admin }] : []),
+            { label: supplier.name },
+          ]}
+        />
         {/* Cover hero — shown on entry to the supplier panel */}
         <div className="relative h-40 sm:h-52 rounded-2xl overflow-hidden border border-slate-200 mb-6 bg-gradient-to-br from-slate-800 to-slate-600">
           {supplier.cover_r2_key ? (

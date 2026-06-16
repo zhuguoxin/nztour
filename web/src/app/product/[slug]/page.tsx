@@ -12,6 +12,7 @@ import {
 } from "@/lib/operator-stats";
 import { CreateCoursePanel } from "./create-course-panel";
 import { VoicesModal } from "@/app/supplier/[slug]/voices-modal";
+import { PageBreadcrumb } from "../../_components/page-breadcrumb";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
 import { ActivityChart } from "./activity-chart";
 import { t, fmt, type Dict } from "@/lib/i18n";
@@ -121,36 +122,22 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
   // exactly what their theme looks like.
   return (
     <div className="min-h-screen font-sans antialiased text-[16px] bg-white text-slate-900">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2">
-            <Link href="/" className="hover:text-white">{tr.nav_home}</Link>
-            <span className="text-white/20">/</span>
-            {operator.supplier_slug ? (
-              <>
-                <Link
-                  href={`/supplier/${operator.supplier_slug}`}
-                  className="hover:text-white shrink-0"
-                >
-                  {tr.bc_supplier}
-                </Link>
-                <span className="text-white/20">/</span>
-              </>
-            ) : null}
-            <span className="text-white">{operator.name}</span>
-            {access.isAdmin ? (
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
-                {tr.op_d_view_as_admin}
-              </span>
-            ) : null}
-          </span>
-        }
-      />
+      <TopBar />
 
       <main className="px-5 sm:px-8 py-8 sm:py-10 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-7 sm:mb-9 flex-wrap">
           <div className="min-w-0">
+            <PageBreadcrumb
+              className="mb-1.5"
+              items={[
+                { href: "/", label: tr.nav_home },
+                ...(operator.supplier_slug
+                  ? [{ href: `/supplier/${operator.supplier_slug}`, label: tr.bc_supplier }]
+                  : []),
+                { label: operator.name },
+              ]}
+            />
             <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
               {tr.op_d_chrome_label}
             </div>

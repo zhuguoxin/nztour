@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { TopBar } from "../_components/top-bar";
+import { PageBreadcrumb } from "../_components/page-breadcrumb";
 import { getCurrentRole } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
@@ -77,6 +78,13 @@ export default async function SupplierIndex() {
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
       <TopBar />
       <main className="px-5 sm:px-8 py-10 max-w-5xl mx-auto">
+        <PageBreadcrumb
+          className="mb-2"
+          items={[
+            { href: "/", label: tr.nav_home },
+            { label: role.isAdmin ? tr.sup_picker_title_admin : tr.sup_picker_title_user },
+          ]}
+        />
         <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
           {tr.sup_picker_label}
         </div>

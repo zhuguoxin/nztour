@@ -3,6 +3,7 @@ import { TopBar } from "../_components/top-bar";
 import { getCurrentRole, requireAdmin } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { grantSupplierMembership, revokeSupplierMembership } from "./actions";
+import { PageBreadcrumb } from "../_components/page-breadcrumb";
 import { t, fmt } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -91,19 +92,15 @@ export default async function AdminPage({
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2">
-            <Link href="/" className="hover:text-slate-900">{tr.nav_home}</Link>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-900">{tr.admin_breadcrumb}</span>
-          </span>
-        }
-      />
+      <TopBar />
 
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
+            <PageBreadcrumb
+              className="mb-1.5"
+              items={[{ href: "/", label: tr.nav_home }, { label: tr.admin_breadcrumb }]}
+            />
             <div className="text-[11px] tracking-widest font-mono text-lime-700/70">{tr.admin_chrome_label}</div>
             <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">{tr.admin_title}</h1>
             <p className="text-[13.5px] text-slate-600 mt-1.5">{tr.admin_blurb}</p>
