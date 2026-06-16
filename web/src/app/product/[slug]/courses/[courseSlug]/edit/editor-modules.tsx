@@ -803,8 +803,30 @@ export function ModuleNarration({
 
   function generate() {
     setGenErr(null);
+    // No script anywhere to work from — guide the user instead of a raw error.
+    if (!script.trim() && !(narrationByLang[primaryLang] ?? "").trim()) {
+      setGenErr(tr.em_narration_need_script);
+      return;
+    }
     startGen(async () => {
       try {
+        // Persist the current script first so "type → generate" works without a
+        // separate save click (generation reads the saved script; for a non-
+        // primary language it auto-translates this primary-language script).
+        if (script.trim()) {
+          const fd = new FormData();
+          fd.set("operator_slug", operatorSlug);
+          fd.set("course_slug", courseSlug);
+          fd.set("module_id", moduleId);
+          fd.set("lang", primaryLang);
+          fd.set("script", script);
+          const sres = await saveModuleNarration(fd);
+          if (sres.ok) setSaved(true);
+          else {
+            setGenErr(sres.error ?? tr.em_gen_failed);
+            return;
+          }
+        }
         const res = await generateModuleAudioAction({
           operatorSlug,
           courseSlug,
