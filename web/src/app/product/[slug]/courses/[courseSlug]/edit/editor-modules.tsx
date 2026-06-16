@@ -13,7 +13,6 @@ import {
   createQuizQuestion,
   deleteQuizQuestion,
   generateModuleQuiz,
-  saveModuleNarration,
   generateModuleAudioAction,
 } from "../../actions";
 import { SortableList, GrabHandle, type DragHandleProps } from "./sortable-list";
@@ -708,19 +707,6 @@ function BlockEditor({
   );
 }
 
-function parseNarrationScripts(json: string | null | undefined): Record<string, string> {
-  if (!json) return {};
-  try {
-    const v = JSON.parse(json);
-    if (!v || typeof v !== "object" || Array.isArray(v)) return {};
-    const out: Record<string, string> = {};
-    for (const [k, val] of Object.entries(v)) if (typeof val === "string") out[k] = val;
-    return out;
-  } catch {
-    return {};
-  }
-}
-
 /**
  * Module-level narration (voice-over). One script per module, authored in the
  * course's primary language; the "Import" button seeds it from the module's
@@ -734,7 +720,6 @@ export function ModuleNarration({
   primaryLang,
   availableLangs,
   voices,
-  narrationMdI18n,
   narrationAudioI18n,
   blocks,
 }: {
@@ -744,18 +729,18 @@ export function ModuleNarration({
   primaryLang: string;
   availableLangs: string[];
   voices: VoiceOption[];
-  narrationMdI18n: string | null;
   narrationAudioI18n: string | null;
   blocks: BlockData[];
 }) {
   const tr = useTr();
   const router = useRouter();
-  const narrationByLang = parseNarrationScripts(narrationMdI18n);
   const audioByLang = parseAudioI18n(narrationAudioI18n);
-  const [script, setScript] = useState(narrationByLang[primaryLang] ?? "");
-  const [saving, startSave] = useTransition();
-  const [saved, setSaved] = useState(false);
-  const [saveErr, setSaveErr] = useState<string | null>(null);
+  // Narration auto-tracks the module's text — built from the text/callout
+  // blocks (no manual import, no separately-maintained script).
+  const derivedScript = blocks
+    .filter((b) => (b.kind === "text" || b.kind === "callout") && (b.text_md ?? "").trim())
+    .map((b) => (b.text_md ?? "").trim())
+    .join("\n\n");
 
   const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
@@ -769,33 +754,6 @@ export function ModuleNarration({
   const langsWithAudio = availableLangs.filter((l) => audioByLang[l]);
   const applicableVoices = voicesForLang(voices, genLang);
 
-  function importFromBlocks() {
-    const text = blocks
-      .filter((b) => (b.kind === "text" || b.kind === "callout") && (b.text_md ?? "").trim())
-      .map((b) => (b.text_md ?? "").trim())
-      .join("\n\n");
-    setScript((prev) => (prev.trim() ? prev + "\n\n" + text : text));
-    setSaved(false);
-  }
-
-  function save() {
-    setSaveErr(null);
-    setSaved(false);
-    startSave(async () => {
-      const fd = new FormData();
-      fd.set("operator_slug", operatorSlug);
-      fd.set("course_slug", courseSlug);
-      fd.set("module_id", moduleId);
-      fd.set("lang", primaryLang);
-      fd.set("script", script);
-      const res = await saveModuleNarration(fd);
-      if (res.ok) {
-        setSaved(true);
-        router.refresh();
-      } else setSaveErr(res.error ?? tr.em_gen_failed);
-    });
-  }
-
   function pickLang(l: string) {
     setGenLang(l);
     setVoiceId(defaultVoiceFor(voicesForLang(voices, l), l, audioByLang[l]?.voice_id));
@@ -803,30 +761,13 @@ export function ModuleNarration({
 
   function generate() {
     setGenErr(null);
-    // No script anywhere to work from — guide the user instead of a raw error.
-    if (!script.trim() && !(narrationByLang[primaryLang] ?? "").trim()) {
-      setGenErr(tr.em_narration_need_script);
+    // Narration is derived from the module's text — nothing to narrate yet.
+    if (!derivedScript.trim()) {
+      setGenErr(tr.em_narration_need_text);
       return;
     }
     startGen(async () => {
       try {
-        // Persist the current script first so "type → generate" works without a
-        // separate save click (generation reads the saved script; for a non-
-        // primary language it auto-translates this primary-language script).
-        if (script.trim()) {
-          const fd = new FormData();
-          fd.set("operator_slug", operatorSlug);
-          fd.set("course_slug", courseSlug);
-          fd.set("module_id", moduleId);
-          fd.set("lang", primaryLang);
-          fd.set("script", script);
-          const sres = await saveModuleNarration(fd);
-          if (sres.ok) setSaved(true);
-          else {
-            setGenErr(sres.error ?? tr.em_gen_failed);
-            return;
-          }
-        }
         const res = await generateModuleAudioAction({
           operatorSlug,
           courseSlug,
@@ -846,43 +787,22 @@ export function ModuleNarration({
 
   return (
     <section className="rounded-lg border border-emerald-400/20 bg-emerald-600/[.04] p-3 space-y-2.5">
-      <div className="flex items-center justify-between">
-        <div className="text-[12px] font-semibold text-emerald-700">
-          🎧 {tr.em_narration_heading}
+      <div className="text-[12px] font-semibold text-emerald-700">
+        🎧 {tr.em_narration_heading}
+      </div>
+
+      {derivedScript.trim() ? (
+        <div className="space-y-1">
+          <div className="text-[10.5px] text-slate-500">{tr.em_narration_auto}</div>
+          <div className="max-h-32 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-[12px] leading-relaxed text-slate-600 whitespace-pre-wrap">
+            {derivedScript}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={importFromBlocks}
-          className="px-2.5 py-1 rounded border border-emerald-400/40 text-emerald-700 hover:bg-emerald-600/10 text-[11px]"
-          title={tr.em_narration_import_title}
-        >
-          {tr.em_narration_import}
-        </button>
-      </div>
-
-      <textarea
-        rows={4}
-        value={script}
-        onChange={(e) => {
-          setScript(e.target.value);
-          setSaved(false);
-        }}
-        placeholder={fmt(tr.em_narration_ph, { lang: langLabel(primaryLang) })}
-        className={inputClass + " resize-y text-[12.5px] leading-relaxed"}
-      />
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          className="px-3 py-1.5 rounded bg-emerald-600 text-white font-semibold text-[12px] hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {saving ? tr.em_narration_saving : tr.em_narration_save}
-        </button>
-        {saved ? <span className="text-[11px] text-emerald-700">{tr.em_narration_saved}</span> : null}
-        {saveErr ? <span className="text-[11px] text-rose-600">{saveErr}</span> : null}
-      </div>
+      ) : (
+        <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-2.5 py-3 text-[11.5px] text-slate-400">
+          {tr.em_narration_need_text}
+        </div>
+      )}
 
       {/* Voice-over: per-language audio chips + generate popover */}
       <div className="relative flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200">

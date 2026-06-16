@@ -739,34 +739,34 @@ async function generateModuleAudioCore(input: {
 
   const targetLang =
     requestedLang === "auto" || !requestedLang ? mod.course_primary_lang : requestedLang;
-  const scriptMap = readI18nMap(mod.narration_md_i18n);
-  let script = scriptMap[targetLang] ?? "";
 
-  // Scheme A: author once in the primary language; auto-translate (with the
-  // supplier glossary) for other languages, persisting the result.
-  if (
-    !script.trim() &&
-    targetLang !== mod.course_primary_lang &&
-    (scriptMap[mod.course_primary_lang] ?? "").trim()
-  ) {
+  // The narration script auto-tracks the module's text — concatenate the
+  // module's text/callout blocks at generation time (no manual import). For a
+  // non-primary language, translate that primary text (with the glossary).
+  const { results: textBlocks = [] } = await db()
+    .prepare(
+      `SELECT text_md FROM content_blocks
+       WHERE module_id = ? AND kind IN ('text','callout') ORDER BY position, id`,
+    )
+    .bind(moduleId)
+    .all<{ text_md: string | null }>();
+  const primaryScript = textBlocks
+    .map((b) => (b.text_md ?? "").trim())
+    .filter(Boolean)
+    .join("\n\n");
+  if (!primaryScript) throw new Error("Module has no text to narrate.");
+
+  let script = primaryScript;
+  if (targetLang !== mod.course_primary_lang) {
     const glossary = await glossaryForTranslation(mod.operator_id, targetLang);
     const out = await translateBatch(
       mod.course_primary_lang,
       targetLang,
-      [{ id: "0", text: scriptMap[mod.course_primary_lang] }],
+      [{ id: "0", text: primaryScript }],
       glossary,
     );
-    const translated = out[0]?.translation ?? "";
-    if (translated.trim()) {
-      script = translated;
-      const newMap = { ...scriptMap, [targetLang]: translated };
-      await db()
-        .prepare(`UPDATE modules SET narration_md_i18n = ? WHERE id = ?`)
-        .bind(writeI18nMap(newMap), moduleId)
-        .run();
-    }
+    script = out[0]?.translation?.trim() || primaryScript;
   }
-  if (!script.trim()) throw new Error(`Module has no narration script in ${targetLang}.`);
 
   const voice = await db()
     .prepare(`SELECT id, provider, external_id, status FROM voice_profiles WHERE id = ?`)

@@ -364,7 +364,6 @@ export default async function EditCoursePage({
                   primaryLang={course.primary_lang}
                   availableLangs={availableLangs}
                   voices={voices ?? []}
-                  narrationMdI18n={activeModule.narration_md_i18n ?? null}
                   narrationAudioI18n={activeModule.narration_audio_i18n ?? null}
                   blocks={blocksByModule[activeModule.id] ?? []}
                 />
