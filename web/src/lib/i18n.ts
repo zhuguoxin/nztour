@@ -509,6 +509,7 @@ const en = {
   ln_visible_hint: "Show or hide this language from learners (content is kept either way).",
   ln_visible_need_gen: "Generate this language first — then you can show it to learners.",
   ed_lang_narration: "🌐 Languages & narration",
+  ed_ln_card_sub: "Applies to the whole course — translates the text and generates narration for every module together.",
 
   // ===== Course editor (page + duration + modules) =====
   ed_cover_label: "Cover image",
@@ -1456,6 +1457,7 @@ const zhCN: Dict = {
   ln_visible_hint: "控制该语言是否对学员显示(内容都会保留)。",
   ln_visible_need_gen: "请先生成该语言,生成后即可对学员显示。",
   ed_lang_narration: "🌐 语言与旁白",
+  ed_ln_card_sub: "作用于整门课程——同时翻译文本并为每个模块生成旁白。",
 
   // ===== Course editor (page + duration + modules) =====
   ed_cover_label: "封面图",
