@@ -31,20 +31,27 @@ export function VoicesModal({
   // Bump on every (re)load so the panel remounts fresh after a mutation —
   // resetting any open edit/record form, exactly like the old full reload did.
   const [ver, setVer] = useState(0);
+  const [err, setErr] = useState<string | null>(null);
 
   async function load() {
     const r = await listSupplierVoices(supplierSlug);
     if (r.ok) {
+      setErr(null);
       setVoices(r.voices ?? []);
       setHasXIKey(!!r.hasXIKey);
     } else {
-      setVoices([]);
+      setErr(
+        r.error === "forbidden" || r.error === "unauthorised"
+          ? tr.err_no_permission
+          : r.error ?? tr.err_load_failed,
+      );
     }
     setVer((v) => v + 1);
   }
 
   function openModal() {
     setVoices(null);
+    setErr(null);
     setOpen(true);
     void load();
   }
@@ -60,7 +67,9 @@ export function VoicesModal({
         {children}
       </button>
       <Modal open={open} onClose={close} title={tr.sp_p_nav_voices} maxWidth="max-w-2xl">
-        {voices === null ? (
+        {err ? (
+          <div className="text-[13px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
+        ) : voices === null ? (
           <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
         ) : (
           <VoicesPanel key={ver} supplierSlug={supplierSlug} voices={voices} hasXIKey={hasXIKey} onChanged={load} />

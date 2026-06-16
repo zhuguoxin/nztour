@@ -27,15 +27,26 @@ export function GlossaryModal({
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<GlossaryRow[] | null>(null);
   const [ver, setVer] = useState(0);
+  const [err, setErr] = useState<string | null>(null);
 
   async function load() {
     const r = await listSupplierGlossary(supplierSlug);
-    setEntries(r.ok ? r.entries ?? [] : []);
+    if (r.ok) {
+      setErr(null);
+      setEntries(r.entries ?? []);
+    } else {
+      setErr(
+        r.error === "forbidden" || r.error === "unauthorised"
+          ? tr.err_no_permission
+          : r.error ?? tr.err_load_failed,
+      );
+    }
     setVer((v) => v + 1);
   }
 
   function openModal() {
     setEntries(null);
+    setErr(null);
     setOpen(true);
     void load();
   }
@@ -50,7 +61,9 @@ export function GlossaryModal({
         {children}
       </button>
       <Modal open={open} onClose={close} title={tr.sp_p_nav_glossary} maxWidth="max-w-3xl">
-        {entries === null ? (
+        {err ? (
+          <div className="text-[13px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
+        ) : entries === null ? (
           <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
         ) : (
           <GlossaryPanel

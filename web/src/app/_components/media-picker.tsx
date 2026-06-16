@@ -130,7 +130,14 @@ function PickerModal({
       const [sup, plat] = await Promise.all([listSupplierMedia(supplierSlug), listPlatformMedia()]);
       if (!live) return;
       if (sup.ok) setAssets(sup.assets ?? []);
-      else setErr(sup.error ?? tr.mp_failed);
+      else {
+        setAssets([]);
+        setErr(
+          sup.error === "forbidden" || sup.error === "unauthorised"
+            ? tr.err_no_permission
+            : sup.error ?? tr.mp_failed,
+        );
+      }
       setPlatform(plat.ok ? plat.assets ?? [] : []);
     })();
     return () => {
