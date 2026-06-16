@@ -505,6 +505,7 @@ const en = {
   ln_working: "Translating text and generating narration — this can take a moment.",
   ln_visible: "Show to learners",
   ln_visible_hint: "Show or hide this language from learners (content is kept either way).",
+  ln_visible_need_gen: "Generate this language first — then you can show it to learners.",
   ed_lang_narration: "🌐 Languages & narration",
 
   // ===== Course editor (page + duration + modules) =====
@@ -1449,6 +1450,7 @@ const zhCN: Dict = {
   ln_working: "正在翻译文本并生成旁白，请稍候。",
   ln_visible: "对学员可见",
   ln_visible_hint: "控制该语言是否对学员显示(内容都会保留)。",
+  ln_visible_need_gen: "请先生成该语言,生成后即可对学员显示。",
   ed_lang_narration: "🌐 语言与旁白",
 
   // ===== Course editor (page + duration + modules) =====

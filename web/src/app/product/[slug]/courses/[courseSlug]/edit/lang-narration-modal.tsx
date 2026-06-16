@@ -162,18 +162,20 @@ export function LangNarrationModal({
                   {rowBusy ? tr.ln_generating : hasAny ? tr.ln_regenerate : tr.ln_generate}
                 </button>
 
-                {!isPrimary && isTranslated ? (
+                {!isPrimary ? (
                   <label
-                    className="flex items-center gap-1 text-[11px] text-slate-600 shrink-0"
-                    title={tr.ln_visible_hint}
+                    className="flex items-center gap-1 text-[11px] shrink-0"
+                    title={isTranslated ? tr.ln_visible_hint : tr.ln_visible_need_gen}
                   >
                     <input
                       type="checkbox"
                       checked={isVisible}
-                      disabled={rowBusy}
+                      disabled={rowBusy || !isTranslated}
                       onChange={(e) => toggleVisible(code, e.target.checked)}
                     />
-                    {tr.ln_visible}
+                    <span className={isTranslated ? "text-slate-600" : "text-slate-400"}>
+                      {tr.ln_visible}
+                    </span>
                   </label>
                 ) : null}
 
