@@ -119,7 +119,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
   // The Branding panel renders a live preview so the operator still sees
   // exactly what their theme looks like.
   return (
-    <div className="min-h-screen font-sans antialiased text-[16px] bg-[#04241e] text-[#f0fdf4]">
+    <div className="min-h-screen font-sans antialiased text-[16px] bg-white text-slate-900">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2">
@@ -150,11 +150,11 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-7 sm:mb-9 flex-wrap">
           <div className="min-w-0">
-            <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">
+            <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
               {tr.op_d_chrome_label}
             </div>
             <div className="flex items-center flex-wrap gap-2 mt-1">
-              <h1 className="text-[26px] sm:text-[32px] font-semibold tracking-tight text-white">
+              <h1 className="text-[26px] sm:text-[32px] font-semibold tracking-tight text-slate-900">
                 {operator.display_name ?? operator.name}
               </h1>
               <OperatorSwitcher
@@ -168,12 +168,12 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                 }}
               />
             </div>
-            <p className="text-[13px] sm:text-[14px] text-[#a7d4b6] mt-1.5">{tr.op_d_blurb}</p>
+            <p className="text-[13px] sm:text-[14px] text-slate-600 mt-1.5">{tr.op_d_blurb}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link
               href={`/product/${slug}/settings`}
-              className="px-3 py-2 rounded-md border border-white/[.12] text-[#d8f0e1] text-[13px] hover:bg-white/[.06]"
+              className="px-3 py-2 rounded-md border border-slate-300 text-slate-700 text-[13px] hover:bg-slate-50"
               title={tr.pp_heading}
             >
               ⚙ {tr.pp_nav_settings}
@@ -181,7 +181,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             {operator.supplier_slug ? (
               <Link
                 href={`/supplier/${operator.supplier_slug}/voices`}
-                className="px-3 py-2 rounded-md border border-white/[.12] text-[#d8f0e1] text-[13px] hover:bg-white/[.06]"
+                className="px-3 py-2 rounded-md border border-slate-300 text-slate-700 text-[13px] hover:bg-slate-50"
                 title={tr.pd_voices_link_tooltip}
               >
                 {tr.pd_voices_link}
@@ -189,7 +189,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             ) : null}
             <Link
               href={`/product/${slug}/courses/new`}
-              className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
+              className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-[13px] hover:bg-emerald-700"
             >
               {tr.op_d_new_course}
             </Link>
@@ -256,23 +256,23 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 mb-8">
           {/* My courses */}
-          <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
-            <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between">
-              <div className="font-semibold text-[14px] text-white">{tr.op_d_my_courses}</div>
-              <span className="text-[12px] text-[#86b69a]">
+          <section className="rounded-2xl border border-slate-200 bg-white">
+            <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <div className="font-semibold text-[14px] text-slate-900">{tr.op_d_my_courses}</div>
+              <span className="text-[12px] text-slate-500">
                 {fmt(tr.op_d_total_count, { n: kpis.courses_published + kpis.courses_draft })}
               </span>
             </header>
             <div>
               {courses.length === 0 ? (
-                <div className="px-5 py-8 text-center text-[13px] text-[#86b69a]">
+                <div className="px-5 py-8 text-center text-[13px] text-slate-500">
                   {tr.op_d_no_courses}
                 </div>
               ) : (
                 courses.map((c) => (
                   <div
                     key={c.id}
-                    className="px-5 py-4 flex items-center gap-4 border-b border-white/[.04] last:border-b-0"
+                    className="px-5 py-4 flex items-center gap-4 border-b border-slate-100 last:border-b-0"
                   >
                     <Link
                       href={`/product/${operator.slug}/courses/${c.slug}/edit`}
@@ -295,10 +295,10 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-[14px] text-white truncate group-hover:text-emerald-300">
+                        <div className="font-medium text-[14px] text-slate-900 truncate group-hover:text-emerald-700">
                           {c.title}
                         </div>
-                        <div className="text-[12px] text-[#86b69a]">
+                        <div className="text-[12px] text-slate-500">
                           {fmt(
                             c.modules === 1 ? tr.op_d_course_modules : tr.op_d_course_modules_plural,
                             { n: c.modules },
@@ -311,8 +311,8 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                     <span
                       className={`px-2.5 py-1 rounded-full text-[11px] font-medium tabular-nums shrink-0 ${
                         c.learners > 0
-                          ? "bg-emerald-400/10 border border-emerald-400/30 text-emerald-200"
-                          : "bg-white/[.04] border border-white/[.08] text-[#86b69a]"
+                          ? "bg-emerald-100 border border-emerald-200 text-emerald-700"
+                          : "bg-slate-100 border border-slate-200 text-slate-500"
                       }`}
                       title={fmt(
                         c.learners === 1
@@ -326,14 +326,14 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                     <StatusPill status={c.status} labels={{ published: tr.op_d_status_published, draft: tr.op_d_status_draft }} />
                     <Link
                       href={`/product/${operator.slug}/courses/${c.slug}/edit`}
-                      className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
+                      className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-50"
                     >
                       {tr.op_d_action_edit}
                     </Link>
                     {c.status === "published" ? (
                       <Link
                         href={`/learn/${operator.slug}/${c.slug}`}
-                        className="px-3 py-1.5 rounded-md bg-white/[.04] border border-white/[.08] text-emerald-300 text-[12px] hover:bg-white/[.08]"
+                        className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-200 text-emerald-700 text-[12px] hover:bg-slate-100"
                       >
                         {tr.op_d_action_view}
                       </Link>
@@ -350,51 +350,51 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
 
         {/* Learners + Top questions */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5">
-          <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
-            <header className="px-5 py-4 border-b border-white/[.06] flex items-center justify-between">
-              <div className="font-semibold text-[14px] text-white">{tr.op_d_learners_title}</div>
+          <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+            <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <div className="font-semibold text-[14px] text-slate-900">{tr.op_d_learners_title}</div>
               <button
                 disabled
                 title={tr.op_d_learners_export_tooltip}
-                className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06] disabled:opacity-50"
+                className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-50 disabled:opacity-50"
               >
                 {tr.op_d_learners_export}
               </button>
             </header>
             {learners.length === 0 ? (
-              <div className="px-5 py-10 text-center text-[13px] text-[#86b69a]">
+              <div className="px-5 py-10 text-center text-[13px] text-slate-500">
                 {tr.op_d_learners_empty}
               </div>
             ) : (
               <table className="w-full">
                 <thead>
                   <tr className="text-left">
-                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">{tr.op_d_learners_th_learner}</th>
-                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a] hidden md:table-cell">{tr.op_d_learners_th_agency}</th>
-                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a] hidden md:table-cell">{tr.op_d_learners_th_course}</th>
-                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">{tr.op_d_learners_th_progress}</th>
-                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-[#86b69a]">{tr.op_d_learners_th_badge}</th>
+                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-slate-500">{tr.op_d_learners_th_learner}</th>
+                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-slate-500 hidden md:table-cell">{tr.op_d_learners_th_agency}</th>
+                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-slate-500 hidden md:table-cell">{tr.op_d_learners_th_course}</th>
+                    <th className="px-3 py-3 text-[11px] tracking-widest font-mono text-slate-500">{tr.op_d_learners_th_progress}</th>
+                    <th className="px-5 py-3 text-[11px] tracking-widest font-mono text-slate-500">{tr.op_d_learners_th_badge}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {learners.map((l) => (
-                    <tr key={`${l.user_id}_${l.course_id}`} className="border-t border-white/[.04]">
-                      <td className="px-5 py-3 text-[13px] text-white">{l.name ?? maskEmail(l.email)}</td>
-                      <td className="px-3 py-3 text-[13px] text-[#a7d4b6] hidden md:table-cell">
-                        {l.agency_name ?? <span className="text-[#5d9279]">—</span>}
+                    <tr key={`${l.user_id}_${l.course_id}`} className="border-t border-slate-100">
+                      <td className="px-5 py-3 text-[13px] text-slate-900">{l.name ?? maskEmail(l.email)}</td>
+                      <td className="px-3 py-3 text-[13px] text-slate-600 hidden md:table-cell">
+                        {l.agency_name ?? <span className="text-slate-400">—</span>}
                       </td>
-                      <td className="px-3 py-3 text-[13px] text-[#a7d4b6] hidden md:table-cell truncate max-w-[180px]">
+                      <td className="px-3 py-3 text-[13px] text-slate-600 hidden md:table-cell truncate max-w-[180px]">
                         {l.course_title}
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-24 h-1.5 bg-black/30 rounded-full overflow-hidden">
+                          <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-emerald-400 to-lime-300"
                               style={{ width: `${l.progress_pct}%` }}
                             />
                           </div>
-                          <span className="text-[12px] text-[#a7d4b6] font-mono tabular-nums">
+                          <span className="text-[12px] text-slate-600 font-mono tabular-nums">
                             {l.progress_pct}%
                           </span>
                         </div>
@@ -417,33 +417,33 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
           </section>
 
           {/* Top questions */}
-          <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f]">
-            <header className="px-5 py-4 border-b border-white/[.06]">
-              <div className="font-semibold text-[14px] text-white">{tr.op_d_topqs_title}</div>
-              <div className="text-[12px] text-[#86b69a] mt-0.5">
+          <section className="rounded-2xl border border-slate-200 bg-white">
+            <header className="px-5 py-4 border-b border-slate-200">
+              <div className="font-semibold text-[14px] text-slate-900">{tr.op_d_topqs_title}</div>
+              <div className="text-[12px] text-slate-500 mt-0.5">
                 {fmt(tr.op_d_topqs_sub, { n: kpis.ai_questions_30d })}
               </div>
             </header>
             <div className="p-5 space-y-3.5">
               {topQs.length === 0 ? (
-                <div className="text-center text-[13px] text-[#86b69a] py-6">
+                <div className="text-center text-[13px] text-slate-500 py-6">
                   {tr.op_d_topqs_empty}
                 </div>
               ) : (
                 topQs.map((q, i) => {
                   const tone =
                     q.source_kind === "rag"
-                      ? "text-emerald-300"
+                      ? "text-emerald-700"
                       : q.source_kind === "web"
-                        ? "text-amber-300"
+                        ? "text-amber-600"
                         : q.source_kind === "no_answer"
-                          ? "text-rose-300"
-                          : "text-[#a7d4b6]";
+                          ? "text-rose-600"
+                          : "text-slate-600";
                   return (
                     <div key={i} className="flex items-start gap-3">
                       <div className={`text-[20px] font-bold w-7 tabular-nums ${tone}`}>{i + 1}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] text-white">"{q.question}"</div>
+                        <div className="text-[13px] text-slate-900">"{q.question}"</div>
                         <div className={`text-[11px] mt-0.5 ${tone}`}>
                           {fmt(
                             q.asks === 1 ? tr.op_d_topqs_asks_one : tr.op_d_topqs_asks_plural,
@@ -464,7 +464,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
               <button
                 disabled
                 title={tr.op_d_new_course_disabled}
-                className="w-full mt-3 px-3 py-2 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06] disabled:opacity-50"
+                className="w-full mt-3 px-3 py-2 rounded-md border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-50 disabled:opacity-50"
               >
                 {tr.op_d_topqs_view_all}
               </button>
@@ -497,10 +497,10 @@ function BrandingPanel({
 }) {
   const t = resolveTheme(operator);
   return (
-    <section id="branding" className="scroll-mt-4 mt-8 rounded-2xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
-      <header className="px-5 py-4 border-b border-white/[.06]">
-        <div className="font-semibold text-[14px] text-white">{tr.br_title}</div>
-        <div className="text-[12px] text-[#86b69a] mt-0.5">
+    <section id="branding" className="scroll-mt-4 mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">
+      <header className="px-5 py-4 border-b border-slate-200">
+        <div className="font-semibold text-[14px] text-slate-900">{tr.br_title}</div>
+        <div className="text-[12px] text-slate-500 mt-0.5">
           {tr.br_blurb}
         </div>
       </header>
@@ -545,12 +545,12 @@ function BrandingPanel({
           </div>
 
           <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
-            <div className="text-[11.5px] text-[#86b69a]">
+            <div className="text-[11.5px] text-slate-500">
               {tr.br_save_hint}
             </div>
             <button
               type="submit"
-              className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13px] hover:bg-emerald-300"
+              className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-[13px] hover:bg-emerald-700"
             >
               {tr.br_save}
             </button>
@@ -558,7 +558,7 @@ function BrandingPanel({
         </form>
 
         {/* Live preview of the four tokens as a learner would see them */}
-        <div className="rounded-xl overflow-hidden border border-white/[.10]" style={{ background: t.bg }}>
+        <div className="rounded-xl overflow-hidden border border-slate-300" style={{ background: t.bg }}>
           <div className="px-3 py-2 text-[10px] font-mono tracking-widest" style={{ color: t.inkMuted }}>
             {tr.br_preview}
           </div>
@@ -584,23 +584,23 @@ function BrandingPanel({
 
       {/* Product cover image — picked from the supplier media library. */}
       {operator.supplier_slug ? (
-        <div className="px-5 pb-4 border-t border-white/[.06] pt-4">
-          <div className="text-[12px] font-semibold text-white mb-1">{tr.br_cover_title}</div>
-          <div className="text-[12px] text-[#86b69a] mb-2.5">{tr.br_cover_blurb}</div>
+        <div className="px-5 pb-4 border-t border-slate-200 pt-4">
+          <div className="text-[12px] font-semibold text-slate-900 mb-1">{tr.br_cover_title}</div>
+          <div className="text-[12px] text-slate-500 mb-2.5">{tr.br_cover_blurb}</div>
           <div className="max-w-xs">
             <MediaPicker
               supplierSlug={operator.supplier_slug}
               target={{ target: "product", operatorSlug: operator.slug }}
               currentUrl={operator.cover_r2_key ? `/api/product-cover?slug=${encodeURIComponent(operator.slug)}` : null}
               aspect="video"
-              theme="dark"
+              theme="light"
             />
           </div>
         </div>
       ) : null}
 
       {/* Logo uploader + reset */}
-      <div className="px-5 pb-5 flex items-center justify-between flex-wrap gap-3 border-t border-white/[.06] pt-4">
+      <div className="px-5 pb-5 flex items-center justify-between flex-wrap gap-3 border-t border-slate-200 pt-4">
         <LogoUploader
           operatorSlug={operator.slug}
           hasLogo={!!operator.theme_logo_r2_key}
@@ -610,7 +610,7 @@ function BrandingPanel({
           <input type="hidden" name="operator_slug" value={operator.slug} />
           <button
             type="submit"
-            className="px-3 py-1.5 rounded-md border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.06]"
+            className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-50"
           >
             {tr.br_reset}
           </button>
@@ -657,11 +657,11 @@ function DateRangeBar({
     { label: tr.pd_preset_90d, days: 90 },
   ];
   return (
-    <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] px-4 py-3 mb-5 flex items-center gap-2 flex-wrap">
-      <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">{tr.pd_reporting_window}</div>
-      <div className="font-mono text-[12.5px] text-white">
+    <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 mb-5 flex items-center gap-2 flex-wrap">
+      <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">{tr.pd_reporting_window}</div>
+      <div className="font-mono text-[12.5px] text-slate-900">
         {fromIso} → {toIso}{" "}
-        <span className="text-[#86b69a]">({windowDays}d)</span>
+        <span className="text-slate-500">({windowDays}d)</span>
       </div>
 
       <div className="flex items-center gap-1 ml-2">
@@ -675,7 +675,7 @@ function DateRangeBar({
             <Link
               key={p.days}
               href={`/product/${slug}?${params.toString()}`}
-              className="px-2 py-1 rounded border border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06] text-[11.5px]"
+              className="px-2 py-1 rounded border border-slate-300 text-slate-700 hover:bg-slate-50 text-[11.5px]"
             >
               {p.label}
             </Link>
@@ -689,19 +689,19 @@ function DateRangeBar({
           name="from"
           defaultValue={fromIso}
           max={todayIso}
-          className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white"
+          className="bg-white border border-slate-300 rounded px-2 py-1 text-[12px] text-slate-900"
         />
-        <span className="text-[#86b69a]">→</span>
+        <span className="text-slate-500">→</span>
         <input
           type="date"
           name="to"
           defaultValue={toIso}
           max={todayIso}
-          className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white"
+          className="bg-white border border-slate-300 rounded px-2 py-1 text-[12px] text-slate-900"
         />
         <button
           type="submit"
-          className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300"
+          className="px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold text-[12px] hover:bg-emerald-700"
         >
           {tr.pd_apply}
         </button>
@@ -710,14 +710,14 @@ function DateRangeBar({
       <div className="ml-auto flex items-center gap-2">
         <a
           href={`/api/operator/learners.csv?slug=${encodeURIComponent(slug)}&from=${fromIso}&to=${toIso}`}
-          className="px-2.5 py-1 rounded border border-white/[.10] text-emerald-300 hover:bg-white/[.06] text-[12px]"
+          className="px-2.5 py-1 rounded border border-slate-300 text-emerald-700 hover:bg-slate-50 text-[12px]"
           title={tr.pd_learners_csv_tooltip}
         >
           {tr.pd_learners_csv}
         </a>
         <Link
           href={`/product/${slug}/qa?from=${fromIso}&to=${toIso}`}
-          className="px-2.5 py-1 rounded border border-white/[.10] text-emerald-300 hover:bg-white/[.06] text-[12px]"
+          className="px-2.5 py-1 rounded border border-slate-300 text-emerald-700 hover:bg-slate-50 text-[12px]"
         >
           {tr.pd_qa_archive}
         </Link>
@@ -738,11 +738,11 @@ function KpiCard({
   tone: "emerald" | "lime" | "default";
 }) {
   const subColor =
-    tone === "emerald" ? "text-emerald-300" : tone === "lime" ? "text-lime-300" : "text-[#a7d4b6]";
+    tone === "emerald" ? "text-emerald-700" : tone === "lime" ? "text-lime-700" : "text-slate-600";
   return (
-    <div className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-4 sm:p-5">
-      <div className="text-[11px] tracking-widest font-mono text-[#86b69a]">{label.toUpperCase()}</div>
-      <div className="text-[26px] sm:text-[28px] font-semibold text-white mt-1.5 tabular-nums">{value}</div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="text-[11px] tracking-widest font-mono text-slate-500">{label.toUpperCase()}</div>
+      <div className="text-[26px] sm:text-[28px] font-semibold text-slate-900 mt-1.5 tabular-nums">{value}</div>
       <div className={`text-[12px] mt-1 ${subColor}`}>{sub}</div>
     </div>
   );
@@ -757,13 +757,13 @@ function StatusPill({
 }) {
   if (status === "published") {
     return (
-      <span className="px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
+      <span className="px-2 py-0.5 rounded-full bg-lime-100 border border-lime-200 text-lime-700 text-[11px] font-medium">
         {labels.published}
       </span>
     );
   }
   return (
-    <span className="px-2 py-0.5 rounded-full bg-amber-300/10 border border-amber-300/30 text-amber-300 text-[11px] font-medium">
+    <span className="px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-medium">
       {labels.draft}
     </span>
   );
@@ -778,20 +778,20 @@ function BadgePill({
 }) {
   if (status === "issued") {
     return (
-      <span className="px-2 py-0.5 rounded-full bg-lime-300/10 border border-lime-300/30 text-lime-300 text-[11px] font-medium">
+      <span className="px-2 py-0.5 rounded-full bg-lime-100 border border-lime-200 text-lime-700 text-[11px] font-medium">
         {labels.issued}
       </span>
     );
   }
   if (status === "pending") {
     return (
-      <span className="px-2 py-0.5 rounded-full bg-amber-300/10 border border-amber-300/30 text-amber-300 text-[11px] font-medium">
+      <span className="px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-medium">
         {labels.pending}
       </span>
     );
   }
   return (
-    <span className="px-2 py-0.5 rounded-full bg-white/[.04] border border-white/[.08] text-[#a7d4b6] text-[11px] font-medium">
+    <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-[11px] font-medium">
       {labels.not_yet}
     </span>
   );
@@ -801,20 +801,20 @@ async function NoAccess({ slug }: { slug: string }) {
   const tr = await t();
   const [before, after] = tr.op_d_403_body.split("{slug}");
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased flex items-center justify-center">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased flex items-center justify-center">
       <div className="text-center max-w-md px-6">
-        <div className="text-[11px] tracking-widest font-mono text-rose-300 mb-2">
+        <div className="text-[11px] tracking-widest font-mono text-rose-600 mb-2">
           {tr.op_d_403_label}
         </div>
-        <h1 className="text-[24px] font-semibold text-white">{tr.op_d_403_title}</h1>
-        <p className="mt-3 text-[14px] text-[#a7d4b6]">
+        <h1 className="text-[24px] font-semibold text-slate-900">{tr.op_d_403_title}</h1>
+        <p className="mt-3 text-[14px] text-slate-600">
           {before}
-          <code className="font-mono text-emerald-300">{slug}</code>
+          <code className="font-mono text-emerald-700">{slug}</code>
           {after}
         </p>
         <Link
           href="/"
-          className="mt-6 inline-block px-4 py-2 rounded-md border border-white/[.10] text-[14px] text-[#d8f0e1] hover:bg-white/[.06]"
+          className="mt-6 inline-block px-4 py-2 rounded-md border border-slate-300 text-[14px] text-slate-700 hover:bg-slate-50"
         >
           {tr.op_d_403_home}
         </Link>

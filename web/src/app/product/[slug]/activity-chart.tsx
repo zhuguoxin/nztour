@@ -36,15 +36,15 @@ export function ActivityChart({
       .join(" ") + ` L ${x(n - 1).toFixed(1)} ${H - padY} L ${x(0).toFixed(1)} ${H - padY} Z`;
 
   return (
-    <section className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-5 mb-8">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 mb-8">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="font-semibold text-[14px] text-white">{labels.title}</div>
+        <div className="font-semibold text-[14px] text-slate-900">{labels.title}</div>
         <div className="flex items-center gap-4 text-[11px]">
-          <span className="flex items-center gap-1.5 text-emerald-300">
-            <span className="inline-block w-3 h-[3px] rounded bg-emerald-400" />
+          <span className="flex items-center gap-1.5 text-emerald-700">
+            <span className="inline-block w-3 h-[3px] rounded bg-emerald-600" />
             {labels.completions}
           </span>
-          <span className="flex items-center gap-1.5 text-lime-300">
+          <span className="flex items-center gap-1.5 text-lime-700">
             <span className="inline-block w-3 h-[3px] rounded bg-lime-300" style={{ opacity: 0.7 }} />
             {labels.new_learners}
           </span>
@@ -52,7 +52,7 @@ export function ActivityChart({
       </div>
 
       {totalActivity === 0 ? (
-        <div className="h-[120px] flex items-center justify-center text-[13px] text-[#5d9279]">
+        <div className="h-[120px] flex items-center justify-center text-[13px] text-slate-400">
           {labels.empty}
         </div>
       ) : (
@@ -64,7 +64,7 @@ export function ActivityChart({
             </linearGradient>
           </defs>
           {/* baseline */}
-          <line x1={padX} y1={H - padY} x2={W - padX} y2={H - padY} stroke="rgba(255,255,255,.08)" strokeWidth="1" />
+          <line x1={padX} y1={H - padY} x2={W - padX} y2={H - padY} stroke="rgba(0,0,0,.08)" strokeWidth="1" />
           {/* completions area + line */}
           <path d={areaPath} fill="url(#activityFill)" />
           <path d={linePath("module_completions")} fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
@@ -75,7 +75,7 @@ export function ActivityChart({
             <g key={p.date}>
               <circle cx={x(i)} cy={y(p.module_completions)} r="3" fill="#34d399" />
               {p.module_completions > 0 ? (
-                <text x={x(i)} y={y(p.module_completions) - 7} textAnchor="middle" fontSize="10" fill="#a7d4b6" fontFamily="ui-monospace,monospace">
+                <text x={x(i)} y={y(p.module_completions) - 7} textAnchor="middle" fontSize="10" fill="#475569" fontFamily="ui-monospace,monospace">
                   {p.module_completions}
                 </text>
               ) : null}
@@ -86,7 +86,7 @@ export function ActivityChart({
             const d = new Date(p.date + "T00:00:00Z");
             const wd = d.toLocaleDateString("en-NZ", { weekday: "short", timeZone: "UTC" });
             return (
-              <text key={p.date} x={x(i)} y={H - 4} textAnchor="middle" fontSize="9.5" fill="#5d9279" fontFamily="ui-monospace,monospace">
+              <text key={p.date} x={x(i)} y={H - 4} textAnchor="middle" fontSize="9.5" fill="#64748b" fontFamily="ui-monospace,monospace">
                 {wd}
               </text>
             );

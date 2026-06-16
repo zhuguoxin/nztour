@@ -54,7 +54,7 @@ export function LogoUploader({
     <div className="flex items-center gap-3">
       {hasLogo ? (
         <span
-          className="inline-flex items-center justify-center h-10 px-3 rounded-md border border-white/[.10]"
+          className="inline-flex items-center justify-center h-10 px-3 rounded-md border border-slate-300"
           style={{ background: themeBg }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -65,10 +65,10 @@ export function LogoUploader({
           />
         </span>
       ) : (
-        <span className="text-[12px] text-[#86b69a]">{tr.br_logo_none}</span>
+        <span className="text-[12px] text-slate-500">{tr.br_logo_none}</span>
       )}
       <label className="cursor-pointer">
-        <span className="px-3 py-1.5 rounded-md bg-white/[.06] border border-white/[.10] text-[#d8f0e1] text-[12px] hover:bg-white/[.10]">
+        <span className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-200">
           {pending ? tr.br_logo_uploading : hasLogo ? tr.br_logo_replace : tr.br_logo_upload}
         </span>
         <input
@@ -84,12 +84,12 @@ export function LogoUploader({
           type="button"
           onClick={removeLogo}
           disabled={pending}
-          className="text-[11px] text-rose-300/80 hover:underline"
+          className="text-[11px] text-rose-600/80 hover:underline"
         >
           {tr.br_logo_remove}
         </button>
       ) : null}
-      <span className="text-[10.5px] text-[#5d9279]">{tr.br_logo_hint}</span>
+      <span className="text-[10.5px] text-slate-400">{tr.br_logo_hint}</span>
     </div>
   );
 }

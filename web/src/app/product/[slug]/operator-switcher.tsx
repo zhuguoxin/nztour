@@ -59,7 +59,7 @@ export function OperatorSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[.10] hover:bg-white/[.06] text-[13px] text-[#d8f0e1]"
+        className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-300 hover:bg-slate-50 text-[13px] text-slate-700"
         aria-haspopup="listbox"
         aria-expanded={open}
         title={labels.switch}
@@ -72,9 +72,9 @@ export function OperatorSwitcher({
       {open ? (
         <div
           role="listbox"
-          className="absolute left-0 top-full mt-1 z-30 min-w-[240px] rounded-lg bg-[#062b22] border border-white/[.10] shadow-[0_8px_28px_rgba(0,0,0,.4)] overflow-hidden"
+          className="absolute left-0 top-full mt-1 z-30 min-w-[240px] rounded-lg bg-[#062b22] border border-slate-300 shadow-[0_8px_28px_rgba(0,0,0,.4)] overflow-hidden"
         >
-          <div className="px-3 py-2 text-[10px] tracking-widest font-mono text-[#5d9279] border-b border-white/[.06]">
+          <div className="px-3 py-2 text-[10px] tracking-widest font-mono text-slate-400 border-b border-slate-200">
             {labels.panel_title.replace("{n}", String(operators.length))}
           </div>
           <div className="max-h-[70vh] overflow-y-auto">
@@ -84,20 +84,20 @@ export function OperatorSwitcher({
                 <Link
                   key={o.slug}
                   href={`/product/${o.slug}`}
-                  className={`flex items-center justify-between px-3 py-2.5 text-[13.5px] border-b border-white/[.04] last:border-b-0 ${
+                  className={`flex items-center justify-between px-3 py-2.5 text-[13.5px] border-b border-slate-100 last:border-b-0 ${
                     isCurrent
-                      ? "bg-emerald-400/[.06] text-white"
-                      : "text-[#d8f0e1] hover:bg-white/[.04]"
+                      ? "bg-emerald-600/[.06] text-slate-900"
+                      : "text-slate-700 hover:bg-slate-100"
                   }`}
                   onClick={() => setOpen(false)}
                 >
                   <span className="flex items-center gap-2 min-w-0">
                     <span className="truncate">{o.name}</span>
                     {isCurrent ? (
-                      <span className="text-emerald-300 text-[11px]">●</span>
+                      <span className="text-emerald-700 text-[11px]">●</span>
                     ) : null}
                   </span>
-                  <span className="text-[10px] text-[#86b69a] font-mono uppercase shrink-0 ml-2">
+                  <span className="text-[10px] text-slate-500 font-mono uppercase shrink-0 ml-2">
                     {o.role}
                   </span>
                 </Link>
@@ -106,7 +106,7 @@ export function OperatorSwitcher({
           </div>
           <Link
             href="/product"
-            className="block px-3 py-2.5 text-[12px] text-emerald-300 hover:bg-white/[.04] border-t border-white/[.06]"
+            className="block px-3 py-2.5 text-[12px] text-emerald-700 hover:bg-slate-100 border-t border-slate-200"
             onClick={() => setOpen(false)}
           >
             {labels.view_all}

@@ -43,29 +43,29 @@ export default async function ProductSettingsPage({
   const tr = await t();
 
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="hover:text-white shrink-0">{tr.nav_home}</Link>
-            <span className="text-white/20 shrink-0">/</span>
-            <Link href={`/product/${slug}`} className="hover:text-white shrink-0 truncate">
+            <Link href="/" className="hover:text-slate-900 shrink-0">{tr.nav_home}</Link>
+            <span className="text-slate-900/20 shrink-0">/</span>
+            <Link href={`/product/${slug}`} className="hover:text-slate-900 shrink-0 truncate">
               {p.name}
             </Link>
-            <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{tr.pp_heading}</span>
+            <span className="text-slate-900/20 shrink-0">/</span>
+            <span className="text-slate-900 truncate">{tr.pp_heading}</span>
           </span>
         }
       />
       <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto">
-        <Link href={`/product/${slug}`} className="text-[13px] text-emerald-300 hover:underline">
+        <Link href={`/product/${slug}`} className="text-[13px] text-emerald-700 hover:underline">
           {tr.pp_back_dashboard}
         </Link>
         <div className="flex items-baseline justify-between gap-3 mt-2 mb-5 flex-wrap">
-          <h1 className="text-[24px] sm:text-[28px] font-semibold tracking-tight text-white">
+          <h1 className="text-[24px] sm:text-[28px] font-semibold tracking-tight text-slate-900">
             {tr.pp_heading}
           </h1>
-          <Link href={`/product/${slug}#branding`} className="text-[12.5px] text-[#a7d4b6] hover:text-white hover:underline">
+          <Link href={`/product/${slug}#branding`} className="text-[12.5px] text-slate-600 hover:text-slate-900 hover:underline">
             {tr.pp_visuals_hint}
           </Link>
         </div>

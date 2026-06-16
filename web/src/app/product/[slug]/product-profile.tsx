@@ -33,8 +33,8 @@ interface LinkRow {
 }
 
 const input =
-  "w-full bg-[#04241e] border border-white/[.12] rounded-md px-2.5 py-1.5 text-[13.5px] text-white outline-none focus:border-emerald-400/60";
-const labelCls = "block text-[11.5px] font-medium text-[#a7d4b6] mb-1";
+  "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[13.5px] text-slate-900 outline-none focus:border-emerald-400/60";
+const labelCls = "block text-[11.5px] font-medium text-slate-600 mb-1";
 
 const CATEGORIES = ["snow", "adventure", "cruise", "hiking", "stay", "entertainment"];
 const REGIONS = ["queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia"];
@@ -76,7 +76,7 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
     })[r] ?? r;
 
   return (
-    <div className="rounded-2xl border border-white/[.08] bg-[#0a3a2f] p-5 sm:p-6">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
       <form action={formAction} className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-7">
         <input type="hidden" name="operator_slug" value={p.slug} />
         <input type="hidden" name="links_json" value={JSON.stringify(links)} />
@@ -125,7 +125,7 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
                   <button
                     type="button"
                     onClick={() => setLinks((pr) => pr.filter((_, j) => j !== i))}
-                    className="px-1.5 py-1 rounded text-rose-300 hover:bg-rose-400/10 text-[12px] shrink-0"
+                    className="px-1.5 py-1 rounded text-rose-600 hover:bg-rose-400/10 text-[12px] shrink-0"
                   >
                     ✕
                   </button>
@@ -134,7 +134,7 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
               <button
                 type="button"
                 onClick={() => setLinks((pr) => [...pr, { label: "", url: "" }])}
-                className="text-[12px] text-emerald-300 hover:underline"
+                className="text-[12px] text-emerald-700 hover:underline"
               >
                 + {tr.pp_link_add}
               </button>
@@ -205,17 +205,17 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
           </Section>
         </div>
 
-        <div className="lg:col-span-2 flex items-center gap-2 border-t border-white/[.08] pt-4">
+        <div className="lg:col-span-2 flex items-center gap-2 border-t border-slate-200 pt-4">
           <button
             type="submit"
             disabled={pending}
-            className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[13.5px] hover:bg-emerald-300 disabled:opacity-50"
+            className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-[13.5px] hover:bg-emerald-700 disabled:opacity-50"
           >
             {pending ? tr.sp_p_saving : tr.sp_p_save}
           </button>
-          {state?.ok ? <span className="text-[12px] text-emerald-300">{tr.sp_p_saved}</span> : null}
+          {state?.ok ? <span className="text-[12px] text-emerald-700">{tr.sp_p_saved}</span> : null}
           {state && !state.ok ? (
-            <span className="text-[12px] text-rose-300">{state.error ?? tr.sp_p_save_failed}</span>
+            <span className="text-[12px] text-rose-600">{state.error ?? tr.sp_p_save_failed}</span>
           ) : null}
         </div>
       </form>
@@ -226,7 +226,7 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2.5">
-      <div className="text-[11px] font-mono uppercase tracking-widest text-emerald-300/70">{title}</div>
+      <div className="text-[11px] font-mono uppercase tracking-widest text-emerald-700/70">{title}</div>
       {children}
     </section>
   );
@@ -247,10 +247,10 @@ function Field({
     <label className="block">
       <span className={labelCls}>
         {label}
-        {required ? <span className="text-rose-300"> *</span> : null}
+        {required ? <span className="text-rose-600"> *</span> : null}
       </span>
       {children}
-      {hint ? <span className="block text-[10.5px] text-[#5d9279] mt-1">{hint}</span> : null}
+      {hint ? <span className="block text-[10.5px] text-slate-400 mt-1">{hint}</span> : null}
     </label>
   );
 }
