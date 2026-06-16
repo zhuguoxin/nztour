@@ -34,19 +34,7 @@ export default async function SupplierBillingPage({
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="hover:text-white shrink-0">{tr.nav_home}</Link>
-            <span className="text-white/20 shrink-0">/</span>
-            <Link href={`/supplier/${slug}`} className="hover:text-white shrink-0">
-              {fmt(tr.sp_breadcrumb, { name: s.name })}
-            </Link>
-            <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{tr.sp_hub_billing_card}</span>
-          </span>
-        }
-      />
+      <TopBar />
       <main className="px-5 sm:px-8 py-8 max-w-2xl mx-auto">
         <Link href={`/supplier/${slug}`} className="text-[13px] text-emerald-700 hover:underline">
           {tr.sp_back_panel}

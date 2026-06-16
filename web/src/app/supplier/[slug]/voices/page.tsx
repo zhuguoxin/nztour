@@ -56,15 +56,7 @@ export default async function SupplierVoices({
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="hover:text-white shrink-0">{tr.nav_home}</Link>
-            <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{fmt(tr.sp_voices_crumb, { name: supplier.name })}</span>
-          </span>
-        }
-      />
+      <TopBar />
       <main className="px-5 sm:px-8 py-8 sm:py-10 max-w-4xl mx-auto">
         <Link
           href={safeReturnTo(from, `/supplier/${supplier.slug}`)}

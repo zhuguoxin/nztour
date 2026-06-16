@@ -143,17 +143,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2 min-w-0 text-[14px]">
-            <Link href={`/product/${slug}`} className="hover:text-white">
-              {operator.name}
-            </Link>
-            <span className="text-white/20">/</span>
-            <span className="text-white">{tr.qa_breadcrumb}</span>
-          </span>
-        }
-      />
+      <TopBar />
 
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
         {/* Window + refresh button */}

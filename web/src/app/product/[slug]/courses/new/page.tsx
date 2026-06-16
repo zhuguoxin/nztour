@@ -29,29 +29,7 @@ export default async function NewCoursePage({ params }: { params: Promise<{ slug
 
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2 min-w-0 text-[14px]">
-            <Link href="/" className="hover:text-white shrink-0">
-              {tr.nav_home}
-            </Link>
-            <span className="text-white/20 shrink-0">/</span>
-            {op.supplier_slug ? (
-              <>
-                <Link href={`/supplier/${op.supplier_slug}`} className="hover:text-white shrink-0">
-                  {tr.bc_supplier}
-                </Link>
-                <span className="text-white/20 shrink-0">/</span>
-              </>
-            ) : null}
-            <Link href={`/product/${slug}`} className="hover:text-white shrink-0">
-              {op.name}
-            </Link>
-            <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{tr.nc_crumb_new}</span>
-          </span>
-        }
-      />
+      <TopBar />
       <main className="px-5 sm:px-8 py-10 max-w-3xl mx-auto">
         <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">
           {tr.nc_label}

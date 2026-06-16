@@ -44,19 +44,7 @@ export default async function ProductSettingsPage({
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2 min-w-0">
-            <Link href="/" className="hover:text-slate-900 shrink-0">{tr.nav_home}</Link>
-            <span className="text-slate-900/20 shrink-0">/</span>
-            <Link href={`/product/${slug}`} className="hover:text-slate-900 shrink-0 truncate">
-              {p.name}
-            </Link>
-            <span className="text-slate-900/20 shrink-0">/</span>
-            <span className="text-slate-900 truncate">{tr.pp_heading}</span>
-          </span>
-        }
-      />
+      <TopBar />
       <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto">
         <Link href={`/product/${slug}`} className="text-[13px] text-emerald-700 hover:underline">
           {tr.pp_back_dashboard}

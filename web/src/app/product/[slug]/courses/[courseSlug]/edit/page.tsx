@@ -197,38 +197,7 @@ export default async function EditCoursePage({
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
-      <TopBar
-        breadcrumb={
-          <span className="flex items-center gap-2 min-w-0 text-[14px]">
-            <Link href="/" className="hover:text-white shrink-0">
-              {tr.nav_home}
-            </Link>
-            <span className="text-white/20 shrink-0">/</span>
-            {op.supplier_slug ? (
-              <>
-                <Link href={`/supplier/${op.supplier_slug}`} className="hover:text-white shrink-0">
-                  {tr.bc_supplier}
-                </Link>
-                <span className="text-white/20 shrink-0">/</span>
-              </>
-            ) : null}
-            <Link href={`/product/${slug}`} className="hover:text-white shrink-0">
-              {op.name}
-            </Link>
-            <span className="text-white/20 shrink-0">/</span>
-            <span className="text-white truncate">{course.title}</span>
-            <span
-              className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium border ${
-                course.status === "published"
-                  ? "bg-lime-300/10 border-lime-300/30 text-lime-300"
-                  : "bg-amber-300/10 border-amber-300/30 text-amber-300"
-              }`}
-            >
-              {course.status}
-            </span>
-          </span>
-        }
-      />
+      <TopBar />
 
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-[230px_1fr_300px] gap-6 items-start">
         {/* ============ Left rail (sticky): course switch · languages · modules ============ */}
