@@ -187,12 +187,6 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                 {tr.pd_voices_link}
               </VoicesModal>
             ) : null}
-            <Link
-              href={`/product/${slug}/courses/new`}
-              className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-[13px] hover:bg-emerald-700"
-            >
-              {tr.op_d_new_course}
-            </Link>
           </div>
         </div>
 
@@ -243,25 +237,25 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
           />
         </div>
 
-        {/* 7-day learning activity */}
-        <ActivityChart
-          points={activity}
-          labels={{
-            title: tr.op_d_activity_title,
-            completions: tr.op_d_activity_completions,
-            new_learners: tr.op_d_activity_new_learners,
-            empty: tr.op_d_activity_empty,
-          }}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 mb-8">
+        {/* Two-column dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-5">
+          {/* Left column: courses + learners */}
+          <div className="space-y-5 min-w-0">
           {/* My courses */}
           <section className="rounded-2xl border border-slate-200 bg-white">
-            <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+            <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
               <div className="font-semibold text-[14px] text-slate-900">{tr.op_d_my_courses}</div>
-              <span className="text-[12px] text-slate-500">
-                {fmt(tr.op_d_total_count, { n: kpis.courses_published + kpis.courses_draft })}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] text-slate-500">
+                  {fmt(tr.op_d_total_count, { n: kpis.courses_published + kpis.courses_draft })}
+                </span>
+                <Link
+                  href={`/product/${slug}/courses/new`}
+                  className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700"
+                >
+                  + {tr.op_d_new_course}
+                </Link>
+              </div>
             </header>
             <div>
               {courses.length === 0 ? (
@@ -342,14 +336,15 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
                 ))
               )}
             </div>
+            {/* Quick: upload a doc → AI-generate a course */}
+            <div className="px-5 py-4 border-t border-slate-200 bg-slate-50/60 rounded-b-2xl">
+              <div className="text-[12px] font-semibold text-slate-700 mb-0.5">{tr.op_d_upload_title}</div>
+              <div className="text-[11.5px] text-slate-500 mb-2.5">{tr.op_d_upload_sub}</div>
+              <CreateCoursePanel operatorSlug={operator.slug} bare />
+            </div>
           </section>
 
-          {/* Upload content → generate course (real) */}
-          <CreateCoursePanel operatorSlug={operator.slug} />
-        </div>
-
-        {/* Learners + Top questions */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5">
+          {/* Learners */}
           <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
             <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
               <div className="font-semibold text-[14px] text-slate-900">{tr.op_d_learners_title}</div>
@@ -415,7 +410,19 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
               </table>
             )}
           </section>
+          </div>
 
+          {/* Right column: activity + top questions */}
+          <div className="space-y-5 min-w-0">
+          <ActivityChart
+            points={activity}
+            labels={{
+              title: tr.op_d_activity_title,
+              completions: tr.op_d_activity_completions,
+              new_learners: tr.op_d_activity_new_learners,
+              empty: tr.op_d_activity_empty,
+            }}
+          />
           {/* Top questions */}
           <section className="rounded-2xl border border-slate-200 bg-white">
             <header className="px-5 py-4 border-b border-slate-200">
@@ -470,6 +477,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
               </button>
             </div>
           </section>
+          </div>
         </div>
 
         {/* === Branding section === */}
