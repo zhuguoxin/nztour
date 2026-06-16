@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { requireSupplierMembership, requireOperatorMembership, requireAdmin } from "@/lib/roles";
+import { requireSupplierMembership, requireOperatorMembership, requireAdmin, getCurrentRole } from "@/lib/roles";
 import { revalidatePath } from "next/cache";
 
 export interface MediaAsset {
@@ -32,6 +32,21 @@ export async function listAllMedia(
       ? db().prepare(`${base} WHERE s.name LIKE ? OR m.filename LIKE ? ORDER BY m.created_at DESC`).bind(`%${query}%`, `%${query}%`)
       : db().prepare(`${base} ORDER BY m.created_at DESC`);
     const { results = [] } = await stmt.all<PlatformMediaAsset>();
+    return { ok: true, assets: results };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+/** List the platform public asset library (newest first). Any back-office user
+ *  can read it so they can pick shared stock imagery in the media picker. */
+export async function listPlatformMedia(): Promise<{ ok: boolean; assets?: MediaAsset[]; error?: string }> {
+  try {
+    const role = await getCurrentRole();
+    if (!role.hasBackofficeAccess) throw new Error("forbidden");
+    const { results = [] } = await db()
+      .prepare(`SELECT id, r2_key, filename, mime, created_at FROM platform_media ORDER BY created_at DESC`)
+      .all<MediaAsset>();
     return { ok: true, assets: results };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "failed" };
@@ -76,11 +91,17 @@ export async function setCoverFromMedia(
     // r2Key, when set, must belong to a real library asset (don't let a caller
     // point a column at an arbitrary R2 key).
     if (r2Key) {
-      const exists = await db()
+      const inSupplier = await db()
         .prepare(`SELECT 1 AS x FROM media_assets WHERE r2_key = ?`)
         .bind(r2Key)
         .first<{ x: number }>();
-      if (!exists) throw new Error("unknown media asset");
+      const inPlatform = inSupplier
+        ? null
+        : await db()
+            .prepare(`SELECT 1 AS x FROM platform_media WHERE r2_key = ?`)
+            .bind(r2Key)
+            .first<{ x: number }>();
+      if (!inSupplier && !inPlatform) throw new Error("unknown media asset");
     }
 
     if (input.target === "supplier") {

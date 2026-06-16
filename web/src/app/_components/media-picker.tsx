@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTr } from "@/lib/i18n-provider";
-import { listSupplierMedia, setCoverFromMedia, type MediaAsset } from "../_actions/media";
+import { listSupplierMedia, listPlatformMedia, setCoverFromMedia, type MediaAsset } from "../_actions/media";
 
 type Target =
   | { target: "supplier"; supplierSlug: string }
@@ -118,23 +118,29 @@ function PickerModal({
 }) {
   const tr = useTr();
   const [assets, setAssets] = useState<MediaAsset[] | null>(null);
+  const [platform, setPlatform] = useState<MediaAsset[] | null>(null);
+  const [tab, setTab] = useState<"supplier" | "platform">("supplier");
   const [err, setErr] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Load the library once when the modal mounts.
+  // Load the supplier library + the shared platform library on mount.
   useEffect(() => {
     let live = true;
     (async () => {
-      const res = await listSupplierMedia(supplierSlug);
+      const [sup, plat] = await Promise.all([listSupplierMedia(supplierSlug), listPlatformMedia()]);
       if (!live) return;
-      if (res.ok) setAssets(res.assets ?? []);
-      else setErr(res.error ?? tr.mp_failed);
+      if (sup.ok) setAssets(sup.assets ?? []);
+      else setErr(sup.error ?? tr.mp_failed);
+      setPlatform(plat.ok ? plat.assets ?? [] : []);
     })();
     return () => {
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierSlug]);
+
+  const current = tab === "platform" ? platform : assets;
+  const serveBase = tab === "platform" ? "/api/platform-media" : "/api/media";
 
   function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -169,19 +175,36 @@ function PickerModal({
         className="w-full max-w-3xl max-h-[80vh] rounded-2xl bg-white text-slate-900 shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200">
-          <div className="font-semibold text-[15px]">{tr.mp_library}</div>
+        <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-slate-200 flex-wrap">
+          <div className="inline-flex rounded-lg border border-slate-200 p-0.5 text-[12.5px]">
+            <button
+              type="button"
+              onClick={() => setTab("supplier")}
+              className={`px-3 py-1 rounded-md font-medium ${tab === "supplier" ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+            >
+              {tr.mp_tab_supplier}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("platform")}
+              className={`px-3 py-1 rounded-md font-medium ${tab === "platform" ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+            >
+              {tr.mp_tab_platform}
+            </button>
+          </div>
           <div className="flex items-center gap-2">
-            <label className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-[13px] font-semibold hover:bg-emerald-700 cursor-pointer">
-              {uploading ? tr.mp_uploading : `+ ${tr.mp_upload}`}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                disabled={uploading}
-                onChange={upload}
-                className="hidden"
-              />
-            </label>
+            {tab === "supplier" ? (
+              <label className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-[13px] font-semibold hover:bg-emerald-700 cursor-pointer">
+                {uploading ? tr.mp_uploading : `+ ${tr.mp_upload}`}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  disabled={uploading}
+                  onChange={upload}
+                  className="hidden"
+                />
+              </label>
+            ) : null}
             <button
               type="button"
               onClick={onClose}
@@ -198,22 +221,24 @@ function PickerModal({
               {err}
             </div>
           ) : null}
-          {assets === null ? (
+          {current === null ? (
             <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
-          ) : assets.length === 0 ? (
-            <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_empty}</div>
+          ) : current.length === 0 ? (
+            <div className="text-[13px] text-slate-400 text-center py-10">
+              {tab === "platform" ? tr.mp_platform_empty : tr.mp_empty}
+            </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {assets.map((a) => (
+              {current.map((a) => (
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => onPick({ r2_key: a.r2_key, url: `/api/media?id=${a.id}` })}
+                  onClick={() => onPick({ r2_key: a.r2_key, url: `${serveBase}?id=${a.id}` })}
                   className="group relative aspect-video rounded-lg overflow-hidden border border-slate-200 hover:border-emerald-500 hover:ring-2 hover:ring-emerald-500/30"
                   title={a.filename ?? ""}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`/api/media?id=${a.id}`} alt={a.filename ?? ""} className="w-full h-full object-cover" />
+                  <img src={`${serveBase}?id=${a.id}`} alt={a.filename ?? ""} className="w-full h-full object-cover" />
                   <span className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/10 transition" />
                 </button>
               ))}
