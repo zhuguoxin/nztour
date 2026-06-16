@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { regenerateModule } from "../../actions";
 import { langLabel } from "@/lib/translate";
@@ -31,6 +31,7 @@ export function RegenerateModuleButton({
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Switching modules in the 3-column editor is a soft navigation that reuses
   // this component instance — reset transient UI so we never carry a previous
@@ -40,6 +41,12 @@ export function RegenerateModuleButton({
     setDone(false);
     setErr(null);
   }, [moduleId]);
+
+  // Start playback when the editor picks a language (not on module switch — that
+  // path only ever sets `playing` to null, so this effect won't auto-play).
+  useEffect(() => {
+    if (playing) audioRef.current?.play().catch(() => {});
+  }, [playing]);
 
   function run() {
     setErr(null);
@@ -98,6 +105,7 @@ export function RegenerateModuleButton({
           {playingEntry ? (
             <div className="flex items-center gap-2">
               <audio
+                ref={audioRef}
                 key={`${playingEntry.lang}-${playingEntry.t}`}
                 controls
                 preload="none"
