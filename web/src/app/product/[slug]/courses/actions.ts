@@ -59,7 +59,9 @@ export async function createCourse(form: FormData) {
   redirect(`/product/${operatorSlug}/courses/${slug}/edit`);
 }
 
-export async function updateCourse(form: FormData) {
+/** Save the course-details form. `forceStatus` lets the Publish / Unpublish
+ *  buttons set the status regardless of the (hidden) status field. */
+async function saveCourseInternal(form: FormData, forceStatus?: "draft" | "published") {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
   const access = await requireOperatorMembership(operatorSlug);
@@ -72,10 +74,10 @@ export async function updateCourse(form: FormData) {
   const title = String(form.get("title") ?? "").trim().slice(0, 200);
   const summary = String(form.get("summary") ?? "").trim().slice(0, 1000) || null;
   const emoji = String(form.get("emoji") ?? "").trim().slice(0, 8) || null;
-  const status = String(form.get("status") ?? "draft");
+  const formStatus = String(form.get("status") ?? "draft");
+  const status = forceStatus ?? (["draft", "published"].includes(formStatus) ? formStatus : "draft");
   const est = parseInt(String(form.get("est_minutes") ?? "0"), 10) || null;
   if (!title) throw new Error("title required");
-  if (!["draft", "published"].includes(status)) throw new Error("invalid status");
 
   await db()
     .prepare(
@@ -89,6 +91,19 @@ export async function updateCourse(form: FormData) {
   revalidatePath(`/product/${operatorSlug}`);
   revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+/** Save changes, keeping the current status. */
+export async function updateCourse(form: FormData) {
+  await saveCourseInternal(form);
+}
+/** Save changes and publish (status → published). */
+export async function publishCourse(form: FormData) {
+  await saveCourseInternal(form, "published");
+}
+/** Save changes and unpublish (status → draft). */
+export async function unpublishCourse(form: FormData) {
+  await saveCourseInternal(form, "draft");
 }
 
 export async function deleteCourse(form: FormData) {

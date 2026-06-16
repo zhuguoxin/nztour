@@ -4,7 +4,7 @@ import { TopBar } from "../../../../../_components/top-bar";
 import { requireOperatorMembership } from "@/lib/roles";
 import { VoicesModal } from "@/app/supplier/[slug]/voices-modal";
 import { db } from "@/lib/db";
-import { updateCourse, deleteCourse } from "../../actions";
+import { updateCourse, deleteCourse, publishCourse, unpublishCourse } from "../../actions";
 import {
   EditorModules,
   ModuleNarration,
@@ -267,7 +267,22 @@ export default async function EditCoursePage({
         {/* ============ Right rail (sticky): one save button + course settings ============ */}
         <aside className="lg:sticky lg:top-[76px] space-y-5 order-2 lg:order-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-            {/* Single save button for the whole course (associated to #course-form). */}
+            {/* Current status */}
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-slate-500">{tr.ed_status}</span>
+              {course.status === "published" ? (
+                <span className="px-2 py-0.5 rounded-full bg-lime-100 border border-lime-200 text-lime-700 text-[11px] font-medium">
+                  {tr.ed_published}
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-medium">
+                  {tr.ed_draft}
+                </span>
+              )}
+            </div>
+
+            {/* All three buttons submit the single #course-form, so edits are
+                saved either way; formAction sets the resulting status. */}
             <button
               type="submit"
               form="course-form"
@@ -275,6 +290,26 @@ export default async function EditCoursePage({
             >
               {tr.ed_save_changes}
             </button>
+            {course.status === "published" ? (
+              <button
+                type="submit"
+                form="course-form"
+                formAction={unpublishCourse}
+                className="w-full px-4 py-2 rounded-md border border-slate-300 text-slate-700 font-semibold text-[13px] hover:bg-slate-50"
+              >
+                {tr.ed_unpublish}
+              </button>
+            ) : (
+              <button
+                type="submit"
+                form="course-form"
+                formAction={publishCourse}
+                className="w-full px-4 py-2 rounded-md bg-lime-600 text-white font-semibold text-[13px] hover:bg-lime-700"
+              >
+                {tr.ed_publish}
+              </button>
+            )}
+
             <div className="flex items-center gap-3 text-[12px]">
               <Link
                 href={`/learn/${slug}/${course.slug}?preview=1`}
@@ -306,25 +341,20 @@ export default async function EditCoursePage({
               emoji={course.emoji}
               hasCover={!!course.cover_r2_key}
             />
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={tr.ed_minutes}>
-                <input
-                  name="est_minutes"
-                  form="course-form"
-                  type="number"
-                  min={1}
-                  max={600}
-                  defaultValue={course.est_minutes ?? ""}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label={tr.ed_status}>
-                <select name="status" form="course-form" defaultValue={course.status} className={inputClass}>
-                  <option value="draft">{tr.ed_draft}</option>
-                  <option value="published">{tr.ed_published}</option>
-                </select>
-              </Field>
-            </div>
+            <Field label={tr.ed_minutes}>
+              <input
+                name="est_minutes"
+                form="course-form"
+                type="number"
+                min={1}
+                max={600}
+                defaultValue={course.est_minutes ?? ""}
+                className={inputClass + " max-w-[160px]"}
+              />
+            </Field>
+            {/* Status is set by the Publish / Unpublish buttons above; this
+                hidden field preserves the current status on a plain Save. */}
+            <input type="hidden" name="status" form="course-form" defaultValue={course.status} />
             {activeModule ? (
               <div className="border-t border-slate-200 pt-3">
                 <ModuleNarration
