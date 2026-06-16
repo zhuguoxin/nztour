@@ -28,13 +28,13 @@ export default async function NewCoursePage({ params }: { params: Promise<{ slug
   const tr = await t();
 
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
       <TopBar />
       <main className="px-5 sm:px-8 py-10 max-w-3xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">
+        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
           {tr.nc_label}
         </div>
-        <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-tight text-white mt-1">
+        <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-tight text-slate-900 mt-1">
           {tr.nc_title}
         </h1>
 

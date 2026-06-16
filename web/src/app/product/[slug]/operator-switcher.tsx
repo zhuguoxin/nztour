@@ -72,7 +72,7 @@ export function OperatorSwitcher({
       {open ? (
         <div
           role="listbox"
-          className="absolute left-0 top-full mt-1 z-30 min-w-[240px] rounded-lg bg-[#062b22] border border-slate-300 shadow-[0_8px_28px_rgba(0,0,0,.4)] overflow-hidden"
+          className="absolute left-0 top-full mt-1 z-30 min-w-[240px] rounded-lg bg-white border border-slate-300 shadow-[0_8px_28px_rgba(15,23,42,.18)] overflow-hidden"
         >
           <div className="px-3 py-2 text-[10px] tracking-widest font-mono text-slate-400 border-b border-slate-200">
             {labels.panel_title.replace("{n}", String(operators.length))}

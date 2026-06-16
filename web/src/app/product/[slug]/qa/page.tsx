@@ -142,44 +142,44 @@ export default async function QAArchive({ params, searchParams }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
       <TopBar />
 
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
         {/* Window + refresh button */}
-        <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] px-4 py-3 mb-5 flex items-center gap-3 flex-wrap">
-          <div className="text-[11px] tracking-widest font-mono text-emerald-300/70">{tr.qa_reporting_window}</div>
-          <div className="font-mono text-[12.5px] text-white">{fromIso} → {toIso}</div>
+        <section className="rounded-xl border border-slate-200 bg-white px-4 py-3 mb-5 flex items-center gap-3 flex-wrap">
+          <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">{tr.qa_reporting_window}</div>
+          <div className="font-mono text-[12.5px] text-slate-900">{fromIso} → {toIso}</div>
           <form action={`/product/${slug}/qa`} className="flex items-center gap-1 ml-1">
             <input
               type="date"
               name="from"
               defaultValue={fromIso}
               max={todayIso}
-              className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white"
+              className="bg-white border border-slate-300 rounded px-2 py-1 text-[12px] text-slate-900"
             />
-            <span className="text-[#86b69a]">→</span>
+            <span className="text-slate-500">→</span>
             <input
               type="date"
               name="to"
               defaultValue={toIso}
               max={todayIso}
-              className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white"
+              className="bg-white border border-slate-300 rounded px-2 py-1 text-[12px] text-slate-900"
             />
             <button
               type="submit"
-              className="px-2.5 py-1 rounded bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300"
+              className="px-2.5 py-1 rounded bg-emerald-600 text-white font-semibold text-[12px] hover:bg-emerald-700"
             >
               {tr.qa_apply}
             </button>
           </form>
           <div className="ml-auto flex items-center gap-2">
             {uncategorizedCount && uncategorizedCount.n > 0 ? (
-              <span className="text-[11.5px] text-amber-300 font-mono">
+              <span className="text-[11.5px] text-amber-600 font-mono">
                 {fmt(tr.qa_uncategorized_count, { n: uncategorizedCount.n })}
               </span>
             ) : (
-              <span className="text-[11.5px] text-emerald-300 font-mono">{tr.qa_all_categorized}</span>
+              <span className="text-[11.5px] text-emerald-700 font-mono">{tr.qa_all_categorized}</span>
             )}
             <CategorizeButton
               operatorSlug={slug}
@@ -192,20 +192,20 @@ export default async function QAArchive({ params, searchParams }: Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">
           {/* Theme sidebar */}
-          <aside className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-3 h-fit">
-            <div className="text-[11px] tracking-widest font-mono text-emerald-300/70 mb-2 px-1">
+          <aside className="rounded-xl border border-slate-200 bg-white p-3 h-fit">
+            <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2 px-1">
               {fmt(tr.qa_themes_heading, { n: themes.results?.length ?? 0 })}
             </div>
             <Link
               href={`/product/${slug}/qa?${baseQuery({ theme: undefined })}`}
               className={`block px-2 py-1.5 rounded text-[13px] mb-1 ${
                 themeFilter === null
-                  ? "bg-emerald-400/15 text-white border border-emerald-400/30"
-                  : "text-[#d8f0e1] hover:bg-white/[.06]"
+                  ? "bg-emerald-600/15 text-slate-900 border border-emerald-400/30"
+                  : "text-slate-700 hover:bg-slate-50"
               }`}
             >
               {tr.qa_all_themes}
-              <span className="ml-1.5 font-mono text-[11px] text-[#86b69a]">
+              <span className="ml-1.5 font-mono text-[11px] text-slate-500">
                 {(themes.results ?? []).reduce((acc, t) => acc + t.question_count, 0)}
               </span>
             </Link>
@@ -218,13 +218,13 @@ export default async function QAArchive({ params, searchParams }: Props) {
                       href={`/product/${slug}/qa?${baseQuery({ theme: t.id })}`}
                       className={`block px-2 py-1.5 rounded text-[13px] ${
                         active
-                          ? "bg-emerald-400/15 text-white border border-emerald-400/30"
-                          : "text-[#d8f0e1] hover:bg-white/[.06] border border-transparent"
+                          ? "bg-emerald-600/15 text-slate-900 border border-emerald-400/30"
+                          : "text-slate-700 hover:bg-slate-50 border border-transparent"
                       }`}
                       title={t.description ?? undefined}
                     >
                       <div className="truncate">{t.label}</div>
-                      <div className="font-mono text-[10px] text-[#86b69a]">
+                      <div className="font-mono text-[10px] text-slate-500">
                         {fmt(t.question_count === 1 ? tr.qa_theme_question_one : tr.qa_theme_question_many, { n: t.question_count })}
                       </div>
                     </Link>
@@ -232,7 +232,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                 );
               })}
               {(themes.results ?? []).length === 0 ? (
-                <div className="px-2 py-3 text-[12px] text-[#86b69a]">
+                <div className="px-2 py-3 text-[12px] text-slate-500">
                   {tr.qa_no_themes}
                 </div>
               ) : null}
@@ -240,13 +240,13 @@ export default async function QAArchive({ params, searchParams }: Props) {
           </aside>
 
           {/* Q&A list */}
-          <section className="rounded-xl border border-white/[.08] bg-[#0a3a2f] overflow-hidden">
-            <header className="px-4 py-3 border-b border-white/[.06] flex items-center gap-3 flex-wrap">
-              <div className="text-[13.5px] font-semibold text-white">
+          <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <header className="px-4 py-3 border-b border-slate-200 flex items-center gap-3 flex-wrap">
+              <div className="text-[13.5px] font-semibold text-slate-900">
                 {themeFilter
                   ? fmt(tr.qa_filtered, { label: (themes.results ?? []).find((t) => t.id === themeFilter)?.label ?? themeFilter })
                   : tr.qa_all_qa}
-                <span className="ml-1.5 text-[11px] text-[#86b69a] font-mono">
+                <span className="ml-1.5 text-[11px] text-slate-500 font-mono">
                   {fmt(tr.qa_shown_count, { n: qaRows.results?.length ?? 0 })}
                 </span>
               </div>
@@ -259,47 +259,47 @@ export default async function QAArchive({ params, searchParams }: Props) {
                   name="q"
                   defaultValue={q}
                   placeholder={tr.qa_search_placeholder}
-                  className="bg-[#04241e] border border-white/[.10] rounded px-2 py-1 text-[12px] text-white outline-none focus:border-emerald-400/60 w-56"
+                  className="bg-white border border-slate-300 rounded px-2 py-1 text-[12px] text-slate-900 outline-none focus:border-emerald-400/60 w-56"
                 />
               </form>
             </header>
 
-            <ul className="divide-y divide-white/[.04]">
+            <ul className="divide-y divide-slate-100">
               {(qaRows.results ?? []).map((r) => (
                 <li key={r.id} className="px-4 py-3">
                   <details className="group">
                     <summary className="cursor-pointer list-none flex items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] text-white">{r.question}</div>
-                        <div className="text-[11px] text-[#86b69a] mt-0.5 flex items-center gap-2 flex-wrap">
+                        <div className="text-[13.5px] text-slate-900">{r.question}</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
                           {r.theme_label ? (
-                            <span className="px-1.5 py-0.5 rounded border border-emerald-400/30 text-emerald-300 font-mono text-[10px]">
+                            <span className="px-1.5 py-0.5 rounded border border-emerald-400/30 text-emerald-700 font-mono text-[10px]">
                               {r.theme_label}
                             </span>
                           ) : (
-                            <span className="px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-300 font-mono text-[10px]">
+                            <span className="px-1.5 py-0.5 rounded border border-amber-400/30 text-amber-600 font-mono text-[10px]">
                               {tr.qa_uncategorized_badge}
                             </span>
                           )}
                           <span>{r.user_name ?? maskEmail(r.user_email)}</span>
-                          <span className="text-white/20">·</span>
+                          <span className="text-slate-900/20">·</span>
                           <span className="font-mono">{r.user_email}</span>
                           {r.course_title ? (
                             <>
-                              <span className="text-white/20">·</span>
+                              <span className="text-slate-900/20">·</span>
                               <span>{r.course_title}</span>
                             </>
                           ) : null}
-                          <span className="text-white/20">·</span>
+                          <span className="text-slate-900/20">·</span>
                           <span>{new Date(r.created_at * 1000).toISOString().slice(0, 16).replace("T", " ")}</span>
-                          <span className="text-white/20">·</span>
+                          <span className="text-slate-900/20">·</span>
                           <span className="uppercase font-mono">{r.source_kind}</span>
                         </div>
                       </div>
-                      <span className="text-[#86b69a] text-[12px] group-open:rotate-180 transition-transform shrink-0">⌄</span>
+                      <span className="text-slate-500 text-[12px] group-open:rotate-180 transition-transform shrink-0">⌄</span>
                     </summary>
-                    <div className="mt-2 ml-1 p-3 rounded bg-[#04241e] border border-white/[.06]">
-                      <div className="text-[12px] text-[#a7d4b6] whitespace-pre-wrap leading-relaxed">
+                    <div className="mt-2 ml-1 p-3 rounded bg-white border border-slate-200">
+                      <div className="text-[12px] text-slate-600 whitespace-pre-wrap leading-relaxed">
                         {r.answer}
                       </div>
                     </div>
@@ -307,7 +307,7 @@ export default async function QAArchive({ params, searchParams }: Props) {
                 </li>
               ))}
               {(qaRows.results ?? []).length === 0 ? (
-                <li className="px-4 py-10 text-center text-[13px] text-[#86b69a]">
+                <li className="px-4 py-10 text-center text-[13px] text-slate-500">
                   {tr.qa_empty}
                 </li>
               ) : null}
