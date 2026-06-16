@@ -816,6 +816,17 @@ async function generateModuleAudioCore(input: {
       return {};
     }
   })();
+  // One narration per (module, language): if the previous take used a different
+  // R2 object (e.g. a different voice), delete it so old audio isn't orphaned.
+  const prevKey = (audioMap[targetLang] as { r2_key?: string } | undefined)?.r2_key;
+  if (prevKey && prevKey !== r2Key) {
+    try {
+      const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+      await getCloudflareContext().env.ASSETS_BUCKET.delete(prevKey);
+    } catch {
+      /* best-effort cleanup */
+    }
+  }
   audioMap[targetLang] = {
     r2_key: r2Key,
     voice_id: voice.id,
@@ -860,7 +871,6 @@ export async function regenerateModule(input: {
         return [];
       }
     })();
-    const targets = Array.from(new Set(avail)).filter((l) => l && l !== primary);
 
     const mod = await db()
       .prepare(
@@ -877,6 +887,19 @@ export async function regenerateModule(input: {
         narration_audio_i18n: string;
       }>();
     if (!mod) throw new Error("not_found");
+
+    // Languages to refresh = enabled languages PLUS any language this module
+    // already has narration in (so older modules whose title was never
+    // translated get caught up — narration and text stay in lockstep).
+    const narrLangs = (() => {
+      try {
+        const v = JSON.parse(mod.narration_audio_i18n ?? "{}");
+        return v && typeof v === "object" && !Array.isArray(v) ? Object.keys(v) : [];
+      } catch {
+        return [];
+      }
+    })();
+    const targets = Array.from(new Set([...avail, ...narrLangs])).filter((l) => l && l !== primary);
 
     const { results: blocks = [] } = await db()
       .prepare(

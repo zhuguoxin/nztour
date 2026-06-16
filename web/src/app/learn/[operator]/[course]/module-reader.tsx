@@ -272,7 +272,6 @@ function BlockView({
             className="max-w-none text-[15px] text-[#d8f0e1] leading-relaxed [&>p]:my-3 [&_strong]:text-white [&_strong]:font-semibold"
             dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
           />
-          <AudioPlayer block={block} />
         </div>
       );
     case "callout":
@@ -282,7 +281,6 @@ function BlockView({
             className="text-[14.5px] text-white leading-relaxed [&>p]:my-2 [&_strong]:text-white"
             dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
           />
-          <AudioPlayer block={block} compact />
         </div>
       );
     case "video":
@@ -428,41 +426,3 @@ function VideoBlock({
   );
 }
 
-/**
- * Voice-over player attached to text/callout blocks. Hidden when the block has
- * no audio_r2_key. `compact` shrinks padding so it fits nicely inside callouts.
- */
-function AudioPlayer({ block, compact = false }: { block: BlockRow; compact?: boolean }) {
-  const dict = useTr();
-  const [hidden, setHidden] = useState(false);
-  if (!block.audio_r2_key || hidden) return null;
-  // When viewing a non-primary language, the page sets _audio_lang_query so we
-  // request the localised audio (/api/audio?lang=…) instead of the primary
-  // column. Without it the player would serve the wrong language (or 404 when
-  // the primary audio doesn't exist but a translated one does).
-  const langQ = (block as BlockRow & { _audio_lang_query?: string })._audio_lang_query;
-  const src = `/api/audio?id=${block.id}${
-    langQ ? `&lang=${encodeURIComponent(langQ)}` : ""
-  }&t=${block.audio_generated_at ?? 0}`;
-  return (
-    <div
-      className={`mt-3 flex items-center gap-2 ${
-        compact ? "" : "rounded-lg bg-white/[.03] border border-white/[.06] p-2"
-      }`}
-    >
-      <span className="text-[11px] text-emerald-300/80 font-mono uppercase tracking-widest shrink-0">
-        🎙 {dict.lr_voiceover}
-      </span>
-      <audio controls preload="none" src={src} className="flex-1 h-8" />
-      <button
-        type="button"
-        onClick={() => setHidden(true)}
-        aria-label={dict.mp_close}
-        title={dict.mp_close}
-        className="w-6 h-6 shrink-0 rounded text-[#a7d4b6] hover:bg-white/[.08] flex items-center justify-center text-[12px]"
-      >
-        ✕
-      </button>
-    </div>
-  );
-}

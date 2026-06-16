@@ -158,6 +158,21 @@ export default async function EditCoursePage({
     }
   }
 
+  // Languages the active module already has narration in — drives the
+  // centre-column 🎧 preview chips next to "Regenerate".
+  const activeNarration: { lang: string; t: number }[] = (() => {
+    if (!activeModule) return [];
+    try {
+      const v = JSON.parse(activeModule.narration_audio_i18n ?? "{}");
+      if (!v || typeof v !== "object" || Array.isArray(v)) return [];
+      return Object.entries(v as Record<string, { r2_key?: string; generated_at?: number }>)
+        .filter(([, e]) => e?.r2_key)
+        .map(([lang, e]) => ({ lang, t: e?.generated_at ?? 0 }));
+    } catch {
+      return [];
+    }
+  })();
+
   const { results: attachments = [] } = await db()
     .prepare(
       `SELECT id, filename, mime_type, size_bytes, rag_status, created_at
@@ -269,7 +284,7 @@ export default async function EditCoursePage({
               operatorSlug={slug}
               courseSlug={course.slug}
               moduleId={activeModule.id}
-              moduleTitle={activeModule.title}
+              narration={activeNarration}
             />
           ) : null}
 
