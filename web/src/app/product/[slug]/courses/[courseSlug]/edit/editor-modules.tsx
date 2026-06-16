@@ -910,13 +910,24 @@ export function ModuleNarration({
         </button>
 
         {playing && audioByLang[playing] ? (
-          <audio
-            autoPlay
-            controls
-            preload="none"
-            src={`/api/module-audio?id=${moduleId}&lang=${encodeURIComponent(playing)}&t=${audioByLang[playing].generated_at}`}
-            className="absolute left-0 top-7 z-20 w-72 h-8"
-          />
+          <div className="absolute left-0 top-7 z-20 flex items-center gap-1 rounded-md border border-white/[.12] bg-[#0a3a2f] p-1 shadow-xl">
+            <audio
+              autoPlay
+              controls
+              preload="none"
+              src={`/api/module-audio?id=${moduleId}&lang=${encodeURIComponent(playing)}&t=${audioByLang[playing].generated_at}`}
+              className="w-64 h-8"
+            />
+            <button
+              type="button"
+              onClick={() => setPlaying(null)}
+              aria-label={tr.mp_close}
+              title={tr.mp_close}
+              className="w-6 h-6 shrink-0 rounded text-[#a7d4b6] hover:bg-white/[.08] flex items-center justify-center text-[12px]"
+            >
+              ✕
+            </button>
+          </div>
         ) : null}
 
         {open ? (
