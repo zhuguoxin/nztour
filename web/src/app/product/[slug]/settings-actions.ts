@@ -4,6 +4,106 @@ import { db } from "@/lib/db";
 import { requireOperatorMembership } from "@/lib/roles";
 import { revalidatePath } from "next/cache";
 
+function shortId(prefix: string): string {
+  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+export interface ProductMemberRow {
+  user_id: string;
+  email: string;
+  name: string | null;
+  role: string;
+}
+
+/** List members with editor/admin access to THIS product. */
+export async function listProductMembers(
+  operatorSlug: string,
+): Promise<{ ok: boolean; members?: ProductMemberRow[]; error?: string }> {
+  try {
+    const access = await requireOperatorMembership(operatorSlug);
+    const { results = [] } = await db()
+      .prepare(
+        `SELECT om.user_id, om.role, u.email, u.name
+         FROM operator_memberships om JOIN users u ON u.id = om.user_id
+         WHERE om.operator_id = ? ORDER BY (om.role='admin') DESC, u.email`,
+      )
+      .bind(access.operatorId)
+      .all<ProductMemberRow>();
+    return { ok: true, members: results };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+/** Caller must be a product admin, the supplier's owner/manager, or platform admin. */
+async function assertProductManager(operatorSlug: string) {
+  const access = await requireOperatorMembership(operatorSlug);
+  if (access.isAdmin) return access;
+  const om = await db()
+    .prepare(`SELECT role FROM operator_memberships WHERE user_id = ? AND operator_id = ?`)
+    .bind(access.userId, access.operatorId)
+    .first<{ role: string }>();
+  if (om?.role === "admin") return access;
+  const sm = await db()
+    .prepare(
+      `SELECT sm.role FROM supplier_memberships sm
+       JOIN operators o ON o.supplier_id = sm.supplier_id
+       WHERE sm.user_id = ? AND o.id = ?`,
+    )
+    .bind(access.userId, access.operatorId)
+    .first<{ role: string }>();
+  if (sm && ["owner", "manager"].includes(sm.role)) return access;
+  throw new Error("forbidden");
+}
+
+/** Grant a user editor/admin access to this product by email (invites new users). */
+export async function addProductMember(
+  operatorSlug: string,
+  email: string,
+  role: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const access = await assertProductManager(operatorSlug);
+    const e = email.trim().toLowerCase().slice(0, 200);
+    if (!e || !e.includes("@")) throw new Error("valid email required");
+    const r = ["editor", "admin"].includes(role) ? role : "editor";
+    const existing = await db().prepare(`SELECT id FROM users WHERE email = ?`).bind(e).first<{ id: string }>();
+    let userId = existing?.id;
+    if (!userId) {
+      userId = shortId("usr");
+      await db().prepare(`INSERT INTO users (id, email, preferred_lang) VALUES (?, ?, 'en')`).bind(userId, e).run();
+    }
+    await db()
+      .prepare(
+        `INSERT INTO operator_memberships (user_id, operator_id, role) VALUES (?, ?, ?)
+         ON CONFLICT(user_id, operator_id) DO UPDATE SET role = excluded.role`,
+      )
+      .bind(userId, access.operatorId, r)
+      .run();
+    revalidatePath(`/product/${operatorSlug}/settings`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+export async function removeProductMember(
+  operatorSlug: string,
+  userId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const access = await assertProductManager(operatorSlug);
+    await db()
+      .prepare(`DELETE FROM operator_memberships WHERE user_id = ? AND operator_id = ?`)
+      .bind(userId, access.operatorId)
+      .run();
+    revalidatePath(`/product/${operatorSlug}/settings`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
 function clean(v: FormDataEntryValue | null, max = 500): string | null {
   const s = String(v ?? "").trim().slice(0, max);
   return s.length ? s : null;

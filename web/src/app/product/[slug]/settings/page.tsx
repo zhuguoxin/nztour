@@ -5,6 +5,8 @@ import { requireOperatorMembership } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t } from "@/lib/i18n";
 import { ProductProfile, type ProductProfileData } from "../product-profile";
+import { MemberManager } from "../../../_components/member-manager";
+import { listProductMembers, addProductMember, removeProductMember } from "../settings-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,8 @@ export default async function ProductSettingsPage({
   if (!p) notFound();
 
   const tr = await t();
+  const membersRes = await listProductMembers(slug);
+  const members = membersRes.ok ? membersRes.members ?? [] : [];
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
@@ -58,6 +62,19 @@ export default async function ProductSettingsPage({
           </Link>
         </div>
         <ProductProfile p={p} />
+
+        <div className="mt-5 max-w-md">
+          <MemberManager
+            slug={slug}
+            members={members}
+            roles={[
+              { value: "editor", label: tr.admin_role_editor },
+              { value: "admin", label: tr.admin_role_admin },
+            ]}
+            addAction={addProductMember}
+            removeAction={removeProductMember}
+          />
+        </div>
       </main>
     </div>
   );

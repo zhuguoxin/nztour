@@ -8,6 +8,8 @@ import { VoicesModal } from "./voices-modal";
 import { GlossaryModal } from "./glossary-modal";
 import { BillingModal } from "./billing-modal";
 import { PageBreadcrumb } from "../../_components/page-breadcrumb";
+import { MemberManager } from "../../_components/member-manager";
+import { listSupplierMembers, addSupplierMember, removeSupplierMember } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +124,8 @@ export default async function SupplierDashboard({ params }: Props) {
     .first<{ voices_count: number; glossary_count: number }>();
   const voicesCount = counts?.voices_count ?? 0;
   const glossaryCount = counts?.glossary_count ?? 0;
+  const membersRes = await listSupplierMembers(slug);
+  const members = membersRes.ok ? membersRes.members ?? [] : [];
 
   // Aggregate KPIs.
   const totalProducts = products.length;
@@ -263,6 +267,19 @@ export default async function SupplierDashboard({ params }: Props) {
                 <span className="text-slate-400 text-[16px] shrink-0">›</span>
               </BillingModal>
             </div>
+
+            {/* Team & access — grant supplier membership */}
+            <MemberManager
+              slug={supplier.slug}
+              members={members}
+              roles={[
+                { value: "owner", label: tr.admin_role_owner },
+                { value: "manager", label: tr.admin_role_manager },
+                { value: "viewer", label: tr.admin_role_viewer },
+              ]}
+              addAction={addSupplierMember}
+              removeAction={removeSupplierMember}
+            />
           </div>
 
           {/* Main column — roll-up KPIs + product cards */}

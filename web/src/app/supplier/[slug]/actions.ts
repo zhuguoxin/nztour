@@ -8,6 +8,94 @@ import { hasMiniMaxKey } from "@/lib/minimax";
 import type { VoiceRow } from "./voices-panel";
 import { listGlossaryEntries, type GlossaryRow } from "@/lib/glossary";
 
+export interface MemberRow {
+  user_id: string;
+  email: string;
+  name: string | null;
+  role: string;
+}
+
+/** List a supplier's members (for the team manager). */
+export async function listSupplierMembers(
+  supplierSlug: string,
+): Promise<{ ok: boolean; members?: MemberRow[]; error?: string }> {
+  try {
+    const access = await requireSupplierMembership(supplierSlug);
+    const { results = [] } = await db()
+      .prepare(
+        `SELECT sm.user_id, sm.role, u.email, u.name
+         FROM supplier_memberships sm JOIN users u ON u.id = sm.user_id
+         WHERE sm.supplier_id = ? ORDER BY (sm.role='owner') DESC, u.email`,
+      )
+      .bind(access.supplierId)
+      .all<MemberRow>();
+    return { ok: true, members: results };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+/** Caller must own/manage the supplier (or be platform admin) to change members. */
+async function assertSupplierManager(supplierSlug: string) {
+  const access = await requireSupplierMembership(supplierSlug);
+  if (!access.isAdmin) {
+    const m = await db()
+      .prepare(`SELECT role FROM supplier_memberships WHERE user_id = ? AND supplier_id = ?`)
+      .bind(access.userId, access.supplierId)
+      .first<{ role: string }>();
+    if (!m || !["owner", "manager"].includes(m.role)) throw new Error("forbidden");
+  }
+  return access;
+}
+
+/** Grant a user supplier membership by email (invites new users). */
+export async function addSupplierMember(
+  supplierSlug: string,
+  email: string,
+  role: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const access = await assertSupplierManager(supplierSlug);
+    const e = email.trim().toLowerCase().slice(0, 200);
+    if (!e || !e.includes("@")) throw new Error("valid email required");
+    const r = ["owner", "manager", "viewer"].includes(role) ? role : "manager";
+    const existing = await db().prepare(`SELECT id FROM users WHERE email = ?`).bind(e).first<{ id: string }>();
+    let userId = existing?.id;
+    if (!userId) {
+      userId = shortId("usr");
+      await db().prepare(`INSERT INTO users (id, email, preferred_lang) VALUES (?, ?, 'en')`).bind(userId, e).run();
+    }
+    await db()
+      .prepare(
+        `INSERT INTO supplier_memberships (user_id, supplier_id, role) VALUES (?, ?, ?)
+         ON CONFLICT(user_id, supplier_id) DO UPDATE SET role = excluded.role`,
+      )
+      .bind(userId, access.supplierId, r)
+      .run();
+    revalidatePath(`/supplier/${supplierSlug}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
+export async function removeSupplierMember(
+  supplierSlug: string,
+  userId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const access = await assertSupplierManager(supplierSlug);
+    await db()
+      .prepare(`DELETE FROM supplier_memberships WHERE user_id = ? AND supplier_id = ?`)
+      .bind(userId, access.supplierId)
+      .run();
+    revalidatePath(`/supplier/${supplierSlug}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "failed" };
+  }
+}
+
 /** Glossary entries for the supplier (for the glossary modal). */
 export async function listSupplierGlossary(
   supplierSlug: string,
