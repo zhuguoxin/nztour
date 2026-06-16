@@ -4,6 +4,8 @@ import { TopBar } from "./_components/top-bar";
 import { AskAI } from "./_components/ask-ai";
 import { t, fmt } from "@/lib/i18n";
 import { getCurrentRole } from "@/lib/roles";
+import { getOnboardingState } from "@/lib/onboarding";
+import { redirect } from "next/navigation";
 import { OperatorCard } from "./_components/operator-card";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,12 @@ export const dynamic = "force-dynamic";
  *   accent-soft   #ecfdf5  (emerald-50)  — accent backgrounds
  */
 export default async function Home() {
+  // Signed-in but not yet onboarded (e.g. just logged in via Google and landed
+  // on the home page) → send straight to complete registration. getOnboardingState
+  // returns null for signed-out visitors, so the public landing is unaffected.
+  const ob = await getOnboardingState();
+  if (ob && !ob.onboarded) redirect("/onboarding");
+
   const [operators, tr, role] = await Promise.all([
     listOperatorsWithCourseCounts(),
     t(),
