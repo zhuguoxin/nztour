@@ -36,7 +36,7 @@ export interface VoiceOption {
  *  the lang or its base code) plus universal (langs null — e.g. a cloned voice).
  *  Cloned/universal voices always show so suppliers can use a cloned voice in
  *  any language. */
-function voicesForLang(voices: VoiceOption[], lang: string): VoiceOption[] {
+export function voicesForLang(voices: VoiceOption[], lang: string): VoiceOption[] {
   const base = lang.split("-")[0];
   return voices.filter((v) => {
     if (!v.langs) return true;
@@ -53,7 +53,7 @@ function voicesForLang(voices: VoiceOption[], lang: string): VoiceOption[] {
  *  English the ElevenLabs premade stock voice; else the free MeloTTS voice
  *  (works on any tier) so generation succeeds out of the box. Premium native
  *  ElevenLabs library voices remain selectable but aren't the default. */
-function defaultVoiceFor(applicable: VoiceOption[], lang: string, existing?: string): string {
+export function defaultVoiceFor(applicable: VoiceOption[], lang: string, existing?: string): string {
   if (existing) return existing;
   if (lang.startsWith("en")) {
     const premade = applicable.find((v) => v.provider === "elevenlabs" && v.kind === "stock");

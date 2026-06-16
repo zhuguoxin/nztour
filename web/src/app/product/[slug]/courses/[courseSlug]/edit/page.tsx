@@ -7,13 +7,12 @@ import { db } from "@/lib/db";
 import { updateCourse, deleteCourse, publishCourse, unpublishCourse } from "../../actions";
 import {
   EditorModules,
-  ModuleNarration,
   type BlockData,
   type ModuleData,
   type QuizQuestionData,
 } from "./editor-modules";
 import { AttachmentsPanel, type AttachmentRow } from "./attachments";
-import { TranslationsPanel } from "./translations-panel";
+import { LangNarrationModal } from "./lang-narration-modal";
 import { CoverImageField } from "./cover-image-field";
 import { CourseSwitcher } from "./course-switcher";
 import { ModuleNav } from "./module-nav";
@@ -142,6 +141,22 @@ export default async function EditCoursePage({
   const totalMin = Math.floor(totalDurationS / 60);
   const totalSec = totalDurationS % 60;
 
+  // Narration coverage per language: how many modules already have audio in
+  // each language (drives the "narration n/total" status in the modal).
+  const audioCountByLang: Record<string, number> = {};
+  for (const m of moduleList) {
+    try {
+      const v = JSON.parse(m.narration_audio_i18n ?? "{}");
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        for (const k of Object.keys(v)) {
+          if (v[k]?.r2_key) audioCountByLang[k] = (audioCountByLang[k] ?? 0) + 1;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   const { results: attachments = [] } = await db()
     .prepare(
       `SELECT id, filename, mime_type, size_bytes, rag_status, created_at
@@ -208,13 +223,17 @@ export default async function EditCoursePage({
             courses={allCourses}
             label={tr.ed_course_label}
           />
-          <TranslationsPanel
-            operatorSlug={slug}
-            courseSlug={course.slug}
-            primaryLang={course.primary_lang}
-            enabledLangs={availableLangs}
-            translatedLangs={translatedLangs}
-          />
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="font-semibold text-[13px] text-slate-900 mb-3">{tr.ed_cover_label}</div>
+            <CoverImageField
+              courseId={course.id}
+              operatorSlug={slug}
+              supplierSlug={op.supplier_slug}
+              courseSlug={course.slug}
+              emoji={course.emoji}
+              hasCover={!!course.cover_r2_key}
+            />
+          </div>
           <ModuleNav
             operatorSlug={slug}
             courseSlug={course.slug}
@@ -333,14 +352,22 @@ export default async function EditCoursePage({
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
             <div className="font-semibold text-[13px] text-slate-900">{tr.ed_course_details}</div>
-            <CoverImageField
-              courseId={course.id}
+
+            {/* Languages & narration — translate text + generate audio together. */}
+            <LangNarrationModal
               operatorSlug={slug}
-              supplierSlug={op.supplier_slug}
               courseSlug={course.slug}
-              emoji={course.emoji}
-              hasCover={!!course.cover_r2_key}
-            />
+              primaryLang={course.primary_lang}
+              voices={voices ?? []}
+              enabledLangs={availableLangs}
+              translatedLangs={translatedLangs}
+              audioCountByLang={audioCountByLang}
+              moduleCount={moduleList.length}
+              triggerClassName="w-full px-4 py-2.5 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-800 font-semibold text-[13px] hover:bg-emerald-100"
+            >
+              {tr.ed_lang_narration}
+            </LangNarrationModal>
+
             <Field label={tr.ed_minutes}>
               <input
                 name="est_minutes"
@@ -355,20 +382,6 @@ export default async function EditCoursePage({
             {/* Status is set by the Publish / Unpublish buttons above; this
                 hidden field preserves the current status on a plain Save. */}
             <input type="hidden" name="status" form="course-form" defaultValue={course.status} />
-            {activeModule ? (
-              <div className="border-t border-slate-200 pt-3">
-                <ModuleNarration
-                  moduleId={activeModule.id}
-                  operatorSlug={slug}
-                  courseSlug={course.slug}
-                  primaryLang={course.primary_lang}
-                  availableLangs={availableLangs}
-                  voices={voices ?? []}
-                  narrationAudioI18n={activeModule.narration_audio_i18n ?? null}
-                  blocks={blocksByModule[activeModule.id] ?? []}
-                />
-              </div>
-            ) : null}
 
             {op.supplier_slug ? (
               <VoicesModal

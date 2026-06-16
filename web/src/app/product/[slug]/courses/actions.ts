@@ -1121,6 +1121,89 @@ export async function translateCourse(
   }
 }
 
+/**
+ * Generate a whole language for a course in one shot — text + narration
+ * together. Translates every text field into `lang` (skipped for the primary
+ * language), then generates narration audio for every module that has text,
+ * all with a single chosen voice, and enables the language for learners.
+ *
+ * One language per call keeps the work bounded (1 translation pass + N module
+ * TTS calls). The modal calls this once per language the supplier picks.
+ */
+export async function generateCourseLanguage(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  lang: string;
+  voiceId: string;
+}): Promise<{ ok: boolean; error?: string; modules?: number }> {
+  try {
+    const { operatorSlug, courseSlug, voiceId } = input;
+    const lang = input.lang;
+    if (!isSupportedLang(lang)) throw new Error("unsupported language");
+    if (!voiceId) throw new Error("no voice selected");
+    const { courseId } = await authCourse(operatorSlug, courseSlug);
+
+    const course = await db()
+      .prepare(`SELECT id, primary_lang, available_langs FROM courses WHERE id = ?`)
+      .bind(courseId)
+      .first<{ id: string; primary_lang: string; available_langs: string }>();
+    if (!course) throw new Error("not_found");
+    const isPrimary = lang === course.primary_lang;
+
+    // 1) Text — keep the translation in sync with the source (re-translates so
+    //    edits to the primary text always flow through). No-op for primary.
+    if (!isPrimary) {
+      const fd = new FormData();
+      fd.set("operator_slug", operatorSlug);
+      fd.set("course_slug", courseSlug);
+      fd.set("to_lang", lang);
+      await translateCourseCore(fd);
+    }
+
+    // 2) Narration — one voice for every module that actually has text.
+    const { results: mods = [] } = await db()
+      .prepare(`SELECT id FROM modules WHERE course_id = ? ORDER BY position, id`)
+      .bind(courseId)
+      .all<{ id: string }>();
+    let done = 0;
+    for (const m of mods) {
+      const has = await db()
+        .prepare(
+          `SELECT 1 FROM content_blocks
+           WHERE module_id = ? AND kind IN ('text','callout')
+             AND trim(coalesce(text_md,'')) <> '' LIMIT 1`,
+        )
+        .bind(m.id)
+        .first<{ "1": number }>();
+      if (!has) continue;
+      await generateModuleAudioCore({ operatorSlug, courseSlug, moduleId: m.id, lang, voiceId });
+      done++;
+    }
+
+    // 3) Enable the language for learners (translateCourseCore already does this
+    //    for non-primary; ensure it for the primary path too).
+    const avail = (() => {
+      try {
+        const a = JSON.parse(course.available_langs);
+        return Array.isArray(a) ? a.filter((s): s is string => typeof s === "string") : [];
+      } catch {
+        return [];
+      }
+    })();
+    const next = Array.from(new Set([...avail, course.primary_lang, lang]));
+    await db()
+      .prepare(`UPDATE courses SET available_langs = ? WHERE id = ?`)
+      .bind(JSON.stringify(next), courseId)
+      .run();
+
+    revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+    revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+    return { ok: true, modules: done };
+  } catch (e) {
+    return { ok: false, error: (e instanceof Error ? e.message : "failed").slice(0, 500) };
+  }
+}
+
 /** Strip one key from an audio_i18n JSON object ({lang: {…}}). */
 function removeAudioLang(json: string | null, lang: string): string {
   try {

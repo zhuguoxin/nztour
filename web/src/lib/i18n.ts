@@ -493,7 +493,22 @@ const en = {
   tp_retranslate_title: "Re-translate (overwrites the existing translation)",
   tp_preview_title: "Preview in {lang}",
 
+  // ===== Languages & narration modal =====
+  ln_title: "Languages & narration",
+  ln_sub: "Pick a voice per language. Generate translates the text and creates the narration audio for every module together — so the spoken narration always matches the on-screen text.",
+  ln_text_done: "translated",
+  ln_text_none: "not translated",
+  ln_audio_count: "narration {n}/{total}",
+  ln_generate: "Generate",
+  ln_regenerate: "Regenerate",
+  ln_generating: "Generating…",
+  ln_working: "Translating text and generating narration — this can take a moment.",
+  ln_visible: "Show to learners",
+  ln_visible_hint: "Show or hide this language from learners (content is kept either way).",
+  ed_lang_narration: "🌐 Languages & narration",
+
   // ===== Course editor (page + duration + modules) =====
+  ed_cover_label: "Cover image",
   ed_course_details: "Course details",
   ed_preview_title: "Preview the course as a learner would see it, even while draft",
   ed_preview: "Preview →",
@@ -1421,7 +1436,22 @@ const zhCN: Dict = {
   tp_retranslate_title: "重新翻译(覆盖已有翻译)",
   tp_preview_title: "预览 {lang}",
 
+  // ===== Languages & narration modal =====
+  ln_title: "语言与旁白",
+  ln_sub: "为每种语言选择一个音色。点击「生成」会同时翻译文本并为所有模块生成旁白语音——这样旁白朗读始终与页面文本一致。",
+  ln_text_done: "已翻译",
+  ln_text_none: "未翻译",
+  ln_audio_count: "旁白 {n}/{total}",
+  ln_generate: "生成",
+  ln_regenerate: "重新生成",
+  ln_generating: "生成中…",
+  ln_working: "正在翻译文本并生成旁白，请稍候。",
+  ln_visible: "对学员可见",
+  ln_visible_hint: "控制该语言是否对学员显示(内容都会保留)。",
+  ed_lang_narration: "🌐 语言与旁白",
+
   // ===== Course editor (page + duration + modules) =====
+  ed_cover_label: "封面图",
   ed_course_details: "课程详情",
   ed_preview_title: "以学员视角预览课程(草稿也可预览)",
   ed_preview: "预览 →",
