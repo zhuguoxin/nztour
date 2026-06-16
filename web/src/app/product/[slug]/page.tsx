@@ -65,7 +65,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
     .prepare(
       `SELECT o.id, o.slug, o.name, o.display_name, o.country,
               o.theme_bg, o.theme_panel, o.theme_accent, o.theme_ink, o.theme_logo_r2_key,
-              o.cover_r2_key, s.slug AS supplier_slug
+              o.cover_r2_key, s.slug AS supplier_slug, s.name AS supplier_name
        FROM operators o LEFT JOIN suppliers s ON s.id = o.supplier_id
        WHERE o.slug = ?`,
     )
@@ -83,6 +83,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
       theme_logo_r2_key: string | null;
       cover_r2_key: string | null;
       supplier_slug: string | null;
+      supplier_name: string | null;
     }>();
   if (!operator) notFound();
 
@@ -132,8 +133,9 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
               className="mb-1.5"
               items={[
                 { href: "/", label: tr.nav_home },
+                ...(access.isAdmin ? [{ href: "/supplier", label: tr.sup_picker_title_admin }] : []),
                 ...(operator.supplier_slug
-                  ? [{ href: `/supplier/${operator.supplier_slug}`, label: tr.bc_supplier }]
+                  ? [{ href: `/supplier/${operator.supplier_slug}`, label: operator.supplier_name ?? tr.bc_supplier }]
                   : []),
                 { label: operator.name },
               ]}
