@@ -11,6 +11,7 @@ import {
   getDailyActivity,
 } from "@/lib/operator-stats";
 import { CreateCoursePanel } from "./create-course-panel";
+import { withReturnTo } from "@/lib/nav";
 import { OperatorSwitcher, type SwitcherOperator } from "./operator-switcher";
 import { ActivityChart } from "./activity-chart";
 import { t, fmt, type Dict } from "@/lib/i18n";
@@ -180,7 +181,7 @@ export default async function OperatorDashboard({ params, searchParams }: Props)
             </Link>
             {operator.supplier_slug ? (
               <Link
-                href={`/supplier/${operator.supplier_slug}/voices`}
+                href={withReturnTo(`/supplier/${operator.supplier_slug}/voices`, `/product/${slug}`)}
                 className="px-3 py-2 rounded-md border border-slate-300 text-slate-700 text-[13px] hover:bg-slate-50"
                 title={tr.pd_voices_link_tooltip}
               >

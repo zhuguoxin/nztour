@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { TopBar } from "../../../../../_components/top-bar";
 import { requireOperatorMembership } from "@/lib/roles";
+import { withReturnTo } from "@/lib/nav";
 import { db } from "@/lib/db";
 import { updateCourse, deleteCourse } from "../../actions";
 import {
@@ -373,7 +374,10 @@ export default async function EditCoursePage({
 
             {op.supplier_slug ? (
               <Link
-                href={`/supplier/${op.supplier_slug}/voices`}
+                href={withReturnTo(
+                  `/supplier/${op.supplier_slug}/voices`,
+                  `/product/${slug}/courses/${course.slug}/edit${activeModule ? `?m=${activeModule.id}` : ""}`,
+                )}
                 className="block text-[12px] text-emerald-300 hover:underline"
                 title={tr.ed_voices_title}
               >

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
 import { hasMiniMaxKey } from "@/lib/minimax";
 import { VoicesPanel, type VoiceRow } from "../voices-panel";
+import { safeReturnTo } from "@/lib/nav";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,13 @@ export const dynamic = "force-dynamic";
  */
 export default async function SupplierVoices({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { slug } = await params;
+  const { from } = await searchParams;
 
   let access;
   try {
@@ -62,8 +66,11 @@ export default async function SupplierVoices({
         }
       />
       <main className="px-5 sm:px-8 py-8 sm:py-10 max-w-4xl mx-auto">
-        <Link href={`/supplier/${supplier.slug}`} className="text-[13px] text-emerald-700 hover:underline">
-          {tr.sp_back_panel}
+        <Link
+          href={safeReturnTo(from, `/supplier/${supplier.slug}`)}
+          className="text-[13px] text-emerald-700 hover:underline"
+        >
+          {from ? tr.nav_back : tr.sp_back_panel}
         </Link>
         <div className="mb-6 mt-2">
           <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">{tr.sp_voices_label}</div>
