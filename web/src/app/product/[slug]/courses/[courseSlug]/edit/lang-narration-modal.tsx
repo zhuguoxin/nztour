@@ -134,8 +134,12 @@ export function LangNarrationModal({
                     ) : null}
                   </div>
                   <div className="text-[10.5px] text-slate-500 mt-0.5">
-                    {isPrimary ? "" : (isTranslated ? tr.ln_text_done : tr.ln_text_none) + " · "}
-                    {fmt(tr.ln_audio_count, { n: String(audioN), total: String(moduleCount) })}
+                    {isPrimary ? null : <span>{isTranslated ? tr.ln_text_done : tr.ln_text_none}</span>}
+                    {audioN > 0 ? (
+                      <span className="text-emerald-600">
+                        {isPrimary ? "" : " · "}🎧 {audioN < moduleCount ? tr.ln_audio_partial : tr.ln_audio_done}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
 
