@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { regenerateModule } from "../../actions";
 import { langLabel } from "@/lib/translate";
@@ -31,6 +31,15 @@ export function RegenerateModuleButton({
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
+
+  // Switching modules in the 3-column editor is a soft navigation that reuses
+  // this component instance — reset transient UI so we never carry a previous
+  // module's selected language (which would otherwise pop open a player here).
+  useEffect(() => {
+    setPlaying(null);
+    setDone(false);
+    setErr(null);
+  }, [moduleId]);
 
   function run() {
     setErr(null);
@@ -91,7 +100,6 @@ export function RegenerateModuleButton({
               <audio
                 key={`${playingEntry.lang}-${playingEntry.t}`}
                 controls
-                autoPlay
                 preload="none"
                 src={`/api/module-audio?id=${moduleId}&lang=${encodeURIComponent(playingEntry.lang)}&t=${playingEntry.t}`}
                 className="flex-1 h-9"
