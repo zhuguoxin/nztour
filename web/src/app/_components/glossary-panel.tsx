@@ -125,12 +125,12 @@ export function GlossaryPanel({
   return (
     <section className="rounded-2xl border border-slate-200 bg-white">
       <header className="px-5 py-4 border-b border-slate-200">
-        <div className="font-semibold text-[14px] text-slate-900">{tr.gl_title}</div>
-        <div className="text-[12.5px] text-slate-500 mt-0.5">
+        <div className="font-semibold text-small text-slate-900">{tr.gl_title}</div>
+        <div className="text-caption text-slate-500 mt-0.5">
           {scope === "supplier" ? tr.gl_sub_supplier : tr.gl_sub_operator}
         </div>
         {inheritedCount ? (
-          <div className="text-[11.5px] text-emerald-700 mt-1">
+          <div className="text-caption text-slate-900 mt-1">
             {fmt(tr.gl_inherited, { n: inheritedCount })}
           </div>
         ) : null}
@@ -138,9 +138,9 @@ export function GlossaryPanel({
 
       {/* Import */}
       <div className="px-5 py-4 border-b border-slate-200 space-y-2.5">
-        <div className="text-[12px] font-semibold text-slate-700">{tr.gl_import_heading}</div>
-        <div className="text-[11.5px] text-slate-500 leading-relaxed">{tr.gl_import_hint}</div>
-        <label className="inline-block px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 cursor-pointer">
+        <div className="text-caption font-semibold text-slate-700">{tr.gl_import_heading}</div>
+        <div className="text-caption text-slate-500 leading-relaxed">{tr.gl_import_hint}</div>
+        <label className="inline-block px-3 py-1.5 rounded-md border border-slate-300 text-caption text-slate-700 hover:bg-slate-50 cursor-pointer">
           {tr.gl_choose_file}
           <input
             type="file"
@@ -154,7 +154,7 @@ export function GlossaryPanel({
           onChange={(e) => setPaste(e.target.value)}
           rows={4}
           placeholder={tr.gl_paste_ph}
-          className="w-full px-3 py-2 rounded-md border border-slate-300 text-[12.5px] font-mono resize-y"
+          className="w-full px-3 py-2 rounded-md border border-slate-300 text-caption font-mono resize-y"
         />
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -164,49 +164,49 @@ export function GlossaryPanel({
               setErr(null);
             }}
             disabled={!paste.trim()}
-            className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+            className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-300 text-caption text-slate-700 hover:bg-slate-200 disabled:opacity-50"
           >
             {tr.gl_parse}
           </button>
           {parsed ? (
             parsed.entries.length ? (
               <>
-                <span className="text-[12px] text-slate-600">
+                <span className="text-caption text-slate-600">
                   {fmt(tr.gl_parsed_count, { n: parsed.entries.length, langs: parsed.langs.length })}
                 </span>
                 <button
                   type="button"
                   onClick={save}
                   disabled={pending}
-                  className="px-4 py-1.5 rounded-md bg-[#04241e] text-white font-semibold text-[12.5px] hover:bg-[#0a3a2f] disabled:opacity-50"
+                  className="px-4 py-1.5 rounded-md bg-[#04241e] text-white font-semibold text-caption hover:bg-[#0a3a2f] disabled:opacity-50"
                 >
                   {pending ? tr.gl_saving : tr.gl_save_import}
                 </button>
               </>
             ) : (
-              <span className="text-[12px] text-amber-700">{tr.gl_parse_empty}</span>
+              <span className="text-caption text-slate-900">{tr.gl_parse_empty}</span>
             )
           ) : null}
         </div>
         {parsed && parsed.unmatched.length ? (
-          <div className="text-[11px] text-amber-700">
+          <div className="text-micro text-slate-900">
             {fmt(tr.gl_unmatched_cols, { cols: parsed.unmatched.join(", ") })}
           </div>
         ) : null}
-        <div className="text-[11px] text-slate-400">{tr.gl_import_note}</div>
-        {err ? <div className="text-[11.5px] text-rose-700 break-words">{err}</div> : null}
+        <div className="text-micro text-slate-400">{tr.gl_import_note}</div>
+        {err ? <div className="text-caption text-rose-700 break-words">{err}</div> : null}
       </div>
 
       {/* Current terms */}
       <div className="px-5 py-4">
-        <div className="text-[11px] tracking-widest font-mono text-slate-500 mb-2">
+        <div className="text-micro tracking-widest font-mono text-slate-700 mb-2">
           {fmt(tr.gl_current_heading, { n: entries.length })}
         </div>
         {entries.length === 0 ? (
-          <div className="text-[12.5px] text-slate-500">{tr.gl_empty}</div>
+          <div className="text-caption text-slate-500">{tr.gl_empty}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px] border-collapse">
+            <table className="w-full text-caption border-collapse">
               <thead>
                 <tr className="text-left text-slate-500 border-b border-slate-200">
                   <th className="py-1.5 pr-3 font-medium">{tr.gl_col_source}</th>
@@ -232,7 +232,7 @@ export function GlossaryPanel({
                         type="button"
                         onClick={() => del(e.id)}
                         disabled={pending}
-                        className="text-rose-600 hover:underline text-[11.5px] disabled:opacity-50"
+                        className="text-rose-600 hover:underline text-caption disabled:opacity-50"
                       >
                         {tr.gl_delete}
                       </button>

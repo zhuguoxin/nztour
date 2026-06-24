@@ -3,17 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  updateModule,
   deleteModule,
   createBlock,
-  updateBlock,
   deleteBlock,
   reorderModulesBulk,
   reorderBlocksBulk,
-  createQuizQuestion,
-  deleteQuizQuestion,
-  generateModuleQuiz,
   generateModuleAudioAction,
+  removeBlockSlide,
+  removeBlockVideo,
 } from "../../actions";
 import { SortableList, GrabHandle, type DragHandleProps } from "./sortable-list";
 import { langLabel } from "@/lib/translate";
@@ -68,6 +65,18 @@ export function defaultVoiceFor(applicable: VoiceOption[], lang: string, existin
   return applicable[0]?.id ?? "voice_melotts_auto";
 }
 
+/** Clean a voice's display name for the editor: drop the provider prefix
+ *  ("MiniMax · ", "ElevenLabs · ") and a trailing "(EN, f)" parenthetical, so
+ *  only the voice name shows — third-party model names stay hidden. */
+export function voiceDisplayName(name: string): string {
+  return (
+    (name ?? "")
+      .replace(/^[^·]*·\s*/, "")
+      .replace(/\s*\([^)]*\)\s*$/, "")
+      .trim() || name
+  );
+}
+
 export interface QuizQuestionData {
   id: string;
   prompt: string;
@@ -87,6 +96,8 @@ export interface ModuleData {
   narration_md_i18n?: string | null;
   /** JSON {lang: {r2_key, voice_id, duration_s, generated_at}} — narration audio. */
   narration_audio_i18n?: string | null;
+  /** Unix ts set when a background regenerate finished (editor polls it). */
+  regen_at?: number | null;
 }
 
 export interface BlockData {
@@ -96,9 +107,12 @@ export interface BlockData {
   kind: string;
   text_md: string | null;
   video_uid: string | null;
+  video_r2_key: string | null;
   image_r2_key: string | null;
+  images_json: string | null;
   caption: string | null;
   visibility: string;
+  narrate: number;
   duration_s: number | null;
   audio_r2_key: string | null;
   audio_voice: string | null;
@@ -107,7 +121,7 @@ export interface BlockData {
 }
 
 const inputClass =
-  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] text-slate-900 outline-none focus:border-emerald-400/60";
+  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-small text-slate-900 outline-none focus:border-emerald-400/60";
 
 /**
  * Client wrapper for the modules-and-blocks portion of the editor.
@@ -128,7 +142,6 @@ export function EditorModules({
   voices,
   modules,
   blocksByModuleId,
-  quizByModuleId,
   solo = false,
   moduleOptionsSlot,
 }: {
@@ -141,7 +154,6 @@ export function EditorModules({
   voices: VoiceOption[];
   modules: ModuleData[];
   blocksByModuleId: Record<string, BlockData[]>;
-  quizByModuleId: Record<string, QuizQuestionData[]>;
   /** Single-module view (3-column editor): render just the one module,
    *  expanded, no drag handle / reorder list. */
   solo?: boolean;
@@ -154,7 +166,7 @@ export function EditorModules({
     const m = modules[0];
     if (!m) {
       return (
-        <div className="px-5 py-8 text-center text-[13px] text-slate-500">{tr.em_no_modules}</div>
+        <div className="px-5 py-8 text-center text-small text-slate-500">{tr.em_no_modules}</div>
       );
     }
     return (
@@ -162,7 +174,6 @@ export function EditorModules({
         module={m}
         solo
         blocks={blocksByModuleId[m.id] ?? []}
-        quiz={quizByModuleId[m.id] ?? []}
         operatorSlug={operatorSlug}
         supplierSlug={supplierSlug}
         courseSlug={courseSlug}
@@ -180,7 +191,7 @@ export function EditorModules({
         reorderModulesBulk({ operatorSlug, courseSlug, orderedIds })
       }
       emptyState={
-        <div className="px-5 py-8 text-center text-[13px] text-slate-500">
+        <div className="px-5 py-8 text-center text-small text-slate-500">
           {tr.em_no_modules}
         </div>
       }
@@ -189,7 +200,6 @@ export function EditorModules({
           module={m}
           handle={handle}
           blocks={blocksByModuleId[m.id] ?? []}
-          quiz={quizByModuleId[m.id] ?? []}
           operatorSlug={operatorSlug}
           supplierSlug={supplierSlug}
           courseSlug={courseSlug}
@@ -206,7 +216,6 @@ function ModuleEditor({
   module,
   handle,
   blocks,
-  quiz,
   operatorSlug,
   supplierSlug,
   courseSlug,
@@ -219,7 +228,6 @@ function ModuleEditor({
   module: ModuleData;
   handle?: DragHandleProps;
   blocks: BlockData[];
-  quiz: QuizQuestionData[];
   operatorSlug: string;
   supplierSlug: string | null;
   courseSlug: string;
@@ -239,73 +247,42 @@ function ModuleEditor({
         onClick={solo ? (e) => e.preventDefault() : undefined}
       >
         {!solo && handle ? <GrabHandle handle={handle} /> : null}
-        <span className="text-slate-500 text-[14px] font-mono w-8">M{module.position}</span>
+        <span className="text-slate-700 text-small font-mono w-8">M{module.position}</span>
         <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-medium text-slate-900 truncate">{module.title}</div>
-          <div className="text-[11.5px] text-slate-500">
+          <div className="text-small font-medium text-slate-900 truncate">{module.title}</div>
+          <div className="text-caption text-slate-500">
             {blocks.length} block{blocks.length === 1 ? "" : "s"}
-            {module.est_minutes ? ` · ${module.est_minutes} min` : ""}
           </div>
         </div>
-        <span className="text-slate-600 text-[12px] ml-1 group-open:rotate-180 transition-transform inline-block">
+        <span className="text-slate-600 text-caption ml-1 group-open:rotate-180 transition-transform inline-block">
           ⌄
         </span>
       </summary>
 
       <div className="px-5 pb-5 space-y-4">
-        {/* Module meta */}
-        <form action={updateModule} className="space-y-3 bg-slate-50 rounded-lg p-3">
-          <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-          <input type="hidden" name="module_id" value={module.id} />
+        {/* Module meta — title only. Saved with the single page "Save changes"
+            via inputs associated to form="course-form". */}
+        <div className="space-y-3 bg-slate-50 rounded-lg p-3">
           <Field label={tr.em_field_title}>
             <input
-              name="title"
+              form="course-form"
+              name={`mod:${module.id}:title`}
               defaultValue={module.title}
-              required
               maxLength={200}
               className={inputClass}
             />
           </Field>
-          <div className="grid grid-cols-[1fr_120px] gap-3">
-            <Field label={tr.em_field_summary}>
-              <input
-                name="summary"
-                defaultValue={module.summary ?? ""}
-                maxLength={1000}
-                className={inputClass}
-              />
-            </Field>
-            <Field label={tr.em_field_minutes}>
-              <input
-                name="est_minutes"
-                type="number"
-                min={1}
-                max={120}
-                defaultValue={module.est_minutes ?? ""}
-                className={inputClass}
-              />
-            </Field>
-          </div>
-          <div className="flex items-center justify-between gap-2">
+          <form action={deleteModule} className="flex justify-end">
+            <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+            <input type="hidden" name="module_id" value={module.id} />
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700"
-            >
-              {tr.em_save_module}
-            </button>
-            {/* formAction overrides the form's action for this submit — avoids
-                a nested <form> (which corrupts hydration and breaks every form
-                in the module subtree). The shared hidden inputs above carry
-                operator_slug / course_slug / module_id for deleteModule too. */}
-            <button
-              type="submit"
-              formAction={deleteModule}
-              className="px-3 py-1.5 rounded-md border border-rose-200 text-rose-600 text-[12px] hover:bg-rose-400/10"
+              className="px-3 py-1.5 rounded-md border border-rose-200 text-rose-600 text-caption hover:bg-rose-400/10"
             >
               {tr.em_delete_module}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
 
         {/* Per-module language & narration options (solo view) — sits under the
             module's title fields, before the first block. */}
@@ -318,7 +295,7 @@ function ModuleEditor({
             reorderBlocksBulk({ operatorSlug, courseSlug, moduleId: module.id, orderedIds })
           }
           emptyState={
-            <div className="text-[12px] text-slate-500 text-center py-3">
+            <div className="text-caption text-slate-500 text-center py-3">
               {tr.em_no_blocks_add}
             </div>
           }
@@ -337,7 +314,7 @@ function ModuleEditor({
         />
 
         {/* Add-block buttons */}
-        <div className="grid grid-cols-2 gap-2 text-[12px]">
+        <div className="grid grid-cols-2 gap-2 text-caption">
           {(
             [
               ["text", tr.em_add_block_text],
@@ -359,226 +336,14 @@ function ModuleEditor({
             </form>
           ))}
         </div>
-        <p className="text-[11px] text-slate-500 leading-relaxed">
+        <p className="text-micro text-slate-500 leading-relaxed">
           {fmt(tr.em_block_tip, {
             text: tr.em_block_tip_text,
             callout: tr.em_block_tip_callout,
           })}
         </p>
-
-        {/* End-of-chapter quiz authoring */}
-        <ModuleQuizAuthor
-          moduleId={module.id}
-          questions={quiz}
-          operatorSlug={operatorSlug}
-          courseSlug={courseSlug}
-        />
       </div>
     </details>
-  );
-}
-
-function ModuleQuizAuthor({
-  moduleId,
-  questions,
-  operatorSlug,
-  courseSlug,
-}: {
-  moduleId: string;
-  questions: QuizQuestionData[];
-  operatorSlug: string;
-  courseSlug: string;
-}) {
-  const tr = useTr();
-  return (
-    <section className="rounded-lg border border-amber-400/20 bg-amber-400/[.04] p-3">
-      <div className="flex items-baseline justify-between mb-2">
-        <div className="text-[12px] font-semibold text-amber-600">
-          {tr.em_quiz_heading}
-          <span className="ml-1.5 text-[10px] text-slate-500 font-normal">
-            {fmt(questions.length === 1 ? tr.em_quiz_count_one : tr.em_quiz_count_many, {
-              n: questions.length,
-            })}
-          </span>
-        </div>
-        <form action={generateModuleQuiz} className="inline-flex">
-          <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-          <input type="hidden" name="module_id" value={moduleId} />
-          <input type="hidden" name="count" value="5" />
-          <button
-            type="submit"
-            className="px-2.5 py-1 rounded border border-amber-400/40 text-amber-200 hover:bg-amber-400/10 text-[11px]"
-            title={tr.em_quiz_generate_title}
-          >
-            {tr.em_quiz_gen5}
-          </button>
-        </form>
-      </div>
-
-      {questions.length === 0 ? (
-        <div className="text-[11.5px] text-slate-500 mb-2">
-          {tr.em_quiz_empty}
-        </div>
-      ) : (
-        <ol className="space-y-1.5 mb-2">
-          {questions.map((q) => {
-            let choices: string[] = [];
-            try {
-              choices = JSON.parse(q.choices_json);
-            } catch {
-              // skip
-            }
-            return (
-              <li
-                key={q.id}
-                className="bg-slate-100 rounded border border-slate-200 px-2.5 py-1.5 flex items-start gap-2"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12.5px] text-slate-900 truncate">{q.prompt}</div>
-                  <div className="text-[10.5px] text-slate-500 truncate">
-                    {choices.map((c, i) => (
-                      <span key={i} className={i === q.correct_idx ? "text-emerald-700" : ""}>
-                        {i === q.correct_idx ? "✓ " : ""}
-                        {c}
-                        {i < choices.length - 1 ? " · " : ""}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <form action={deleteQuizQuestion} className="inline-flex">
-                  <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-                  <input type="hidden" name="module_id" value={moduleId} />
-                  <input type="hidden" name="question_id" value={q.id} />
-                  <button
-                    type="submit"
-                    className="px-1.5 py-0.5 rounded text-rose-600/80 hover:bg-rose-400/10 text-[10px]"
-                    title={tr.em_quiz_delete_q}
-                  >
-                    ✕
-                  </button>
-                </form>
-              </li>
-            );
-          })}
-        </ol>
-      )}
-
-      <NewQuestionForm
-        moduleId={moduleId}
-        operatorSlug={operatorSlug}
-        courseSlug={courseSlug}
-      />
-    </section>
-  );
-}
-
-function NewQuestionForm({
-  moduleId,
-  operatorSlug,
-  courseSlug,
-}: {
-  moduleId: string;
-  operatorSlug: string;
-  courseSlug: string;
-}) {
-  const tr = useTr();
-  return (
-    <form
-      action={createQuizQuestion}
-      className="grid grid-cols-1 gap-1.5 text-[12px] mt-2"
-    >
-      <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-      <input type="hidden" name="module_id" value={moduleId} />
-      <input
-        type="text"
-        name="prompt"
-        required
-        maxLength={500}
-        placeholder={tr.em_quiz_q_ph}
-        className={inputClass + " text-[12.5px]"}
-      />
-      <div className="grid grid-cols-[1fr_1fr] gap-1.5">
-        <input
-          type="text"
-          name="c0"
-          required
-          placeholder={tr.em_quiz_choice_a}
-          className={inputClass + " text-[12.5px]"}
-        />
-        <input
-          type="text"
-          name="c1"
-          required
-          placeholder={tr.em_quiz_choice_b}
-          className={inputClass + " text-[12.5px]"}
-        />
-      </div>
-      <div className="grid grid-cols-[1fr_1fr] gap-1.5">
-        <input
-          type="text"
-          name="c2"
-          placeholder={tr.em_quiz_choice_c}
-          className={inputClass + " text-[12.5px]"}
-        />
-        <input
-          type="text"
-          name="c3"
-          placeholder={tr.em_quiz_choice_d}
-          className={inputClass + " text-[12.5px]"}
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <label className="text-[11px] text-slate-600">{tr.em_quiz_correct}:</label>
-        <select name="correct_idx" defaultValue="0" className={inputClass + " w-20 text-[12px]"}>
-          <option value="0">A</option>
-          <option value="1">B</option>
-          <option value="2">C</option>
-          <option value="3">D</option>
-        </select>
-        <input
-          type="text"
-          name="explanation"
-          placeholder={tr.em_quiz_explanation_ph}
-          maxLength={1000}
-          className={inputClass + " flex-1 text-[12px]"}
-        />
-        <SubmitChoicesAsJson />
-        <button
-          type="submit"
-          className="px-3 py-1.5 rounded bg-amber-400 text-slate-900 font-semibold text-[12px] hover:bg-amber-300 shrink-0"
-        >
-          {tr.em_quiz_add_short}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-/** Bundle c0..c3 inputs into choices_json before form submit. The server
- *  action expects a single `choices_json` field; we pack non-empty choices
- *  on the client via a tiny render-time hidden input. */
-function SubmitChoicesAsJson() {
-  return (
-    <input
-      type="hidden"
-      name="choices_json"
-      defaultValue=""
-      ref={(node) => {
-        if (!node) return;
-        const form = node.form;
-        if (!form) return;
-        form.addEventListener(
-          "submit",
-          () => {
-            const choices = (["c0", "c1", "c2", "c3"] as const)
-              .map((n) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? "")
-              .filter((s) => s.length > 0);
-            node.value = JSON.stringify(choices);
-          },
-          { once: true },
-        );
-      }}
-    />
   );
 }
 
@@ -618,22 +383,14 @@ function BlockEditor({
   const isNarratable = block.kind === "text" || block.kind === "callout";
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-3">
-      <div className="flex items-center justify-between text-[11px]">
+      <div className="flex items-center justify-between text-micro">
         <div className="flex items-center gap-2">
           <GrabHandle handle={handle} />
-          <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 uppercase font-mono">
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 uppercase font-mono">
             {block.kind}
           </span>
-          {block.visibility === "assistant_only" ? (
-            <span
-              className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-600 uppercase font-mono"
-              title={tr.em_block_training}
-            >
-              {tr.em_ai_only}
-            </span>
-          ) : null}
           {block.duration_s ? (
-            <span className="text-[10px] text-slate-500 font-mono">
+            <span className="text-micro text-slate-700 font-mono">
               {fmtDuration(block.duration_s)}
             </span>
           ) : null}
@@ -644,21 +401,24 @@ function BlockEditor({
           <input type="hidden" name="block_id" value={block.id} />
           <button
             type="submit"
-            className="px-2 py-0.5 rounded text-rose-600/80 hover:bg-rose-400/10 text-[11px]"
+            className="px-2 py-0.5 rounded text-rose-600/80 hover:bg-rose-400/10 text-micro"
           >
             {tr.em_block_delete_short}
           </button>
         </form>
       </div>
 
-      <form action={updateBlock} className="space-y-2">
-        <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
-        <input type="hidden" name="module_id" value={moduleId} />
-        <input type="hidden" name="block_id" value={block.id} />
+      {/* Editable fields — uncontrolled, but associated to the single page form
+          (form="course-form") so one "Save changes" persists every block. The
+          hidden _present marker lets the save action store an unchecked narrate
+          box (absent key) as 0. */}
+      <div className="space-y-2">
+        <input type="hidden" form="course-form" name={`blk:${block.id}:_present`} value="1" />
 
         {isNarratable ? (
           <textarea
-            name="text_md"
+            form="course-form"
+            name={`blk:${block.id}:text_md`}
             rows={3}
             defaultValue={block.text_md ?? ""}
             placeholder={tr.em_block_text_ph}
@@ -667,11 +427,11 @@ function BlockEditor({
         ) : null}
 
         {block.kind === "video" ? (
-          <input
-            name="video_uid"
-            defaultValue={block.video_uid ?? ""}
-            placeholder={tr.em_block_video_ph}
-            className={inputClass + " font-mono text-[12.5px]"}
+          <VideoEditor
+            block={block}
+            operatorSlug={operatorSlug}
+            courseSlug={courseSlug}
+            moduleId={moduleId}
           />
         ) : null}
 
@@ -680,36 +440,34 @@ function BlockEditor({
             block={block}
             operatorSlug={operatorSlug}
             supplierSlug={supplierSlug}
+            courseSlug={courseSlug}
+            moduleId={moduleId}
           />
         ) : null}
 
         {block.kind === "image" || block.kind === "video" || block.kind === "pdf" ? (
           <input
-            name="caption"
+            form="course-form"
+            name={`blk:${block.id}:caption`}
             defaultValue={block.caption ?? ""}
             placeholder={tr.em_block_caption_ph}
             className={inputClass}
           />
         ) : null}
 
-        <div className="flex items-center justify-between gap-2">
-          <label className="flex items-center gap-2 text-[11.5px] text-slate-600 select-none">
+        {isNarratable ? (
+          <label className="flex items-center gap-2 text-caption text-slate-600 select-none">
             <input
               type="checkbox"
-              name="visibility_assistant_only"
-              defaultChecked={block.visibility === "assistant_only"}
+              form="course-form"
+              name={`blk:${block.id}:narrate`}
+              defaultChecked={block.narrate !== 0}
               className="accent-emerald-400"
             />
-            {tr.em_ai_only_hide}
+            {tr.em_block_narrate}
           </label>
-          <button
-            type="submit"
-            className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-200"
-          >
-            {tr.em_save_block}
-          </button>
-        </div>
-      </form>
+        ) : null}
+      </div>
 
     </div>
   );
@@ -746,7 +504,12 @@ export function ModuleNarration({
   // Narration auto-tracks the module's text — built from the text/callout
   // blocks (no manual import, no separately-maintained script).
   const derivedScript = blocks
-    .filter((b) => (b.kind === "text" || b.kind === "callout") && (b.text_md ?? "").trim())
+    .filter(
+      (b) =>
+        (b.kind === "text" || b.kind === "callout") &&
+        b.narrate !== 0 &&
+        (b.text_md ?? "").trim(),
+    )
     .map((b) => (b.text_md ?? "").trim())
     .join("\n\n");
 
@@ -795,35 +558,35 @@ export function ModuleNarration({
 
   return (
     <section className="rounded-lg border border-emerald-400/20 bg-emerald-600/[.04] p-3 space-y-2.5">
-      <div className="text-[12px] font-semibold text-emerald-700">
+      <div className="text-caption font-semibold text-slate-900">
         🎧 {tr.em_narration_heading}
       </div>
 
       {derivedScript.trim() ? (
         <div className="space-y-1">
-          <div className="text-[10.5px] text-slate-500">{tr.em_narration_auto}</div>
-          <div className="max-h-32 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-[12px] leading-relaxed text-slate-600 whitespace-pre-wrap">
+          <div className="text-micro text-slate-500">{tr.em_narration_auto}</div>
+          <div className="max-h-32 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-caption leading-relaxed text-slate-600 whitespace-pre-wrap">
             {derivedScript}
           </div>
         </div>
       ) : (
-        <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-2.5 py-3 text-[11.5px] text-slate-400">
+        <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-2.5 py-3 text-caption text-slate-400">
           {tr.em_narration_need_text}
         </div>
       )}
 
       {/* Voice-over: per-language audio chips + generate popover */}
       <div className="relative flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200">
-        <span className="text-[11px] text-slate-500 mr-1">{tr.em_audio_heading}:</span>
+        <span className="text-micro text-slate-500 mr-1">{tr.em_audio_heading}:</span>
         {langsWithAudio.map((l) => (
           <button
             key={l}
             type="button"
             onClick={() => setPlaying(playing === l ? null : l)}
-            className={`px-1.5 py-0.5 rounded-full border text-[10px] font-medium ${
+            className={`px-1.5 py-0.5 rounded-full border text-micro font-medium ${
               playing === l
                 ? "bg-emerald-600 border-emerald-400 text-slate-900"
-                : "bg-emerald-600/15 border-emerald-400/30 text-emerald-700 hover:bg-emerald-600/25"
+                : "bg-emerald-600/15 border-emerald-400/30 text-slate-900 hover:bg-emerald-600/25"
             }`}
           >
             🎧 {langLabel(l)}
@@ -832,7 +595,7 @@ export function ModuleNarration({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="px-2 py-0.5 rounded-full border border-slate-300 text-slate-600 text-[10px] hover:bg-slate-50"
+          className="px-2 py-0.5 rounded-full border border-slate-300 text-slate-600 text-micro hover:bg-slate-50"
         >
           + {tr.em_audio_gen_short}
         </button>
@@ -851,7 +614,7 @@ export function ModuleNarration({
               onClick={() => setPlaying(null)}
               aria-label={tr.mp_close}
               title={tr.mp_close}
-              className="w-6 h-6 shrink-0 rounded text-slate-600 hover:bg-slate-100 flex items-center justify-center text-[12px]"
+              className="w-6 h-6 shrink-0 rounded text-slate-600 hover:bg-slate-100 flex items-center justify-center text-caption"
             >
               ✕
             </button>
@@ -863,7 +626,7 @@ export function ModuleNarration({
             <select
               value={genLang}
               onChange={(e) => pickLang(e.target.value)}
-              className={inputClass + " text-[11.5px] py-1.5"}
+              className={inputClass + " text-caption py-1.5"}
             >
               {availableLangs.map((l) => (
                 <option key={l} value={l}>
@@ -875,7 +638,7 @@ export function ModuleNarration({
             <select
               value={voiceId}
               onChange={(e) => setVoiceId(e.target.value)}
-              className={inputClass + " text-[11.5px] py-1.5"}
+              className={inputClass + " text-caption py-1.5"}
             >
               {applicableVoices.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -888,7 +651,7 @@ export function ModuleNarration({
               type="button"
               onClick={generate}
               disabled={pending}
-              className="w-full px-2.5 py-1.5 rounded bg-emerald-600 text-white font-semibold text-[11.5px] hover:bg-emerald-700 disabled:opacity-50"
+              className="w-full px-2.5 py-1.5 rounded bg-emerald-600 text-white font-semibold text-caption hover:bg-emerald-700 disabled:opacity-50"
             >
               {pending
                 ? tr.em_audio_generating
@@ -897,7 +660,7 @@ export function ModuleNarration({
                   : tr.em_audio_gen_short}
             </button>
             {genErr ? (
-              <div className="text-[10.5px] text-rose-600 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
+              <div className="text-micro text-rose-600 bg-rose-950/40 border border-rose-500/30 rounded px-2 py-1 break-words">
                 {genErr}
               </div>
             ) : null}
@@ -913,34 +676,326 @@ export function ModuleNarration({
  * (pick existing or upload-new) via the shared MediaPicker, which writes the
  * block's image_r2_key (block target).
  */
+function VideoEditor({
+  block,
+  operatorSlug,
+  courseSlug,
+  moduleId,
+}: {
+  block: BlockData;
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+}) {
+  const tr = useTr();
+  const [pending, startTransition] = useTransition();
+  const [progress, setProgress] = useState<number | null>(null);
+
+  // Files ≤ 50 MB go in one request (proven path); larger files use chunked R2
+  // multipart upload so they sail past the Worker's ~100 MB body limit, up to a
+  // 2 GB cap. R2 needs every part except the last to be the same size — a fixed
+  // 50 MB slice guarantees that.
+  const SINGLE_MAX = 50 * 1024 * 1024;
+  const CHUNK = 50 * 1024 * 1024;
+  const HARD_MAX = 2 * 1024 * 1024 * 1024;
+
+  async function uploadMultipart(file: File) {
+    const ids = {
+      operator_slug: operatorSlug,
+      course_slug: courseSlug,
+      module_id: moduleId,
+      block_id: block.id,
+    };
+    const cr = await fetch("/api/upload/video/multipart?phase=create", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...ids, content_type: file.type, size: file.size }),
+    });
+    if (!cr.ok) throw new Error(await cr.text());
+    const { key, uploadId } = (await cr.json()) as { key: string; uploadId: string };
+    const total = Math.ceil(file.size / CHUNK);
+    const parts: { partNumber: number; etag: string }[] = new Array(total);
+    setProgress(0);
+    try {
+      // Upload parts with bounded concurrency (4 at a time). Each part is a
+      // separate Worker invocation, so this saturates the uploader's bandwidth
+      // and gets close to direct-to-R2 speed — without any S3 credentials.
+      const CONCURRENCY = 4;
+      let nextIdx = 0;
+      let completed = 0;
+      const worker = async () => {
+        for (;;) {
+          const i = nextIdx++;
+          if (i >= total) break;
+          const blob = file.slice(i * CHUNK, Math.min((i + 1) * CHUNK, file.size));
+          const q = new URLSearchParams({
+            key,
+            uploadId,
+            part: String(i + 1),
+            operator_slug: operatorSlug,
+          });
+          const pr = await fetch(`/api/upload/video/multipart?phase=part&${q}`, {
+            method: "POST",
+            body: blob,
+          });
+          if (!pr.ok) throw new Error(await pr.text());
+          const { etag } = (await pr.json()) as { etag: string };
+          parts[i] = { partNumber: i + 1, etag };
+          completed++;
+          setProgress(Math.round((completed / total) * 100));
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
+
+      const co = await fetch("/api/upload/video/multipart?phase=complete", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...ids, key, uploadId, parts }),
+      });
+      if (!co.ok) throw new Error(await co.text());
+    } catch (err) {
+      // best-effort: discard the half-finished upload so it doesn't linger in R2
+      fetch("/api/upload/video/multipart?phase=abort", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ operator_slug: operatorSlug, key, uploadId }),
+      }).catch(() => {});
+      throw err;
+    }
+  }
+
+  // Fastest path: browser PUTs the file STRAIGHT to R2 via a presigned URL — no
+  // Worker in the data path. Throws on any failure (incl. CORS) so onFile can
+  // fall back to the Worker upload routes.
+  async function uploadDirect(file: File) {
+    const ids = {
+      operator_slug: operatorSlug,
+      course_slug: courseSlug,
+      module_id: moduleId,
+      block_id: block.id,
+    };
+    const pr = await fetch("/api/upload/video/direct?phase=presign", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...ids, content_type: file.type, size: file.size }),
+    });
+    if (!pr.ok) throw new Error(await pr.text());
+    const { url, key } = (await pr.json()) as { url: string; key: string };
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url);
+      if (file.type) xhr.setRequestHeader("Content-Type", file.type);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () =>
+        xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`R2 PUT ${xhr.status}`));
+      xhr.onerror = () => reject(new Error("direct PUT network/CORS error"));
+      xhr.send(file);
+    });
+    const at = await fetch("/api/upload/video/direct?phase=attach", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...ids, key }),
+    });
+    if (!at.ok) throw new Error(await at.text());
+  }
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > HARD_MAX) {
+      alert(tr.ui_video_too_large.replace("{mb}", String(Math.round(file.size / 1024 / 1024))));
+      return;
+    }
+    startTransition(async () => {
+      try {
+        let ok = false;
+        try {
+          setProgress(0);
+          await uploadDirect(file);
+          ok = true;
+        } catch (directErr) {
+          // Direct-to-R2 unavailable (no S3 creds, CORS, network) → Worker path.
+          console.warn("direct R2 upload failed, falling back", directErr);
+        }
+        if (!ok) {
+          setProgress(null);
+          if (file.size <= SINGLE_MAX) {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("operator_slug", operatorSlug);
+            fd.append("course_slug", courseSlug);
+            fd.append("module_id", moduleId);
+            fd.append("block_id", block.id);
+            const r = await fetch("/api/upload/video", { method: "POST", body: fd });
+            if (!r.ok) throw new Error(await r.text());
+          } else {
+            await uploadMultipart(file);
+          }
+        }
+        window.location.reload();
+      } catch (err) {
+        alert((err instanceof Error ? err.message : tr.ui_upload_failed).slice(0, 300));
+      } finally {
+        setProgress(null);
+      }
+    });
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* YouTube share link (saved with the page "Save changes"). */}
+      <input
+        form="course-form"
+        name={`blk:${block.id}:video_uid`}
+        defaultValue={block.video_uid ?? ""}
+        placeholder={tr.em_block_video_yt_ph}
+        className={inputClass + " text-caption"}
+      />
+
+      {block.video_r2_key ? (
+        <div className="flex items-center gap-2 text-caption text-slate-700 bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+          <span>🎬 {tr.em_video_uploaded}</span>
+          <form action={removeBlockVideo} className="ml-auto">
+            <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+            <input type="hidden" name="module_id" value={moduleId} />
+            <input type="hidden" name="block_id" value={block.id} />
+            <button type="submit" className="text-rose-600 hover:underline text-caption">
+              {tr.em_video_remove}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <label className="inline-flex items-center gap-2 text-caption text-slate-700 cursor-pointer">
+          <span className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-50">
+            {pending ? (progress !== null ? `${tr.at_uploading} ${progress}%` : tr.at_uploading) : tr.em_video_upload}
+          </span>
+          <span className="text-micro text-slate-500">{tr.em_video_hint}</span>
+          <input
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,video/ogg"
+            disabled={pending}
+            onChange={onFile}
+            className="hidden"
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
 function ImageUploader({
   block,
   operatorSlug,
   supplierSlug,
+  courseSlug,
+  moduleId,
 }: {
   block: BlockData;
   operatorSlug: string;
   supplierSlug: string | null;
+  courseSlug: string;
+  moduleId: string;
 }) {
   const tr = useTr();
-  if (!supplierSlug) {
-    return <div className="text-[11px] text-slate-500">{tr.em_img_none}</div>;
+  const [pending, startTransition] = useTransition();
+  const slides: string[] = (() => {
+    try {
+      const v = JSON.parse(block.images_json ?? "[]");
+      return Array.isArray(v) ? v.filter((s): s is string => typeof s === "string") : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  function addSlide(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    // Upload sequentially: the append route does a read-modify-write on
+    // images_json, so parallel uploads would clobber each other's entries.
+    startTransition(async () => {
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("operator_slug", operatorSlug);
+        fd.append("course_slug", courseSlug);
+        fd.append("module_id", moduleId);
+        fd.append("block_id", block.id);
+        fd.append("append", "1");
+        const r = await fetch("/api/upload/image", { method: "POST", body: fd });
+        if (!r.ok) {
+          alert((await r.text().catch(() => tr.ui_upload_failed)).slice(0, 200));
+          break;
+        }
+      }
+      window.location.reload();
+    });
+    e.target.value = "";
   }
+
+  if (!supplierSlug) {
+    return <div className="text-micro text-slate-500">{tr.em_img_none}</div>;
+  }
+
   return (
-    <MediaPicker
-      supplierSlug={supplierSlug}
-      target={{ target: "block", operatorSlug, blockId: block.id }}
-      currentUrl={block.image_r2_key ? `/api/image?id=${block.id}` : null}
-      aspect="video"
-      theme="light"
-    />
+    <div className="space-y-2">
+      <MediaPicker
+        supplierSlug={supplierSlug}
+        target={{ target: "block", operatorSlug, blockId: block.id }}
+        currentUrl={block.image_r2_key ? `/api/image?id=${block.id}` : null}
+        aspect="video"
+        theme="light"
+      />
+
+      {/* Extra slides — turns the block into a slider. 1 image = single, 2+ =
+          slides on the learner side. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {slides.map((key, i) => (
+          <div key={key} className="relative w-16 h-16 rounded-md overflow-hidden border border-slate-200">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/image?id=${block.id}&n=${i}&k=${key.slice(-10)}`}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+            <form action={removeBlockSlide} className="absolute top-0 right-0">
+              <Hidden operatorSlug={operatorSlug} courseSlug={courseSlug} />
+              <input type="hidden" name="module_id" value={moduleId} />
+              <input type="hidden" name="block_id" value={block.id} />
+              <input type="hidden" name="key" value={key} />
+              <button
+                type="submit"
+                className="w-5 h-5 bg-black/50 text-white text-micro flex items-center justify-center hover:bg-black/70"
+                title={tr.em_slide_remove}
+              >
+                ✕
+              </button>
+            </form>
+          </div>
+        ))}
+        <label className="w-16 h-16 rounded-md border border-dashed border-slate-300 text-slate-400 hover:border-emerald-400 hover:text-slate-900 flex items-center justify-center cursor-pointer text-h3">
+          {pending ? "…" : "+"}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            multiple
+            disabled={pending}
+            onChange={addSlide}
+            className="hidden"
+          />
+        </label>
+      </div>
+      <div className="text-micro text-slate-500">{tr.em_slide_hint}</div>
+    </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="text-[12px] font-semibold text-slate-700 mb-1.5">{label}</div>
+      <div className="text-caption font-semibold text-slate-700 mb-1.5">{label}</div>
       {children}
     </label>
   );

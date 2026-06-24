@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Hanken_Grotesk } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { zhCN } from "@clerk/localizations";
 import "./globals.css";
@@ -14,6 +14,16 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Editorial display/body font for the marketing homepage — a free neo-grotesque
+// stand-in for Tourism NZ's custom "National / Pure Pākati" (Klim, commercial),
+// emulating the newzealand.com look. Scoped via the --font-hanken variable; the
+// home page opts in, the rest of the app keeps Geist.
+const hankenGrotesk = Hanken_Grotesk({
+  variable: "--font-hanken",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -55,7 +65,7 @@ export default async function RootLayout({
         <head>
           <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         </head>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} ${hankenGrotesk.variable} antialiased`}>
           <I18nProvider tr={dict[locale]}>{children}</I18nProvider>
         </body>
       </html>

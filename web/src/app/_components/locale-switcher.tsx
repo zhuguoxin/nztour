@@ -40,7 +40,7 @@ export function LocaleSwitcher({ current, compact = false, label }: Props) {
         onClick={() => setOpen((v) => !v)}
         disabled={isPending}
         className={`rounded-md text-[#c4e9d3] hover:bg-white/[.06] inline-flex items-center disabled:opacity-50 ${
-          compact ? "px-1.5 py-1.5 text-[12px] gap-1" : "px-3 py-2 text-[13px] gap-1.5"
+          compact ? "px-1.5 py-1.5 text-caption gap-1" : "px-3 py-2 text-small gap-1.5"
         }`}
         aria-label={label ?? "Change language"}
         aria-haspopup="listbox"
@@ -71,15 +71,15 @@ export function LocaleSwitcher({ current, compact = false, label }: Props) {
                 if (code === current) return;
                 startTransition(() => setLocale(code));
               }}
-              className={`w-full text-left px-3 py-2 text-[13px] flex items-center justify-between hover:bg-white/[.05] ${
-                code === current ? "text-emerald-300" : "text-[#d8f0e1]"
+              className={`w-full text-left px-3 py-2 text-small flex items-center justify-between hover:bg-white/[.05] ${
+                code === current ? "text-white" : "text-[#d8f0e1]"
               }`}
             >
               <span>{LANG_LABELS[code]}</span>
-              <span className="text-[11px] text-[#86b69a] font-mono">{code}</span>
+              <span className="text-micro text-[#86b69a] font-mono">{code}</span>
             </button>
           ))}
-          <div className="px-3 py-1.5 text-[10px] text-[#5d9279] border-t border-white/[.06] font-mono">
+          <div className="px-3 py-1.5 text-micro text-[#5d9279] border-t border-white/[.06] font-mono">
             More languages coming soon
           </div>
         </div>

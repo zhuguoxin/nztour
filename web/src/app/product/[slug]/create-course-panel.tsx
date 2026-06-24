@@ -51,12 +51,12 @@ export function CreateCoursePanel({ operatorSlug, bare = false }: { operatorSlug
             : "border-emerald-400/40 hover:border-emerald-400/70 bg-emerald-600/[.03]"
         }`}
       >
-        <span className="text-[28px] leading-none">📤</span>
+        <span className="text-h1 leading-none">📤</span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[13.5px] text-slate-900 truncate">
+          <span className="block text-small text-slate-900 truncate">
             {file ? file.name : tr.gen_file_pick}
           </span>
-          <span className="block text-[11.5px] text-slate-500">{tr.gen_file_hint}</span>
+          <span className="block text-caption text-slate-500">{tr.gen_file_hint}</span>
         </span>
         <input
           ref={fileRef}
@@ -72,13 +72,13 @@ export function CreateCoursePanel({ operatorSlug, bare = false }: { operatorSlug
       </label>
 
       {err ? (
-        <div className="text-[12px] text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 break-words">
+        <div className="text-caption text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 break-words">
           {err}
         </div>
       ) : null}
 
       {pending ? (
-        <div className="text-[12.5px] text-amber-600 flex items-center gap-2">
+        <div className="text-caption text-slate-900 flex items-center gap-2">
           <span className="inline-block w-3.5 h-3.5 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
           {tr.gen_generating}
         </div>
@@ -89,7 +89,7 @@ export function CreateCoursePanel({ operatorSlug, bare = false }: { operatorSlug
           type="button"
           onClick={generate}
           disabled={pending || !file}
-          className={`px-4 py-2 rounded-md font-semibold text-[13px] ${
+          className={`px-4 py-2 rounded-md font-semibold text-small ${
             pending || !file
               ? "bg-slate-500/40 text-slate-900/50 cursor-not-allowed"
               : "bg-emerald-600 text-white hover:bg-emerald-700"
@@ -99,7 +99,7 @@ export function CreateCoursePanel({ operatorSlug, bare = false }: { operatorSlug
         </button>
         <Link
           href={`/product/${operatorSlug}/courses/new`}
-          className="text-[12.5px] text-slate-600 hover:text-slate-900 hover:underline"
+          className="text-caption text-slate-600 hover:text-slate-900 hover:underline"
         >
           {tr.op_d_upload_more}
         </Link>
@@ -112,8 +112,8 @@ export function CreateCoursePanel({ operatorSlug, bare = false }: { operatorSlug
   return (
     <section className="rounded-2xl border border-slate-200 bg-white">
       <header className="px-5 py-4 border-b border-slate-200">
-        <div className="font-semibold text-[14px] text-slate-900">{tr.op_d_upload_title}</div>
-        <div className="text-[12px] text-slate-500 mt-0.5">{tr.op_d_upload_sub}</div>
+        <div className="font-semibold text-small text-slate-900">{tr.op_d_upload_title}</div>
+        <div className="text-caption text-slate-500 mt-0.5">{tr.op_d_upload_sub}</div>
       </header>
       <div className="p-5">{inner}</div>
     </section>

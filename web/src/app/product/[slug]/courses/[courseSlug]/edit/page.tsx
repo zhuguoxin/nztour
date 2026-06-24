@@ -1,24 +1,26 @@
 import { notFound } from "next/navigation";
+import { mediaUrl } from "@/lib/media";
 import Link from "next/link";
 import { TopBar } from "../../../../../_components/top-bar";
 import { requireOperatorMembership } from "@/lib/roles";
-import { VoicesModal } from "@/app/supplier/[slug]/voices-modal";
 import { db } from "@/lib/db";
-import { updateCourse, deleteCourse, publishCourse, unpublishCourse } from "../../actions";
+import { estimateReadingMinutes } from "@/lib/reading-time";
+import { updateCourse, deleteCourse, unpublishCourse } from "../../actions";
 import {
   EditorModules,
   type BlockData,
   type ModuleData,
   type QuizQuestionData,
 } from "./editor-modules";
-import { AttachmentsPanel, type AttachmentRow } from "./attachments";
-import { LangNarrationModal } from "./lang-narration-modal";
+import { PublishDialog } from "./publish-dialog";
+import { PublishWatcher } from "./publish-watcher";
+import { SaveBar } from "./save-bar";
+import { CourseQuizAuthor } from "./course-quiz-author";
 import { RegenerateModuleButton } from "./regenerate-module-button";
 import { CoverImageField } from "./cover-image-field";
 import { CourseSwitcher } from "./course-switcher";
 import { ModuleNav } from "./module-nav";
 import { t } from "@/lib/i18n";
-import type { Dict } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,7 @@ interface CourseEditRow {
   primary_lang: string;
   available_langs: string;
   title_i18n: string | null;
+  publish_at: number | null;
 }
 
 type ModuleRow = ModuleData;
@@ -68,7 +71,7 @@ export default async function EditCoursePage({
 
   const course = await db()
     .prepare(
-      `SELECT id, slug, title, summary, emoji, cover_r2_key, status, est_minutes, primary_lang, available_langs, title_i18n
+      `SELECT id, slug, title, summary, emoji, cover_r2_key, status, est_minutes, primary_lang, available_langs, title_i18n, publish_at
        FROM courses WHERE operator_id = ? AND slug = ?`,
     )
     .bind(op.id, courseSlug)
@@ -92,25 +95,11 @@ export default async function EditCoursePage({
       return [course.primary_lang];
     }
   })();
-  // Translated languages = ever translated (content present).
-  const translatedLangs: string[] = (() => {
-    const set = new Set<string>([course.primary_lang]);
-    try {
-      const m = JSON.parse(course.title_i18n ?? "{}");
-      if (m && typeof m === "object") {
-        for (const k of Object.keys(m)) if (typeof m[k] === "string" && m[k]) set.add(k);
-      }
-    } catch {
-      /* ignore */
-    }
-    for (const l of availableLangs) set.add(l);
-    return Array.from(set);
-  })();
 
   const { results: modules } = await db()
     .prepare(
       `SELECT id, title, summary, est_minutes, position,
-              narration_md_i18n, narration_audio_i18n
+              narration_md_i18n, narration_audio_i18n, regen_at
        FROM modules WHERE course_id = ? ORDER BY position, id`,
     )
     .bind(course.id)
@@ -122,13 +111,13 @@ export default async function EditCoursePage({
   // Pull every block at once and group client-side.
   const moduleIds = moduleList.map((m) => m.id);
   const blocksByModule: Record<string, BlockRow[]> = {};
-  let totalDurationS = 0;
+  const estTexts: (string | null)[] = [];
   if (moduleIds.length > 0) {
     const ph = moduleIds.map(() => "?").join(",");
     const { results: blocks } = await db()
       .prepare(
-        `SELECT id, module_id, position, kind, text_md, video_uid, image_r2_key, caption,
-                visibility, duration_s, audio_i18n,
+        `SELECT id, module_id, position, kind, text_md, video_uid, video_r2_key, image_r2_key, images_json, caption,
+                visibility, narrate, duration_s, audio_i18n,
                 audio_r2_key, audio_voice, audio_duration_s, audio_generated_at
          FROM content_blocks WHERE module_id IN (${ph}) ORDER BY module_id, position`,
       )
@@ -136,27 +125,24 @@ export default async function EditCoursePage({
       .all<BlockRow>();
     for (const b of blocks ?? []) {
       (blocksByModule[b.module_id] ??= []).push(b);
-      if (b.duration_s) totalDurationS += b.duration_s;
+      estTexts.push(b.text_md, b.caption);
     }
   }
-  const totalMin = Math.floor(totalDurationS / 60);
-  const totalSec = totalDurationS % 60;
-
-  // Narration coverage per language: how many modules already have audio in
-  // each language (drives the "narration n/total" status in the modal).
-  const audioCountByLang: Record<string, number> = {};
-  for (const m of moduleList) {
-    try {
-      const v = JSON.parse(m.narration_audio_i18n ?? "{}");
-      if (v && typeof v === "object" && !Array.isArray(v)) {
-        for (const k of Object.keys(v)) {
-          if (v[k]?.r2_key) audioCountByLang[k] = (audioCountByLang[k] ?? 0) + 1;
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-  }
+  // Auto reading-time estimate from the course's text content (drives the cards'
+  // "~N min" and the sidebar). Recomputed on every save, so it never drifts to 0.
+  const estReadingMin = estimateReadingMinutes(estTexts);
+  // Length guidance shown beside the estimate (no separate audio-duration box).
+  // Bands: <5 min too short (slate) · 5–20 min good (green) · >20 min too long
+  // (rose). Sweet spot ~15 min. No yellow.
+  const LEN_TARGET = 20;
+  const LEN_SWEET = 15;
+  const lenBand =
+    estReadingMin === 0 ? "none" : estReadingMin < 5 ? "low" : estReadingMin > LEN_TARGET ? "over" : "good";
+  const lenBarCls =
+    lenBand === "over" ? "bg-rose-400" : lenBand === "low" ? "bg-slate-400" : "bg-emerald-600";
+  const lenTip =
+    lenBand === "low" ? tr.ed_len_low : lenBand === "over" ? tr.ed_len_over : lenBand === "good" ? tr.ed_len_good : null;
+  const lenPct = Math.min(100, (estReadingMin / LEN_TARGET) * 100);
 
   // Languages the active module already has narration in — drives the
   // centre-column 🎧 preview chips next to "Regenerate".
@@ -173,36 +159,14 @@ export default async function EditCoursePage({
     }
   })();
 
-  const { results: attachments = [] } = await db()
+  // Course-level final-exam question pool (no longer per-module).
+  const { results: courseQuiz = [] } = await db()
     .prepare(
-      `SELECT id, filename, mime_type, size_bytes, rag_status, created_at
-       FROM course_attachments WHERE course_id = ? ORDER BY created_at DESC`,
+      `SELECT id, prompt, choices_json, correct_idx, explanation, position
+       FROM quiz_questions WHERE course_id = ? ORDER BY position, id`,
     )
     .bind(course.id)
-    .all<AttachmentRow>();
-
-  // Quiz pool per module.
-  const quizByModule: Record<string, QuizQuestionData[]> = {};
-  if (moduleIds.length > 0) {
-    const ph2 = moduleIds.map(() => "?").join(",");
-    const { results: qs = [] } = await db()
-      .prepare(
-        `SELECT id, module_id, prompt, choices_json, correct_idx, explanation, position
-         FROM quiz_questions WHERE module_id IN (${ph2}) ORDER BY module_id, position`,
-      )
-      .bind(...moduleIds)
-      .all<QuizQuestionData & { module_id: string }>();
-    for (const q of qs) {
-      (quizByModule[q.module_id] ??= []).push({
-        id: q.id,
-        prompt: q.prompt,
-        choices_json: q.choices_json,
-        correct_idx: q.correct_idx,
-        explanation: q.explanation,
-        position: q.position,
-      });
-    }
-  }
+    .all<QuizQuestionData>();
 
   // Voices available to this product.
   const { results: voices = [] } = await db()
@@ -229,8 +193,9 @@ export default async function EditCoursePage({
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
       <TopBar />
+      <PublishWatcher />
 
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-[230px_1fr_300px] gap-6 items-start">
+      <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-[230px_1fr_300px] gap-6 items-start">
         {/* ============ Left rail (sticky): course switch · languages · modules ============ */}
         <aside className="lg:sticky lg:top-[76px] space-y-5 order-1">
           <CourseSwitcher
@@ -240,12 +205,13 @@ export default async function EditCoursePage({
             label={tr.ed_course_label}
           />
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="font-semibold text-[13px] text-slate-900 mb-3">{tr.ed_cover_label}</div>
+            <div className="font-semibold text-small text-slate-900 mb-3">{tr.ed_cover_label}</div>
             <CoverImageField
               courseId={course.id}
               operatorSlug={slug}
               supplierSlug={op.supplier_slug}
               hasCover={!!course.cover_r2_key}
+              coverR2Key={course.cover_r2_key}
             />
           </div>
           <ModuleNav
@@ -257,7 +223,7 @@ export default async function EditCoursePage({
         </aside>
 
         {/* ============ Centre: course title/summary + the active module ============ */}
-        <main className="order-3 lg:order-2 min-w-0 space-y-6">
+        <main id="course-editor-main" className="order-3 lg:order-2 min-w-0 space-y-6">
           <form
             id="course-form"
             action={updateCourse}
@@ -290,7 +256,6 @@ export default async function EditCoursePage({
               voices={voices ?? []}
               modules={activeModule ? [activeModule] : []}
               blocksByModuleId={blocksByModule}
-              quizByModuleId={quizByModule}
               moduleOptionsSlot={
                 activeModule ? (
                   <RegenerateModuleButton
@@ -298,13 +263,19 @@ export default async function EditCoursePage({
                     courseSlug={course.slug}
                     moduleId={activeModule.id}
                     narration={activeNarration}
+                    regenAt={activeModule.regen_at ?? 0}
                   />
                 ) : null
               }
             />
           </section>
 
-          <AttachmentsPanel operatorSlug={slug} courseSlug={course.slug} attachments={attachments ?? []} />
+          {/* Course-level final exam — after all chapters */}
+          <CourseQuizAuthor
+            operatorSlug={slug}
+            courseSlug={course.slug}
+            questions={courseQuiz ?? []}
+          />
         </main>
 
         {/* ============ Right rail (sticky): one save button + course settings ============ */}
@@ -312,13 +283,13 @@ export default async function EditCoursePage({
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
             {/* Current status */}
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-slate-500">{tr.ed_status}</span>
+              <span className="text-caption text-slate-500">{tr.ed_status}</span>
               {course.status === "published" ? (
-                <span className="px-2 py-0.5 rounded-full bg-lime-100 border border-lime-200 text-lime-700 text-[11px] font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-lime-100 border border-lime-200 text-lime-700 text-micro font-medium">
                   {tr.ed_published}
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-slate-900 text-micro font-medium">
                   {tr.ed_draft}
                 </span>
               )}
@@ -326,38 +297,37 @@ export default async function EditCoursePage({
 
             {/* All three buttons submit the single #course-form, so edits are
                 saved either way; formAction sets the resulting status. */}
-            <button
-              type="submit"
-              form="course-form"
-              className="w-full px-4 py-2.5 rounded-md bg-emerald-600 text-white font-semibold text-[14px] hover:bg-emerald-700"
+            <SaveBar label={tr.ed_save_changes} />
+            {/* Publish opens a dialog: pick languages + voices, generate all
+                narration in the background, then go live. Save changes first. */}
+            <PublishDialog
+              operatorSlug={slug}
+              courseSlug={course.slug}
+              courseTitle={course.title}
+              primaryLang={course.primary_lang}
+              voices={voices ?? []}
+              enabledLangs={availableLangs}
+              publishAt={course.publish_at ?? 0}
+              triggerClassName="w-full px-4 py-2 rounded-md bg-lime-600 text-white font-semibold text-small hover:bg-lime-700"
             >
-              {tr.ed_save_changes}
-            </button>
+              {course.status === "published" ? tr.ed_republish : tr.ed_publish}
+            </PublishDialog>
             {course.status === "published" ? (
               <button
                 type="submit"
                 form="course-form"
                 formAction={unpublishCourse}
-                className="w-full px-4 py-2 rounded-md border border-slate-300 text-slate-700 font-semibold text-[13px] hover:bg-slate-50"
+                className="w-full px-4 py-2 rounded-md border border-slate-300 text-slate-700 font-semibold text-small hover:bg-slate-50"
               >
                 {tr.ed_unpublish}
               </button>
-            ) : (
-              <button
-                type="submit"
-                form="course-form"
-                formAction={publishCourse}
-                className="w-full px-4 py-2 rounded-md bg-lime-600 text-white font-semibold text-[13px] hover:bg-lime-700"
-              >
-                {tr.ed_publish}
-              </button>
-            )}
+            ) : null}
 
-            <div className="flex items-center gap-3 text-[12px]">
+            <div className="flex items-center gap-3 text-caption">
               <Link
                 href={`/learn/${slug}/${course.slug}?preview=1`}
                 target="_blank"
-                className="text-amber-600 hover:underline"
+                className="text-slate-900 hover:underline"
                 title={tr.ed_preview_title}
               >
                 {tr.ed_preview}
@@ -366,7 +336,7 @@ export default async function EditCoursePage({
                 <Link
                   href={`/learn/${slug}/${course.slug}`}
                   target="_blank"
-                  className="text-emerald-700 hover:underline"
+                  className="text-slate-900 hover:underline"
                 >
                   {tr.ed_view_live}
                 </Link>
@@ -375,54 +345,39 @@ export default async function EditCoursePage({
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
-            <div className="font-semibold text-[13px] text-slate-900">{tr.ed_course_details}</div>
-
-            {/* Languages & narration — whole-course translate + narration. */}
-            <LangNarrationModal
-              operatorSlug={slug}
-              courseSlug={course.slug}
-              primaryLang={course.primary_lang}
-              voices={voices ?? []}
-              enabledLangs={availableLangs}
-              translatedLangs={translatedLangs}
-              audioCountByLang={audioCountByLang}
-              moduleCount={moduleList.length}
-              triggerClassName="w-full px-4 py-2.5 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-800 font-semibold text-[13px] hover:bg-emerald-100"
-            >
-              {tr.ed_lang_narration}
-            </LangNarrationModal>
+            <div className="font-semibold text-small text-slate-900">{tr.ed_course_details}</div>
 
             <Field label={tr.ed_minutes}>
-              <input
-                name="est_minutes"
-                form="course-form"
-                type="number"
-                min={1}
-                max={600}
-                defaultValue={course.est_minutes ?? ""}
-                className={inputClass + " max-w-[160px]"}
-              />
+              <div className="flex items-baseline gap-2">
+                <span className="text-h2 font-semibold text-slate-900 tabular-nums">
+                  {estReadingMin > 0 ? `~${estReadingMin}` : "—"}
+                </span>
+                <span className="text-caption text-slate-500">{tr.ed_minutes_unit}</span>
+              </div>
+              {estReadingMin > 0 ? (
+                <div
+                  className="h-2 rounded-full bg-slate-100 overflow-hidden mt-2.5 relative"
+                  title={tr.ed_len_target}
+                >
+                  <div className={`${lenBarCls} h-full transition-all`} style={{ width: `${lenPct}%` }} />
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-white/60"
+                    style={{ left: `${(LEN_SWEET / LEN_TARGET) * 100}%` }}
+                  />
+                </div>
+              ) : null}
+              {lenTip ? <p className="text-caption text-slate-600 mt-2">{lenTip}</p> : null}
+              <p className="text-caption text-slate-400 mt-1">{tr.ed_minutes_auto}</p>
             </Field>
             {/* Status is set by the Publish / Unpublish buttons above; this
                 hidden field preserves the current status on a plain Save. */}
             <input type="hidden" name="status" form="course-form" defaultValue={course.status} />
-
-            {op.supplier_slug ? (
-              <VoicesModal
-                supplierSlug={op.supplier_slug}
-                className="block text-left text-[12px] text-emerald-700 hover:underline"
-              >
-                {tr.ed_manage_voices}
-              </VoicesModal>
-            ) : null}
           </div>
-
-          <DurationBanner totalS={totalDurationS} totalMin={totalMin} totalSec={totalSec} tr={tr} />
 
           <form action={deleteCourse} className="px-1">
             <input type="hidden" name="operator_slug" value={slug} />
             <input type="hidden" name="course_slug" value={course.slug} />
-            <button type="submit" className="text-[12px] text-rose-600 hover:underline">
+            <button type="submit" className="text-caption text-rose-600 hover:underline">
               {tr.ed_delete_course}
             </button>
           </form>
@@ -432,67 +387,14 @@ export default async function EditCoursePage({
   );
 }
 
-function DurationBanner({
-  totalS,
-  totalMin,
-  totalSec,
-  tr,
-}: {
-  totalS: number;
-  totalMin: number;
-  totalSec: number;
-  tr: Dict;
-}) {
-  const TARGET = 20 * 60;
-  const SWEET = 15 * 60;
-  const pct = Math.min(100, (totalS / TARGET) * 100);
-  let band: "low" | "good" | "warn" | "over";
-  if (totalS < 5 * 60) band = "low";
-  else if (totalS <= SWEET) band = "good";
-  else if (totalS <= TARGET) band = "warn";
-  else band = "over";
-  const cls = {
-    low: "bg-slate-400",
-    good: "bg-emerald-600",
-    warn: "bg-amber-400",
-    over: "bg-rose-400",
-  }[band];
-  const tip = {
-    low: tr.ed_len_low,
-    good: tr.ed_len_good,
-    warn: tr.ed_len_warn,
-    over: tr.ed_len_over,
-  }[band];
-  const fmt = `${totalMin}:${totalSec.toString().padStart(2, "0")}`;
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="flex items-baseline justify-between mb-2">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">{tr.ed_len_label}</div>
-        <div className="text-[12px] text-slate-600">{tr.ed_len_target}</div>
-      </div>
-      <div className="flex items-end justify-between gap-3">
-        <div className="font-mono text-[28px] text-slate-900 tabular-nums leading-none">{fmt}</div>
-        <div className="text-[12px] text-slate-600 flex-1 ml-4 mb-1">{tip}</div>
-      </div>
-      <div className="h-2 rounded-full bg-slate-100 overflow-hidden mt-3 relative">
-        <div className={`${cls} h-full transition-all`} style={{ width: `${pct}%` }} />
-        <div
-          className="absolute top-0 bottom-0 w-px bg-white/40"
-          style={{ left: `${(SWEET / TARGET) * 100}%` }}
-          title={tr.ed_len_sweet}
-        />
-      </div>
-    </section>
-  );
-}
 
 const inputClass =
-  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] text-slate-900 outline-none focus:border-emerald-400/60";
+  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-small text-slate-900 outline-none focus:border-emerald-400/60";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="text-[12px] font-semibold text-slate-700 mb-1.5">{label}</div>
+      <div className="text-caption font-semibold text-slate-700 mb-1.5">{label}</div>
       {children}
     </label>
   );

@@ -51,7 +51,7 @@ export async function GET(req: Request) {
   return new Response(obj.body, {
     headers: {
       "content-type": obj.httpMetadata?.contentType || EXT_TYPES[ext] || "image/jpeg",
-      "cache-control": "public, max-age=300, must-revalidate",
+      "cache-control": "public, max-age=30, must-revalidate",
     },
   });
 }

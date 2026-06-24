@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { requireOperatorMembership } from "@/lib/roles";
+import { RTO_SET } from "@/lib/rto";
 import { revalidatePath } from "next/cache";
 
 function shortId(prefix: string): string {
@@ -127,9 +128,8 @@ function cleanLinks(v: FormDataEntryValue | null): string {
   }
 }
 
-const CATEGORIES = new Set(["snow", "adventure", "cruise", "hiking", "stay", "entertainment"]);
-const REGIONS = new Set([
-  "queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia",
+const CATEGORIES = new Set([
+  "attractions", "adventure", "culture", "water", "land", "air", "accommodation", "tour", "rto",
 ]);
 
 /**
@@ -149,9 +149,9 @@ export async function updateProductProfile(
     if (!name) throw new Error("name is required");
 
     const categoryRaw = clean(form.get("category"), 40);
-    const regionRaw = clean(form.get("region"), 40);
+    const regionRaw = clean(form.get("region"), 80);
     const category = categoryRaw && CATEGORIES.has(categoryRaw) ? categoryRaw : null;
-    const region = regionRaw && REGIONS.has(regionRaw) ? regionRaw : null;
+    const region = regionRaw && RTO_SET.has(regionRaw) ? regionRaw : null;
     const primaryLang = clean(form.get("primary_lang"), 16) ?? "en";
 
     await db()

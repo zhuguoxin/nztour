@@ -56,10 +56,10 @@ export function FeedbackWidget({
         onClick={() => setOpen(true)}
         className="w-full px-3 py-2 border-t border-white/[.06] text-left bg-emerald-400/[.02] hover:bg-emerald-400/[.06] flex items-center justify-between"
       >
-        <span className="text-[12.5px] text-[#a7d4b6]">
-          <span className="text-emerald-300">💬</span> {tr.lr_fb_prompt}
+        <span className="text-caption text-[#a7d4b6]">
+          <span className="text-[#e6f5ec]">💬</span> {tr.lr_fb_prompt}
         </span>
-        <span className="text-[#5d9279] text-[11px]">{tr.lr_fb_click_to_rate}</span>
+        <span className="text-[#5d9279] text-micro">{tr.lr_fb_click_to_rate}</span>
       </button>
     );
   }
@@ -67,7 +67,7 @@ export function FeedbackWidget({
   return (
     <div className="border-t border-white/[.06] bg-emerald-400/[.04] p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-[12.5px] text-white font-semibold">{tr.lr_fb_rate_title}</div>
+        <div className="text-caption text-white font-semibold">{tr.lr_fb_rate_title}</div>
         <button
           type="button"
           onClick={() => {
@@ -75,7 +75,7 @@ export function FeedbackWidget({
             setRating(0);
             setText("");
           }}
-          className="text-[#a7d4b6] hover:text-white text-[11px]"
+          className="text-[#a7d4b6] hover:text-white text-micro"
         >
           {tr.lr_fb_dismiss}
         </button>
@@ -90,13 +90,13 @@ export function FeedbackWidget({
         value={text}
         onChange={(e) => setText(e.target.value)}
         disabled={done || pending}
-        className="w-full bg-[#04241e] border border-white/[.10] rounded-md px-2 py-1.5 text-[12.5px] text-white outline-none focus:border-emerald-400/60 resize-none"
+        className="w-full bg-[#04241e] border border-white/[.10] rounded-md px-2 py-1.5 text-caption text-white outline-none focus:border-emerald-400/60 resize-none"
       />
 
       <div className="flex items-center justify-between">
-        <div className="text-[11px] text-[#86b69a]">
+        <div className="text-micro text-[#86b69a]">
           {done ? (
-            <span className="text-emerald-300">{tr.lr_fb_thanks}</span>
+            <span className="text-[#e6f5ec]">{tr.lr_fb_thanks}</span>
           ) : rating === 0 ? (
             tr.lr_fb_pick_star
           ) : null}
@@ -105,7 +105,7 @@ export function FeedbackWidget({
           type="button"
           onClick={submit}
           disabled={rating < 1 || done || pending}
-          className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-[12px] hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold text-caption hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {pending ? tr.lr_fb_sending : done ? tr.lr_fb_sent : tr.lr_fb_send}
         </button>
@@ -134,8 +134,8 @@ function Stars({
             type="button"
             disabled={disabled}
             onClick={() => onChange(n)}
-            className={`text-[22px] transition disabled:cursor-default ${
-              on ? "text-amber-300" : "text-[#395a4a] hover:text-amber-300/60"
+            className={`text-h2 transition disabled:cursor-default ${
+              on ? "text-[#e6f5ec]" : "text-[#395a4a] hover:text-[#c4e9d3]"
             }`}
             aria-label={fmt(n === 1 ? tr.lr_fb_star_one : tr.lr_fb_star_many, { n })}
             title={fmt(n === 1 ? tr.lr_fb_star_one : tr.lr_fb_star_many, { n })}

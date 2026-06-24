@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition, useRef } from "react";
+import { mediaUrl } from "@/lib/media";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ModuleRow, BlockRow } from "@/lib/db";
-import { QuizPanel, type QuizQuestion } from "./quiz-panel";
 import { useTr } from "@/lib/i18n-provider";
-
-const DWELL_REQUIRED_SECONDS = 30;
 
 export interface ModuleReaderStrings {
   module_position: string;
@@ -37,13 +35,9 @@ interface Props {
   modules: ModuleRow[];
   operatorSlug: string;
   courseSlug: string;
-  courseId: string;
   isCompleted: boolean;
   onComplete: (dwellSeconds: number) => Promise<{ verifyCode?: string }>;
   tr: ModuleReaderStrings;
-  /** Pre-shuffled questions for this attempt. Empty = no quiz configured;
-   *  the legacy 30-second-dwell + button flow is used in that case. */
-  quizQuestions: QuizQuestion[];
   /** Module-level narration audio URL for the chosen language, or null. */
   narrationSrc: string | null;
 }
@@ -54,11 +48,9 @@ export function ModuleReader({
   modules,
   operatorSlug,
   courseSlug,
-  courseId,
   isCompleted,
   onComplete,
   tr,
-  quizQuestions,
   narrationSrc,
 }: Props) {
   const router = useRouter();
@@ -82,11 +74,10 @@ export function ModuleReader({
     return () => clearInterval(i);
   }, [module.id]);
 
-  const hasQuiz = quizQuestions.length > 0;
-  const remaining = Math.max(0, DWELL_REQUIRED_SECONDS - dwell);
-  // When a quiz is configured, the quiz IS the completion gate — the
-  // legacy 30s-dwell + click flow is suppressed.
-  const canComplete = isCompleted || (!hasQuiz && remaining === 0);
+  // No dwell gate: a chapter can be completed / continued immediately. We still
+  // track dwell seconds and pass them to onComplete for analytics, but they no
+  // longer block the button. Assessment lives in the course-level final exam.
+  const canComplete = true;
 
   const idx = modules.findIndex((m) => m.id === module.id);
   const prev = idx > 0 ? modules[idx - 1] : null;
@@ -105,40 +96,25 @@ export function ModuleReader({
     });
   }
 
-  // Chapters aren't gated. When a quiz is present it's the badge gate, not a
-  // navigation gate — so the footer button just moves on; passing the quiz is
-  // encouraged (and required for the badge) but never blocks progress.
-  function advance() {
-    if (hasQuiz && !isCompleted) {
-      if (next) router.push(`/learn/${operatorSlug}/${courseSlug}?m=${next.slug}`);
-      else router.refresh();
-      return;
-    }
-    complete();
-  }
-
   return (
     <main className="p-5 sm:p-8 max-w-4xl">
-      <div className="flex items-center gap-2 text-[13px] text-[#a7d4b6] mb-2 flex-wrap">
+      <div className="flex items-center gap-2 text-small text-[#a7d4b6] mb-2 flex-wrap">
         <span>{tr.module_position.replace("{n}", String(module.position))}</span>
         <span className="text-white/20">·</span>
         <span>{module.title}</span>
         {isCompleted ? (
-          <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-lime-400/30 bg-lime-400/10 text-lime-300 text-[11px] font-medium">
+          <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-lime-400/30 bg-lime-400/10 text-lime-300 text-micro font-medium">
             {tr.completed_chip}
           </span>
         ) : null}
       </div>
-      <h2 className="text-[26px] sm:text-[30px] font-semibold tracking-tight text-white mb-2">
+      <h2 className="text-h2 sm:text-h1 font-semibold tracking-tight text-white mb-2">
         {module.title}
       </h2>
-      {module.summary ? (
-        <p className="text-[15px] text-[#a7d4b6] mb-6 leading-relaxed">{module.summary}</p>
-      ) : null}
 
       {narrationSrc && !narrationHidden ? (
         <div className="mb-6 flex items-center gap-2 rounded-lg bg-emerald-400/[.06] border border-emerald-400/20 p-2.5">
-          <span className="text-[11px] text-emerald-300/80 font-mono uppercase tracking-widest shrink-0">
+          <span className="text-micro text-white font-mono uppercase tracking-widest shrink-0">
             🎧 {dict.lr_voiceover}
           </span>
           <audio controls preload="none" src={narrationSrc} className="flex-1 h-9" />
@@ -147,7 +123,7 @@ export function ModuleReader({
             onClick={() => setNarrationHidden(true)}
             aria-label={dict.mp_close}
             title={dict.mp_close}
-            className="w-7 h-7 shrink-0 rounded-md text-[#a7d4b6] hover:bg-white/[.08] flex items-center justify-center text-[13px]"
+            className="w-7 h-7 shrink-0 rounded-md text-[#a7d4b6] hover:bg-white/[.08] flex items-center justify-center text-small"
           >
             ✕
           </button>
@@ -166,8 +142,7 @@ export function ModuleReader({
               block={b}
               videoFallback={{
                 caption_default: tr.video_caption_default ?? "Video",
-                not_uploaded: tr.video_not_uploaded ?? "video not yet uploaded",
-                setup_hint: tr.video_setup_hint ?? "Set NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN and a real Stream UID to embed",
+                not_uploaded: tr.video_not_uploaded ?? "No video yet",
               }}
             />
           ))
@@ -176,10 +151,10 @@ export function ModuleReader({
 
       {awardedCode ? (
         <div className="mt-8 rounded-2xl border border-lime-400/30 bg-lime-400/10 p-5 flex items-center gap-4">
-          <div className="text-[42px]">🏅</div>
+          <div className="text-display">🏅</div>
           <div className="flex-1">
-            <div className="font-semibold text-white text-[17px]">{tr.badge_earned}</div>
-            <div className="text-[14px] text-lime-300">
+            <div className="font-semibold text-white text-title">{tr.badge_earned}</div>
+            <div className="text-small text-lime-300">
               {tr.verify_code_prefix}{" "}
               <Link
                 href={`/verify/${awardedCode}`}
@@ -191,59 +166,34 @@ export function ModuleReader({
           </div>
           <Link
             href="/learn"
-            className="px-4 py-2 rounded-md bg-lime-300 text-[#04241e] font-semibold text-sm"
+            className="px-4 py-2 rounded-md bg-[#0e3b2c] text-[#ffffff] font-semibold text-sm"
           >
             {tr.back_to_courses}
           </Link>
         </div>
       ) : null}
 
-      {/* End-of-chapter quiz (if authored). Passing marks the module
-          complete server-side and refreshes; the nav button below stays
-          disabled with a "Pass the quiz to continue" hint while the quiz
-          is outstanding. */}
-      <div className="mt-8">
-        <QuizPanel
-          moduleId={module.id}
-          courseId={courseId}
-          questions={quizQuestions}
-          isCompleted={isCompleted}
-        />
-      </div>
-
       <div className="mt-6 flex items-center justify-between gap-3 flex-wrap">
         <button
           disabled={!prev}
           onClick={() => prev && router.push(`/learn/${operatorSlug}/${courseSlug}?m=${prev.slug}`)}
-          className="px-3.5 py-2 rounded-md border border-white/[.10] text-[13px] text-[#d8f0e1] hover:bg-white/[.06] disabled:opacity-30 disabled:cursor-not-allowed"
+          className="px-3.5 py-2 rounded-md border border-white/[.10] text-small text-[#d8f0e1] hover:bg-white/[.06] disabled:opacity-30 disabled:cursor-not-allowed"
         >
           ← {prev ? prev.title : tr.start_module}
         </button>
 
-        <div className="text-[12px] text-[#86b69a] text-center order-3 sm:order-2 w-full sm:w-auto">
-          {isCompleted ? (
-            <span className="text-lime-300">{tr.already_completed}</span>
-          ) : hasQuiz ? (
-            <span className="text-amber-300">{dict.lr_pass_quiz_to_continue}</span>
-          ) : remaining > 0 ? (
-            <>
-              {tr.stay_to_complete_a}{" "}
-              <span className="font-mono text-emerald-300">{remaining}s</span>{" "}
-              {tr.stay_to_complete_b}
-            </>
-          ) : (
-            <span className="text-lime-300">{tr.ready_to_complete}</span>
-          )}
+        <div className="text-caption text-[#86b69a] text-center order-3 sm:order-2 w-full sm:w-auto">
+          {isCompleted ? <span>{tr.already_completed}</span> : null}
         </div>
 
         <button
-          onClick={advance}
-          disabled={isPending || (!hasQuiz && !canComplete)}
-          className="px-4 py-2 rounded-md text-[13px] font-semibold bg-emerald-400 text-[#04241e] hover:bg-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed order-2 sm:order-3"
+          onClick={complete}
+          disabled={isPending || !canComplete}
+          className="px-4 py-2 rounded-md text-small font-semibold bg-[#0e3b2c] text-[#ffffff] hover:bg-[#0a2c20] disabled:opacity-40 disabled:cursor-not-allowed order-2 sm:order-3"
         >
           {isPending
             ? tr.saving
-            : isCompleted || hasQuiz
+            : isCompleted
               ? next
                 ? tr.continue_to.replace("{title}", next.title)
                 : tr.done
@@ -261,7 +211,7 @@ function BlockView({
   videoFallback,
 }: {
   block: BlockRow;
-  videoFallback?: { caption_default: string; not_uploaded: string; setup_hint: string };
+  videoFallback?: { caption_default: string; not_uploaded: string };
 }) {
   const dict = useTr();
   switch (block.kind) {
@@ -269,7 +219,7 @@ function BlockView({
       return (
         <div>
           <div
-            className="max-w-none text-[15px] text-[#d8f0e1] leading-relaxed [&>p]:my-3 [&_strong]:text-white [&_strong]:font-semibold"
+            className="max-w-none text-body text-[#d8f0e1] leading-relaxed [&>p]:my-3 [&_strong]:text-white [&_strong]:font-semibold"
             dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
           />
         </div>
@@ -278,36 +228,56 @@ function BlockView({
       return (
         <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[.06] p-4">
           <div
-            className="text-[14.5px] text-white leading-relaxed [&>p]:my-2 [&_strong]:text-white"
+            className="text-small text-white leading-relaxed [&>p]:my-2 [&_strong]:text-white"
             dangerouslySetInnerHTML={{ __html: mdToHtml(block.text_md ?? "") }}
           />
         </div>
       );
     case "video":
       return <VideoBlock block={block} fallback={videoFallback} />;
-    case "image":
-      return block.image_r2_key ? (
-        <figure>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/image?id=${block.id}`}
-            alt={block.caption ?? ""}
-            loading="lazy"
-            className="w-full rounded-xl border border-white/[.08] object-contain"
-          />
-          {block.caption ? (
-            <figcaption className="text-[12.5px] text-[#a7d4b6] mt-2 text-center">{block.caption}</figcaption>
-          ) : null}
-        </figure>
-      ) : (
-        <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-center text-[#a7d4b6] text-sm">
-          🖼️ {block.caption ?? dict.lr_block_image}
-        </div>
-      );
+    case "image": {
+      // Slides = the primary image (if any) + any extra images_json entries.
+      // One slide → plain figure; 2+ → a carousel.
+      let extra: string[] = [];
+      try {
+        const v = JSON.parse(block.images_json ?? "[]");
+        if (Array.isArray(v)) extra = v.filter((s): s is string => typeof s === "string");
+      } catch {
+        /* ignore */
+      }
+      const slides = [
+        ...(block.image_r2_key ? [`/api/image?id=${block.id}`] : []),
+        ...extra.map((_, i) => `/api/image?id=${block.id}&n=${i}`),
+      ];
+      if (slides.length === 0) {
+        return (
+          <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-6 text-center text-[#a7d4b6] text-sm">
+            🖼️ {block.caption ?? dict.lr_block_image}
+          </div>
+        );
+      }
+      if (slides.length === 1) {
+        return (
+          <figure>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={slides[0]}
+              alt={block.caption ?? ""}
+              loading="lazy"
+              className="w-full rounded-xl border border-white/[.08] object-contain"
+            />
+            {block.caption ? (
+              <figcaption className="text-caption text-[#a7d4b6] mt-2 text-center">{block.caption}</figcaption>
+            ) : null}
+          </figure>
+        );
+      }
+      return <ImageCarousel slides={slides} caption={block.caption} />;
+    }
     case "pdf":
       return (
         <div className="rounded-xl border border-white/[.08] bg-[#0a3a2f] p-4 text-sm text-[#a7d4b6] flex items-center gap-3">
-          <span className="text-[24px]">📄</span>
+          <span className="text-h2">📄</span>
           <span>{block.caption ?? dict.lr_block_pdf}</span>
         </div>
       );
@@ -334,42 +304,70 @@ function mdToHtml(md: string): string {
     .join("");
 }
 
+/** Extract a YouTube video id from a share link (youtu.be/…, watch?v=…,
+ *  /shorts/…, /embed/…), a bare 11-char id, or the legacy "yt:<id>" form. */
+export function parseYouTubeId(input: string): string | null {
+  const v = (input ?? "").trim();
+  if (!v) return null;
+  if (v.startsWith("yt:")) return v.slice(3).trim() || null;
+  if (/^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+  try {
+    const u = new URL(v.includes("://") ? v : `https://${v}`);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      const m = u.pathname.match(/^\/(?:embed|shorts|v)\/([A-Za-z0-9_-]+)/);
+      if (m) return m[1];
+    }
+  } catch {
+    /* not a URL */
+  }
+  return null;
+}
+
 /**
- * Renders the video for a content block.
- *
- * Resolution order for `video_uid`:
- *   1. starts with "yt:<id>"  → YouTube embed (no Stream required; demo-friendly)
- *   2. 32-char hex            → Cloudflare Stream iframe at
- *      https://customer-<SUBDOMAIN>.cloudflarestream.com/<uid>/iframe
- *      (requires NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN to be set)
- *   3. anything else / null   → styled placeholder
- *
- * The Stream subdomain is exposed as NEXT_PUBLIC_* so this component (which
- * stays "use client" alongside the rest of the reader) can read it from
- * build-time inlined env without an extra server prop.
+ * Renders a video block. Resolution order:
+ *   1. video_r2_key  → uploaded file, streamed from /api/video
+ *   2. video_uid     → a YouTube share link, embedded
+ *   3. neither       → styled placeholder
  */
 function VideoBlock({
   block,
-  fallback = {
-    caption_default: "Video",
-    not_uploaded: "video not yet uploaded",
-    setup_hint:
-      "Set NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN and a real Stream UID to embed",
-  },
+  fallback = { caption_default: "Video", not_uploaded: "No video yet" },
 }: {
   block: BlockRow;
-  fallback?: { caption_default: string; not_uploaded: string; setup_hint: string };
+  fallback?: { caption_default: string; not_uploaded: string };
 }) {
-  const uid = block.video_uid?.trim() ?? "";
   const caption = block.caption ?? fallback.caption_default;
 
-  // YouTube fallback — accept "yt:<id>" so we can demo without Stream account.
-  if (uid.startsWith("yt:")) {
-    const ytId = uid.slice(3);
+  // 1. Uploaded file → native player.
+  if (block.video_r2_key) {
     return (
       <figure>
         <div className="rounded-2xl overflow-hidden aspect-video bg-black border border-white/[.06] relative">
-          <div className="absolute top-3.5 left-3.5 z-10 text-[11px] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white/85 border border-white/15">
+          <div className="absolute top-3.5 left-3.5 z-10 text-micro px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white/85 border border-white/15 pointer-events-none">
+            📹 {caption}
+          </div>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            src={mediaUrl(block.video_r2_key)}
+            controls
+            preload="metadata"
+            className="w-full h-full"
+          />
+        </div>
+      </figure>
+    );
+  }
+
+  // 2. YouTube share link.
+  const ytId = parseYouTubeId(block.video_uid ?? "");
+  if (ytId) {
+    return (
+      <figure>
+        <div className="rounded-2xl overflow-hidden aspect-video bg-black border border-white/[.06] relative">
+          <div className="absolute top-3.5 left-3.5 z-10 text-micro px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white/85 border border-white/15">
             📹 {caption}
           </div>
           <iframe
@@ -385,44 +383,67 @@ function VideoBlock({
     );
   }
 
-  // Real Cloudflare Stream UID (32 hex chars).
-  const subdomain = process.env.NEXT_PUBLIC_STREAM_CUSTOMER_SUBDOMAIN;
-  const isStreamUid = /^[a-f0-9]{32}$/i.test(uid);
-  if (isStreamUid && subdomain && subdomain !== "REPLACE_WITH_CF_STREAM_SUBDOMAIN") {
-    const src = `https://customer-${subdomain}.cloudflarestream.com/${uid}/iframe`;
-    return (
-      <figure>
-        <div className="rounded-2xl overflow-hidden aspect-video bg-black border border-white/[.06] relative">
-          <div className="absolute top-3.5 left-3.5 z-10 text-[11px] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white/85 border border-white/15">
-            📹 {caption}
-          </div>
-          <iframe
-            src={src}
-            className="w-full h-full"
-            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-            allowFullScreen
-            loading="lazy"
-            title={caption}
-          />
-        </div>
-      </figure>
-    );
-  }
-
-  // Placeholder
+  // 3. Placeholder — no setup hints.
   return (
     <div className="rounded-2xl overflow-hidden aspect-video bg-gradient-to-br from-emerald-900 via-[#0a3a2f] to-[#04241e] flex items-center justify-center relative border border-white/[.06]">
-      <div className="absolute top-3.5 left-3.5 text-[11px] px-2.5 py-1 rounded-full bg-black/40 backdrop-blur text-white/85 border border-white/15">
+      <div className="absolute top-3.5 left-3.5 text-micro px-2.5 py-1 rounded-full bg-black/40 backdrop-blur text-white/85 border border-white/15">
         📹 {caption}
       </div>
       <div className="text-center text-white/75">
-        <div className="text-[48px] mb-2 leading-none">▶</div>
-        <div className="text-[12px] font-mono text-emerald-300/80">
-          {uid ? `video_uid: ${uid}` : fallback.not_uploaded}
-        </div>
-        <div className="text-[11px] text-white/40 mt-1">{fallback.setup_hint}</div>
+        <div className="text-display mb-2 leading-none">▶</div>
+        <div className="text-caption text-white/50">{fallback.not_uploaded}</div>
       </div>
     </div>
   );
 }
 
+
+/** Multi-image slider used when an image block carries 2+ images. */
+function ImageCarousel({ slides, caption }: { slides: string[]; caption: string | null }) {
+  const [i, setI] = useState(0);
+  const n = slides.length;
+  const go = (d: number) => setI((p) => (p + d + n) % n);
+  return (
+    <figure>
+      <div className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={slides[i]}
+          alt={caption ?? ""}
+          loading="lazy"
+          className="w-full rounded-xl border border-white/[.08] object-contain"
+        />
+        <button
+          type="button"
+          onClick={() => go(-1)}
+          aria-label="Previous"
+          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 text-white text-body flex items-center justify-center hover:bg-black/65"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          onClick={() => go(1)}
+          aria-label="Next"
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 text-white text-body flex items-center justify-center hover:bg-black/65"
+        >
+          ›
+        </button>
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+          {slides.map((_, k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setI(k)}
+              aria-label={`Slide ${k + 1}`}
+              className={`w-1.5 h-1.5 rounded-full ${k === i ? "bg-white" : "bg-white/40"}`}
+            />
+          ))}
+        </div>
+      </div>
+      {caption ? (
+        <figcaption className="text-caption text-[#a7d4b6] mt-2 text-center">{caption}</figcaption>
+      ) : null}
+    </figure>
+  );
+}

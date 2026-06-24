@@ -35,28 +35,28 @@ export interface VoiceRow {
 // Chinese variants. Falls back to the raw code for anything unmapped.
 const LANG_DISPLAY: Record<string, string> = {
   en: "English",
-  zh: "中文",
-  "zh-CN": "中文",
-  "zh-TW": "中文",
-  ja: "日本語",
-  ko: "한국어",
-  es: "Español",
-  fr: "Français",
-  de: "Deutsch",
-  pt: "Português",
+  zh: "Chinese",
+  "zh-CN": "Chinese",
+  "zh-TW": "Chinese",
+  ja: "Japanese",
+  ko: "Korean",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  pt: "Portuguese",
 };
 
 // Languages a cloned voice can be assigned to. "zh" covers both zh-CN and
 // zh-TW (the editor matches on the base code), so one "中文" chip is enough.
 const CLONE_LANGS: Array<{ code: string; label: string }> = [
   { code: "en", label: "English" },
-  { code: "zh", label: "中文" },
-  { code: "ja", label: "日本語" },
-  { code: "ko", label: "한국어" },
-  { code: "es", label: "Español" },
-  { code: "fr", label: "Français" },
-  { code: "de", label: "Deutsch" },
-  { code: "pt", label: "Português" },
+  { code: "zh", label: "Chinese" },
+  { code: "ja", label: "Japanese" },
+  { code: "ko", label: "Korean" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+  { code: "de", label: "German" },
+  { code: "pt", label: "Portuguese" },
 ];
 
 function langLabels(langs: string | null): string[] {
@@ -114,12 +114,12 @@ export function VoicesPanel({
     <section className="rounded-2xl border border-slate-200 bg-white">
       <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <div>
-          <div className="font-semibold text-[14px] text-slate-900">{tr.voi_title}</div>
-          <div className="text-[12.5px] text-slate-500 mt-0.5">{tr.voi_sub}</div>
+          <div className="font-semibold text-small text-slate-900">{tr.voi_title}</div>
+          <div className="text-caption text-slate-500 mt-0.5">{tr.voi_sub}</div>
         </div>
         {!hasXIKey ? (
           <span
-            className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md"
+            className="text-micro text-slate-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md"
             title="Set MINIMAX_API_KEY via `wrangler secret put MINIMAX_API_KEY` to enable voice cloning"
           >
             {tr.voi_disabled}
@@ -130,7 +130,7 @@ export function VoicesPanel({
       {/* Existing cloned voices (editable) */}
       <div className="px-5 py-4">
         {cloned.length === 0 ? (
-          <div className="text-[12.5px] text-slate-500 py-1">{tr.voi_empty}</div>
+          <div className="text-caption text-slate-500 py-1">{tr.voi_empty}</div>
         ) : (
           <ul className="space-y-2">
             {cloned.map((v) => (
@@ -148,7 +148,7 @@ export function VoicesPanel({
 
       {/* Add a new voice */}
       <div className="px-5 py-4 border-t border-slate-200 bg-slate-50/60 rounded-b-2xl">
-        <div className="font-semibold text-[13.5px] text-slate-900">{tr.voi_new_heading}</div>
+        <div className="font-semibold text-small text-slate-900">{tr.voi_new_heading}</div>
         <CloneForm supplierSlug={supplierSlug} disabled={!hasXIKey} onChanged={refresh} />
       </div>
     </section>
@@ -158,13 +158,13 @@ export function VoicesPanel({
 function StatusBadge({ status, detail }: { status: string; detail: string | null }) {
   const cfg =
     status === "active"
-      ? { cls: "border-emerald-300 text-emerald-700 bg-emerald-50", label: "active" }
+      ? { cls: "border-emerald-300 text-slate-900 bg-emerald-50", label: "active" }
       : status === "failed"
         ? { cls: "border-rose-300 text-rose-700 bg-rose-50", label: "failed" }
-        : { cls: "border-amber-300 text-amber-700 bg-amber-50", label: "pending" };
+        : { cls: "border-amber-300 text-slate-900 bg-amber-50", label: "pending" };
   return (
     <span
-      className={`px-1.5 py-0.5 rounded border text-[10px] font-mono uppercase ${cfg.cls}`}
+      className={`px-1.5 py-0.5 rounded border text-micro font-mono uppercase ${cfg.cls}`}
       title={detail ?? undefined}
     >
       {cfg.label}
@@ -357,7 +357,7 @@ function LangChips({
   const tr = useTr();
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-[12px] text-slate-500 mr-1">{tr.voi_langs}</span>
+      <span className="text-caption text-slate-500 mr-1">{tr.voi_langs}</span>
       {CLONE_LANGS.map((l) => {
         const on = selected.includes(l.code);
         return (
@@ -366,7 +366,7 @@ function LangChips({
             type="button"
             onClick={() => onToggle(l.code)}
             disabled={disabled}
-            className={`px-2.5 py-1 rounded-full border text-[12px] transition disabled:opacity-50 ${
+            className={`px-2.5 py-1 rounded-full border text-caption transition disabled:opacity-50 ${
               on
                 ? "bg-[#04241e] border-[#04241e] text-white"
                 : "bg-white border-slate-300 text-slate-600 hover:border-slate-400"
@@ -387,18 +387,18 @@ function RecorderStrip({ rec }: { rec: Recorder }) {
   if (rec.recState === "recording") {
     return (
       <div className="flex items-center gap-3">
-        <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-rose-600">
+        <span className="inline-flex items-center gap-2 text-small font-semibold text-rose-600">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
           {rec.mmss}
         </span>
         <button
           type="button"
           onClick={rec.stop}
-          className="px-4 py-2 rounded-md font-semibold text-[13px] text-white bg-[#04241e] hover:bg-[#0a3a2f]"
+          className="px-4 py-2 rounded-md font-semibold text-small text-white bg-[#04241e] hover:bg-[#0a3a2f]"
         >
           {tr.voi_rec_stop}
         </button>
-        <span className="text-[11px] text-slate-500">
+        <span className="text-micro text-slate-500">
           {fmt(tr.voi_rec_max, { n: MAX_SECONDS / 60 })}
         </span>
       </div>
@@ -408,7 +408,7 @@ function RecorderStrip({ rec }: { rec: Recorder }) {
     return (
       <div className="flex items-center gap-3 flex-wrap">
         <audio controls src={rec.previewUrl} className="h-9" />
-        <span className="text-[12px] text-slate-500">{fmt(tr.voi_recorded, { t: rec.mmss })}</span>
+        <span className="text-caption text-slate-500">{fmt(tr.voi_recorded, { t: rec.mmss })}</span>
       </div>
     );
   }
@@ -417,7 +417,7 @@ function RecorderStrip({ rec }: { rec: Recorder }) {
 
 function RecordTip() {
   const tr = useTr();
-  return <div className="text-[11px] text-slate-500">{tr.voi_tip}</div>;
+  return <div className="text-micro text-slate-500">{tr.voi_tip}</div>;
 }
 
 // ---------------------------------------------------------------------------
@@ -493,10 +493,10 @@ function ClonedVoiceItem({
   if (!editing) {
     return (
       <li className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2">
-        <span className="text-[18px]">🎤</span>
+        <span className="text-title">🎤</span>
         <div className="flex-1 min-w-0">
-          <div className="text-[13.5px] text-slate-900 truncate">{cleanName(voice.name)}</div>
-          <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
+          <div className="text-small text-slate-900 truncate">{cleanName(voice.name)}</div>
+          <div className="text-micro text-slate-500 flex items-center gap-2 flex-wrap">
             {voice.gender ? <span className="uppercase font-mono">{voice.gender}</span> : null}
             <StatusBadge status={voice.status} detail={voice.status_detail} />
             {langLabels(voice.langs).map((lbl) => (
@@ -513,7 +513,7 @@ function ClonedVoiceItem({
           type="button"
           onClick={() => setEditing(true)}
           disabled={disabled}
-          className="shrink-0 px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className="shrink-0 px-3 py-1.5 rounded-md border border-slate-300 text-caption text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
           {tr.voi_edit}
         </button>
@@ -534,13 +534,13 @@ function ClonedVoiceItem({
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
           disabled={pending}
-          className="flex-1 min-w-0 px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+          className="flex-1 min-w-0 px-3 py-2 rounded-md border border-slate-300 text-small disabled:opacity-50"
         />
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value)}
           disabled={pending}
-          className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+          className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-small disabled:opacity-50"
         >
           <option value="neutral">{tr.voi_g_neutral}</option>
           <option value="male">{tr.voi_g_male}</option>
@@ -551,7 +551,7 @@ function ClonedVoiceItem({
             type="button"
             onClick={rec.start}
             disabled={pending}
-            className="shrink-0 px-4 py-2 rounded-md font-semibold text-[13px] text-rose-600 border border-rose-300 hover:bg-rose-50 disabled:opacity-50"
+            className="shrink-0 px-4 py-2 rounded-md font-semibold text-small text-rose-600 border border-rose-300 hover:bg-rose-50 disabled:opacity-50"
           >
             {tr.voi_rec_rerecord}
           </button>
@@ -561,11 +561,11 @@ function ClonedVoiceItem({
       <RecorderStrip rec={rec} />
       {rec.recState !== "idle" ? <RecordTip /> : null}
       {rec.tooShort ? (
-        <div className="text-[11px] text-amber-700">{tr.voi_too_short}</div>
+        <div className="text-micro text-slate-900">{tr.voi_too_short}</div>
       ) : null}
 
       {(err || rec.err) ? (
-        <div className="text-[11px] text-rose-700">{err ?? rec.err}</div>
+        <div className="text-micro text-rose-700">{err ?? rec.err}</div>
       ) : null}
 
       <div className="flex items-center gap-2 flex-wrap pt-0.5">
@@ -575,7 +575,7 @@ function ClonedVoiceItem({
               type="button"
               onClick={saveRecording}
               disabled={pending || rec.tooShort}
-              className={`px-4 py-1.5 rounded-md font-semibold text-[13px] text-white ${
+              className={`px-4 py-1.5 rounded-md font-semibold text-small text-white ${
                 pending || rec.tooShort
                   ? "bg-slate-400 cursor-not-allowed"
                   : "bg-[#04241e] hover:bg-[#0a3a2f]"
@@ -587,7 +587,7 @@ function ClonedVoiceItem({
               type="button"
               onClick={rec.reset}
               disabled={pending}
-              className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="px-3 py-1.5 rounded-md border border-slate-300 text-caption text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               {tr.voi_discard}
             </button>
@@ -597,7 +597,7 @@ function ClonedVoiceItem({
             type="button"
             onClick={saveMeta}
             disabled={!canSaveMeta || rec.recState === "recording"}
-            className={`px-4 py-1.5 rounded-md font-semibold text-[13px] text-white ${
+            className={`px-4 py-1.5 rounded-md font-semibold text-small text-white ${
               !canSaveMeta || rec.recState === "recording"
                 ? "bg-slate-400 cursor-not-allowed"
                 : "bg-[#04241e] hover:bg-[#0a3a2f]"
@@ -610,7 +610,7 @@ function ClonedVoiceItem({
           type="button"
           onClick={cancel}
           disabled={pending}
-          className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className="px-3 py-1.5 rounded-md border border-slate-300 text-caption text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
           {tr.voi_cancel}
         </button>
@@ -674,13 +674,13 @@ function CloneForm({
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
           disabled={disabled || pending || rec.recState !== "idle"}
-          className="flex-1 min-w-0 px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+          className="flex-1 min-w-0 px-3 py-2 rounded-md border border-slate-300 text-small disabled:opacity-50"
         />
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value)}
           disabled={disabled || pending || rec.recState !== "idle"}
-          className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-[13.5px] disabled:opacity-50"
+          className="sm:w-[120px] px-3 py-2 rounded-md border border-slate-300 text-small disabled:opacity-50"
         >
           <option value="neutral">{tr.voi_g_neutral}</option>
           <option value="male">{tr.voi_g_male}</option>
@@ -691,7 +691,7 @@ function CloneForm({
             type="button"
             onClick={rec.start}
             disabled={!canRecord}
-            className={`shrink-0 px-4 py-2 rounded-md font-semibold text-[13px] text-white ${
+            className={`shrink-0 px-4 py-2 rounded-md font-semibold text-small text-white ${
               !canRecord ? "bg-slate-400 cursor-not-allowed" : "bg-rose-600 hover:bg-rose-500"
             }`}
             title={
@@ -715,7 +715,7 @@ function CloneForm({
             type="button"
             onClick={save}
             disabled={pending || rec.tooShort}
-            className={`px-4 py-1.5 rounded-md font-semibold text-[13px] text-white ${
+            className={`px-4 py-1.5 rounded-md font-semibold text-small text-white ${
               pending || rec.tooShort
                 ? "bg-slate-400 cursor-not-allowed"
                 : "bg-[#04241e] hover:bg-[#0a3a2f]"
@@ -727,7 +727,7 @@ function CloneForm({
             type="button"
             onClick={rec.reset}
             disabled={pending}
-            className="px-3 py-1.5 rounded-md border border-slate-300 text-[12.5px] text-slate-700 hover:bg-white disabled:opacity-50"
+            className="px-3 py-1.5 rounded-md border border-slate-300 text-caption text-slate-700 hover:bg-white disabled:opacity-50"
           >
             {tr.voi_rerecord_btn}
           </button>
@@ -735,10 +735,10 @@ function CloneForm({
       ) : null}
 
       {rec.tooShort ? (
-        <div className="text-[11px] text-amber-700">{tr.voi_too_short}</div>
+        <div className="text-micro text-slate-900">{tr.voi_too_short}</div>
       ) : null}
 
-      {(err || rec.err) ? <div className="text-[11px] text-rose-700">{err ?? rec.err}</div> : null}
+      {(err || rec.err) ? <div className="text-micro text-rose-700">{err ?? rec.err}</div> : null}
 
       <RecordTip />
     </div>

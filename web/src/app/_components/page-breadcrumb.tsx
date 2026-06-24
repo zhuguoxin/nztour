@@ -11,7 +11,7 @@ export interface Crumb {
  */
 export function PageBreadcrumb({ items, className = "" }: { items: Crumb[]; className?: string }) {
   return (
-    <nav className={`flex items-center gap-1.5 text-[12.5px] text-slate-500 flex-wrap min-w-0 ${className}`}>
+    <nav className={`flex items-center gap-1.5 text-caption text-slate-500 flex-wrap min-w-0 ${className}`}>
       {items.map((it, i) => {
         const last = i === items.length - 1;
         return (

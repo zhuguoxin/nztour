@@ -62,7 +62,6 @@ export async function markCourseSeenAction(input: { courseId: string }): Promise
  * re-derives correctness from quiz_questions so the client cannot lie.
  */
 export async function submitQuizAttemptAction(input: {
-  moduleId: string;
   courseId: string;
   questionIds: string[];
   answerIdx: number[];
@@ -75,8 +74,8 @@ export async function submitQuizAttemptAction(input: {
 
   const ph = input.questionIds.map(() => "?").join(",");
   const { results } = await db()
-    .prepare(`SELECT id, correct_idx FROM quiz_questions WHERE module_id = ? AND id IN (${ph})`)
-    .bind(input.moduleId, ...input.questionIds)
+    .prepare(`SELECT id, correct_idx FROM quiz_questions WHERE course_id = ? AND id IN (${ph})`)
+    .bind(input.courseId, ...input.questionIds)
     .all<{ id: string; correct_idx: number }>();
   const correctMap = new Map((results ?? []).map((r) => [r.id, r.correct_idx]));
 
@@ -93,13 +92,13 @@ export async function submitQuizAttemptAction(input: {
   await db()
     .prepare(
       `INSERT INTO quiz_attempts
-         (id, user_id, module_id, question_ids, answers_json, score, total, passed)
+         (id, user_id, course_id, question_ids, answers_json, score, total, passed)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       id,
       userId,
-      input.moduleId,
+      input.courseId,
       JSON.stringify(input.questionIds),
       JSON.stringify(input.answerIdx),
       score,
@@ -108,12 +107,9 @@ export async function submitQuizAttemptAction(input: {
     )
     .run();
 
-  // On pass: mark module complete. If this was the last module, badge issue
-  // happens via completeModuleAction's existing flow — but we duplicate that
-  // logic minimally here so the quiz pass IS the trigger.
+  // Passing the course-level final exam is the badge trigger.
   if (passed) {
-    const { markModuleComplete, maybeAwardBadge } = await import("@/lib/progress");
-    await markModuleComplete(userId, input.moduleId, 30);
+    const { maybeAwardBadge } = await import("@/lib/progress");
     await maybeAwardBadge(userId, input.courseId);
   }
 

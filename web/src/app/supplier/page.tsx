@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
+import { mediaUrl } from "@/lib/media";
 import Link from "next/link";
 import { TopBar } from "../_components/top-bar";
-import { PageBreadcrumb } from "../_components/page-breadcrumb";
 import { getCurrentRole } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
 import { requireOnboarded } from "@/lib/onboarding";
+import { fallbackCover } from "@/lib/cover";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,11 @@ interface SupRow {
   hq_city: string | null;
   product_count: number;
   course_count: number;
+  /** Supplier's own uploaded cover (suppliers.cover_r2_key). */
+  cover_r2_key: string | null;
+  /** Fallback: a product's cover under this supplier. */
+  op_cover_r2_key: string | null;
+  op_cover_url: string | null;
 }
 
 /**
@@ -50,7 +56,12 @@ export default async function SupplierIndex() {
                 (SELECT COUNT(*) FROM operators o WHERE o.supplier_id = s.id AND o.status='active') AS product_count,
                 (SELECT COUNT(*) FROM courses c
                    JOIN operators o ON o.id = c.operator_id
-                   WHERE o.supplier_id = s.id AND c.status='published') AS course_count
+                   WHERE o.supplier_id = s.id AND c.status='published') AS course_count,
+                s.cover_r2_key,
+                (SELECT o.cover_r2_key FROM operators o WHERE o.supplier_id = s.id AND o.status='active'
+                   AND o.cover_r2_key IS NOT NULL ORDER BY o.created_at LIMIT 1) AS op_cover_r2_key,
+                (SELECT o.cover_image_url FROM operators o WHERE o.supplier_id = s.id AND o.status='active'
+                   AND o.cover_image_url IS NOT NULL ORDER BY o.created_at LIMIT 1) AS op_cover_url
          FROM suppliers s
          WHERE s.status='active'
          ORDER BY product_count DESC, s.name`,
@@ -65,7 +76,12 @@ export default async function SupplierIndex() {
                 (SELECT COUNT(*) FROM operators o WHERE o.supplier_id = s.id AND o.status='active') AS product_count,
                 (SELECT COUNT(*) FROM courses c
                    JOIN operators o ON o.id = c.operator_id
-                   WHERE o.supplier_id = s.id AND c.status='published') AS course_count
+                   WHERE o.supplier_id = s.id AND c.status='published') AS course_count,
+                s.cover_r2_key,
+                (SELECT o.cover_r2_key FROM operators o WHERE o.supplier_id = s.id AND o.status='active'
+                   AND o.cover_r2_key IS NOT NULL ORDER BY o.created_at LIMIT 1) AS op_cover_r2_key,
+                (SELECT o.cover_image_url FROM operators o WHERE o.supplier_id = s.id AND o.status='active'
+                   AND o.cover_image_url IS NOT NULL ORDER BY o.created_at LIMIT 1) AS op_cover_url
          FROM suppliers s
          WHERE s.id IN (${placeholders})
          ORDER BY s.name`,
@@ -77,23 +93,10 @@ export default async function SupplierIndex() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
       <main className="px-5 sm:px-8 py-10 max-w-5xl mx-auto">
-        <PageBreadcrumb
-          className="mb-2"
-          items={[
-            { href: "/", label: tr.nav_home },
-            { label: role.isAdmin ? tr.sup_picker_title_admin : tr.sup_picker_title_user },
-          ]}
-        />
-        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
-          {tr.sup_picker_label}
-        </div>
-        <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">
-          {role.isAdmin ? tr.sup_picker_title_admin : tr.sup_picker_title_user}
-        </h1>
-        <p className="text-[13.5px] text-slate-600 mt-1.5">
+        <p className="text-small text-slate-600">
           {cards.length === 0
             ? tr.sup_picker_empty_blurb
             : role.isAdmin
@@ -103,40 +106,49 @@ export default async function SupplierIndex() {
 
         {cards.length === 0 ? (
           <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6">
-            <div className="text-[14px] text-slate-900 font-semibold">{tr.sup_picker_none_title}</div>
-            <p className="mt-2 text-[13.5px] text-slate-600">{tr.sup_picker_none_body}</p>
+            <div className="text-small text-slate-900 font-semibold">{tr.sup_picker_none_title}</div>
+            <p className="mt-2 text-small text-slate-600">{tr.sup_picker_none_body}</p>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cards.map((s) => (
+            {cards.map((s) => {
+              const cover = s.cover_r2_key
+                ? mediaUrl(s.cover_r2_key)
+                : s.op_cover_r2_key
+                  ? mediaUrl(s.op_cover_r2_key)
+                  : (s.op_cover_url ?? fallbackCover(s.slug));
+              return (
               <Link
                 key={s.id}
                 href={`/supplier/${s.slug}`}
                 className="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition"
               >
-                <div className="h-20 bg-[linear-gradient(135deg,#04241e_0%,#0a3a2f_100%)] flex items-end p-3">
-                  <div className="text-[11px] font-mono text-emerald-200/80 uppercase tracking-wider">
+                <div className="aspect-[16/9] relative overflow-hidden bg-[linear-gradient(135deg,#04241e_0%,#0a3a2f_100%)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={cover} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                  <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm text-micro font-medium text-white/90 border border-white/15">
                     {s.country}
                     {s.hq_city ? ` · ${s.hq_city}` : ""}
                   </div>
                 </div>
                 <div className="p-4">
-                  <div className="font-semibold text-[15px] text-slate-900">{s.name}</div>
+                  <div className="font-semibold text-body text-slate-900">{s.name}</div>
                   {s.legal_name && s.legal_name !== s.name ? (
-                    <div className="text-[11.5px] text-slate-500 mt-0.5 truncate">{s.legal_name}</div>
+                    <div className="text-caption text-slate-500 mt-0.5 truncate">{s.legal_name}</div>
                   ) : null}
-                  <div className="flex items-center gap-2 mt-2 text-[12px] text-slate-500">
+                  <div className="flex items-center gap-2 mt-2 text-caption text-slate-500">
                     <span>{fmt(tr.sup_picker_card_products, { n: s.product_count })}</span>
                     <span className="text-slate-300">·</span>
                     <span>{fmt(tr.sup_picker_card_published, { n: s.course_count })}</span>
                   </div>
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="font-mono uppercase text-[10px] text-slate-500">{s.role}</span>
-                    <span className="text-[12px] text-emerald-700">{tr.sup_picker_card_cta}</span>
+                    <span className="font-mono uppercase text-micro text-slate-700">{s.role}</span>
+                    <span className="text-caption text-slate-900">{tr.sup_picker_card_cta}</span>
                   </div>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>

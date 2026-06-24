@@ -42,7 +42,7 @@ export function MemberManager({
     e === "forbidden" || e === "unauthorised" ? tr.err_no_permission : e ?? tr.err_load_failed;
 
   const field =
-    "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
+    "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-caption text-slate-900 outline-none focus:border-emerald-500";
 
   function add() {
     if (!email.trim()) return;
@@ -70,23 +70,23 @@ export function MemberManager({
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
       <div>
-        <div className="font-semibold text-[13px] text-slate-900">{tr.team_title}</div>
-        <div className="text-[11.5px] text-slate-500 mt-0.5">{tr.team_sub}</div>
+        <div className="font-semibold text-small text-slate-900">{tr.team_title}</div>
+        <div className="text-caption text-slate-500 mt-0.5">{tr.team_sub}</div>
       </div>
 
       {members.length > 0 ? (
         <ul className="space-y-1.5">
           {members.map((m) => (
-            <li key={m.user_id} className="flex items-center gap-2 text-[12.5px]">
+            <li key={m.user_id} className="flex items-center gap-2 text-caption">
               <span className="flex-1 min-w-0 truncate text-slate-700" title={m.email}>
                 {m.name ?? m.email}
               </span>
-              <span className="text-[10.5px] text-slate-500 uppercase font-mono shrink-0">{roleLabel(m.role)}</span>
+              <span className="text-micro text-slate-700 uppercase font-mono shrink-0">{roleLabel(m.role)}</span>
               <button
                 type="button"
                 onClick={() => remove(m.user_id)}
                 disabled={pending}
-                className="text-rose-600 hover:bg-rose-50 rounded px-1 text-[12px] shrink-0 disabled:opacity-50"
+                className="text-rose-600 hover:bg-rose-50 rounded px-1 text-caption shrink-0 disabled:opacity-50"
                 title={m.email}
               >
                 ✕
@@ -95,7 +95,7 @@ export function MemberManager({
           ))}
         </ul>
       ) : (
-        <div className="text-[12px] text-slate-400">{tr.team_empty}</div>
+        <div className="text-caption text-slate-400">{tr.team_empty}</div>
       )}
 
       <div className="space-y-1.5 border-t border-slate-100 pt-3">
@@ -119,14 +119,14 @@ export function MemberManager({
             type="button"
             onClick={add}
             disabled={pending || !email.trim()}
-            className="px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 disabled:opacity-50 shrink-0 whitespace-nowrap"
+            className="px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-caption hover:bg-emerald-700 disabled:opacity-50 shrink-0 whitespace-nowrap"
           >
             {tr.team_add}
           </button>
         </div>
-        {ok ? <div className="text-[11.5px] text-emerald-700">{tr.team_added}</div> : null}
-        {err ? <div className="text-[11.5px] text-rose-600">{err}</div> : null}
-        <div className="text-[11px] text-slate-400">{tr.team_invite_note}</div>
+        {ok ? <div className="text-caption text-slate-900">{tr.team_added}</div> : null}
+        {err ? <div className="text-caption text-rose-600">{err}</div> : null}
+        <div className="text-micro text-slate-400">{tr.team_invite_note}</div>
       </div>
     </div>
   );

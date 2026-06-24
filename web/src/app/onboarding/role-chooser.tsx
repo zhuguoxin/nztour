@@ -12,8 +12,8 @@ export function RoleChooser({ title, blurb }: { title: string; blurb: string }) 
   const tr = useTr();
   return (
     <div>
-      <h1 className="text-[24px] sm:text-[28px] font-semibold tracking-tight">{title}</h1>
-      <p className="text-[14px] text-slate-600 mt-1.5 mb-6">{blurb}</p>
+      <h1 className="text-h2 sm:text-h1 font-semibold tracking-tight">{title}</h1>
+      <p className="text-small text-slate-600 mt-1.5 mb-6">{blurb}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <RoleCard
           href="/onboarding?as=customer"
@@ -38,9 +38,9 @@ function RoleCard({ href, title, desc, cta }: { href: string; title: string; des
       href={href}
       className="block rounded-2xl border border-slate-200 bg-white p-5 hover:border-emerald-400 hover:shadow-sm transition"
     >
-      <div className="font-semibold text-[16px] text-slate-900">{title}</div>
-      <div className="text-[13px] text-slate-600 mt-1.5 leading-relaxed">{desc}</div>
-      <div className="text-[13px] font-semibold text-emerald-700 mt-3">{cta} →</div>
+      <div className="font-semibold text-body text-slate-900">{title}</div>
+      <div className="text-small text-slate-600 mt-1.5 leading-relaxed">{desc}</div>
+      <div className="text-small font-semibold text-slate-900 mt-3">{cta} →</div>
     </Link>
   );
 }

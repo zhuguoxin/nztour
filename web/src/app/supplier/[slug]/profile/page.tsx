@@ -28,6 +28,7 @@ interface Row {
   default_lang: string | null;
   timezone: string | null;
   cover_r2_key: string | null;
+  rto_json: string | null;
 }
 
 export default async function SupplierProfilePage({
@@ -50,7 +51,7 @@ export default async function SupplierProfilePage({
     .prepare(
       `SELECT slug, name, legal_name, intro, website, country, hq_city, address,
               contact_email, phone, billing_email, poc_name, poc_title, poc_email,
-              poc_phone, links_json, default_lang, timezone, cover_r2_key
+              poc_phone, links_json, default_lang, timezone, cover_r2_key, rto_json
        FROM suppliers WHERE id = ?`,
     )
     .bind(access.supplierId)
@@ -58,16 +59,20 @@ export default async function SupplierProfilePage({
   if (!s) notFound();
 
   const tr = await t();
-  const data: SupplierProfileData = { ...s, hasCover: !!s.cover_r2_key };
+  const data: SupplierProfileData = {
+    ...s,
+    hasCover: !!s.cover_r2_key,
+    coverKey: s.cover_r2_key,
+  };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
       <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto">
-        <Link href={`/supplier/${slug}`} className="text-[13px] text-emerald-700 hover:underline">
+        <Link href={`/supplier/${slug}`} className="text-small text-slate-900 hover:underline">
           {tr.sp_back_panel}
         </Link>
-        <h1 className="text-[24px] sm:text-[28px] font-semibold tracking-tight text-slate-900 mt-2 mb-5">
+        <h1 className="text-h2 sm:text-h1 font-semibold tracking-tight text-slate-900 mt-2 mb-5">
           {tr.sp_p_heading}
         </h1>
         <SupplierProfile s={data} />

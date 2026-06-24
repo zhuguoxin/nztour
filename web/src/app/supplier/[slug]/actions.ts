@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { requireSupplierMembership } from "@/lib/roles";
+import { RTO_SET } from "@/lib/rto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { hasMiniMaxKey } from "@/lib/minimax";
@@ -145,9 +146,8 @@ export async function listSupplierVoices(
   }
 }
 
-const CATEGORY_SET = new Set(["snow", "adventure", "cruise", "hiking", "stay", "entertainment"]);
-const REGION_SET = new Set([
-  "queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia",
+const CATEGORY_SET = new Set([
+  "attractions", "adventure", "culture", "water", "land", "air", "accommodation", "tour", "rto",
 ]);
 
 function shortId(prefix: string): string {
@@ -185,7 +185,7 @@ export async function createProduct(form: FormData) {
   const categoryRaw = String(form.get("category") ?? "").trim();
   const regionRaw = String(form.get("region") ?? "").trim();
   const category = CATEGORY_SET.has(categoryRaw) ? categoryRaw : null;
-  const region = REGION_SET.has(regionRaw) ? regionRaw : null;
+  const region = RTO_SET.has(regionRaw) ? regionRaw : null;
   const primaryLang = String(form.get("primary_lang") ?? "en").trim() || "en";
 
   await db()
@@ -240,6 +240,11 @@ export async function updateSupplierProfile(
     const name = clean(form.get("name"), 200);
     if (!name) throw new Error("name is required");
 
+    // RTO multi-select — validate against the canonical set, store as JSON.
+    const rtoJson = JSON.stringify(
+      form.getAll("rto").map(String).filter((r) => RTO_SET.has(r)),
+    );
+
     await db()
       .prepare(
         `UPDATE suppliers SET
@@ -247,7 +252,7 @@ export async function updateSupplierProfile(
            country = ?, hq_city = ?, address = ?,
            contact_email = ?, phone = ?, billing_email = ?,
            poc_name = ?, poc_title = ?, poc_email = ?, poc_phone = ?,
-           links_json = ?, default_lang = ?, timezone = ?
+           links_json = ?, default_lang = ?, timezone = ?, rto_json = ?
          WHERE id = ?`,
       )
       .bind(
@@ -268,6 +273,7 @@ export async function updateSupplierProfile(
         cleanLinks(form.get("links_json")),
         clean(form.get("default_lang"), 16),
         clean(form.get("timezone"), 60),
+        rtoJson,
         access.supplierId,
       )
       .run();

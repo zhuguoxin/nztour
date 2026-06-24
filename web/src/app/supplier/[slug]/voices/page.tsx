@@ -55,21 +55,21 @@ export default async function SupplierVoices({
   const tr = await t();
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
       <main className="px-5 sm:px-8 py-8 sm:py-10 max-w-4xl mx-auto">
         <Link
           href={safeReturnTo(from, `/supplier/${supplier.slug}`)}
-          className="text-[13px] text-emerald-700 hover:underline"
+          className="text-small text-slate-900 hover:underline"
         >
           {from ? tr.nav_back : tr.sp_back_panel}
         </Link>
         <div className="mb-6 mt-2">
-          <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">{tr.sp_voices_label}</div>
-          <h1 className="text-[26px] sm:text-[30px] font-semibold tracking-tight text-slate-900 mt-1">
+          <div className="text-micro tracking-widest font-mono text-slate-700">{tr.sp_voices_label}</div>
+          <h1 className="text-h2 sm:text-h1 font-semibold tracking-tight text-slate-900 mt-1">
             {supplier.name}
           </h1>
-          <p className="text-[13.5px] text-slate-600 mt-1.5">
+          <p className="text-small text-slate-600 mt-1.5">
             {tr.sp_voices_blurb}
           </p>
         </div>

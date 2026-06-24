@@ -49,3 +49,9 @@ Logos/
 # Stray screenshots from chat / WeChat
 微信图片*.png
 
+
+# Dev artifacts — not part of the app
+.claude/
+.agents/
+designs/
+skills-lock.json

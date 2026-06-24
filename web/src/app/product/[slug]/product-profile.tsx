@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTr } from "@/lib/i18n-provider";
 import { updateProductProfile } from "./settings-actions";
+import { NZ_RTOS } from "@/lib/rto";
 
 export interface ProductProfileData {
   slug: string;
@@ -33,11 +34,21 @@ interface LinkRow {
 }
 
 const input =
-  "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[13.5px] text-slate-900 outline-none focus:border-emerald-400/60";
-const labelCls = "block text-[11.5px] font-medium text-slate-600 mb-1";
+  "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-small text-slate-900 outline-none focus:border-emerald-400/60";
+const labelCls = "block text-caption font-medium text-slate-600 mb-1";
 
-const CATEGORIES = ["snow", "adventure", "cruise", "hiking", "stay", "entertainment"];
-const REGIONS = ["queenstown", "fiordland", "aoraki", "rotorua", "auckland", "waikato", "canterbury", "australia"];
+const CATEGORIES = [
+  "attractions",
+  "adventure",
+  "culture",
+  "water",
+  "land",
+  "air",
+  "accommodation",
+  "tour",
+  "rto",
+];
+const REGIONS = NZ_RTOS;
 const LANGS = ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt"];
 
 export function ProductProfile({ p }: { p: ProductProfileData }) {
@@ -65,15 +76,11 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
 
   const catLabel = (c: string) =>
     ({
-      snow: tr.cat_snow, adventure: tr.cat_adventure, cruise: tr.cat_cruise,
-      hiking: tr.cat_hiking, stay: tr.cat_stay, entertainment: tr.cat_entertainment,
+      attractions: tr.cat_attractions, adventure: tr.cat_adventure, culture: tr.cat_culture,
+      water: tr.cat_water, land: tr.cat_land, air: tr.cat_air,
+      accommodation: tr.cat_accommodation, tour: tr.cat_tour, rto: tr.cat_rto,
     })[c] ?? c;
-  const regLabel = (r: string) =>
-    ({
-      queenstown: tr.reg_queenstown, fiordland: tr.reg_fiordland, aoraki: tr.reg_aoraki,
-      rotorua: tr.reg_rotorua, auckland: tr.reg_auckland, waikato: tr.reg_waikato,
-      canterbury: tr.reg_canterbury, australia: tr.reg_australia,
-    })[r] ?? r;
+  const regLabel = (r: string) => r;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -125,7 +132,7 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
                   <button
                     type="button"
                     onClick={() => setLinks((pr) => pr.filter((_, j) => j !== i))}
-                    className="px-1.5 py-1 rounded text-rose-600 hover:bg-rose-400/10 text-[12px] shrink-0"
+                    className="px-1.5 py-1 rounded text-rose-600 hover:bg-rose-400/10 text-caption shrink-0"
                   >
                     ✕
                   </button>
@@ -134,7 +141,7 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
               <button
                 type="button"
                 onClick={() => setLinks((pr) => [...pr, { label: "", url: "" }])}
-                className="text-[12px] text-emerald-700 hover:underline"
+                className="text-caption text-slate-900 hover:underline"
               >
                 + {tr.pp_link_add}
               </button>
@@ -209,13 +216,13 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
           <button
             type="submit"
             disabled={pending}
-            className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-[13.5px] hover:bg-emerald-700 disabled:opacity-50"
+            className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-small hover:bg-emerald-700 disabled:opacity-50"
           >
             {pending ? tr.sp_p_saving : tr.sp_p_save}
           </button>
-          {state?.ok ? <span className="text-[12px] text-emerald-700">{tr.sp_p_saved}</span> : null}
+          {state?.ok ? <span className="text-caption text-slate-900">{tr.sp_p_saved}</span> : null}
           {state && !state.ok ? (
-            <span className="text-[12px] text-rose-600">{state.error ?? tr.sp_p_save_failed}</span>
+            <span className="text-caption text-rose-600">{state.error ?? tr.sp_p_save_failed}</span>
           ) : null}
         </div>
       </form>
@@ -226,7 +233,7 @@ export function ProductProfile({ p }: { p: ProductProfileData }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2.5">
-      <div className="text-[11px] font-mono uppercase tracking-widest text-emerald-700/70">{title}</div>
+      <div className="text-micro font-mono uppercase tracking-widest text-slate-700">{title}</div>
       {children}
     </section>
   );
@@ -250,7 +257,7 @@ function Field({
         {required ? <span className="text-rose-600"> *</span> : null}
       </span>
       {children}
-      {hint ? <span className="block text-[10.5px] text-slate-400 mt-1">{hint}</span> : null}
+      {hint ? <span className="block text-micro text-slate-400 mt-1">{hint}</span> : null}
     </label>
   );
 }

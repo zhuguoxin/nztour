@@ -23,7 +23,7 @@ export function NewCourseTabs({ operatorSlug }: { operatorSlug: string }) {
         <button
           type="button"
           onClick={() => setMode("ai")}
-          className={`px-4 py-2 rounded-md text-[13px] font-medium transition ${
+          className={`px-4 py-2 rounded-md text-small font-medium transition ${
             mode === "ai" ? "bg-emerald-600 text-white" : "text-slate-600 hover:text-slate-900"
           }`}
         >
@@ -32,7 +32,7 @@ export function NewCourseTabs({ operatorSlug }: { operatorSlug: string }) {
         <button
           type="button"
           onClick={() => setMode("manual")}
-          className={`px-4 py-2 rounded-md text-[13px] font-medium transition ${
+          className={`px-4 py-2 rounded-md text-small font-medium transition ${
             mode === "manual" ? "bg-emerald-600 text-white" : "text-slate-600 hover:text-slate-900"
           }`}
         >
@@ -84,11 +84,11 @@ function GenerateForm({ operatorSlug }: { operatorSlug: string }) {
 
   return (
     <div className="space-y-5 max-w-2xl">
-      <p className="text-[13.5px] text-slate-600 leading-relaxed">{tr.gen_sub}</p>
+      <p className="text-small text-slate-600 leading-relaxed">{tr.gen_sub}</p>
 
       {/* File picker */}
       <div>
-        <div className="text-[13px] font-semibold text-slate-700 mb-1.5">{tr.gen_file}</div>
+        <div className="text-small font-semibold text-slate-700 mb-1.5">{tr.gen_file}</div>
         <label
           className={`flex items-center gap-3 rounded-md border border-dashed px-4 py-3.5 cursor-pointer transition ${
             pending
@@ -96,12 +96,12 @@ function GenerateForm({ operatorSlug }: { operatorSlug: string }) {
               : "border-emerald-400/40 hover:border-emerald-400/70 bg-white"
           }`}
         >
-          <span className="text-[20px]">📄</span>
+          <span className="text-h3">📄</span>
           <span className="flex-1 min-w-0">
-            <span className="block text-[13.5px] text-slate-900 truncate">
+            <span className="block text-small text-slate-900 truncate">
               {file ? file.name : tr.gen_file_pick}
             </span>
-            <span className="block text-[11.5px] text-slate-500">{tr.gen_file_hint}</span>
+            <span className="block text-caption text-slate-500">{tr.gen_file_hint}</span>
           </span>
           <input
             ref={fileRef}
@@ -124,7 +124,7 @@ function GenerateForm({ operatorSlug }: { operatorSlug: string }) {
           maxLength={200}
           disabled={pending}
           placeholder={tr.gen_title_ph}
-          className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60 disabled:opacity-50"
+          className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-small text-slate-900 outline-none focus:border-emerald-400/60 disabled:opacity-50"
         />
       </Field>
 
@@ -136,18 +136,18 @@ function GenerateForm({ operatorSlug }: { operatorSlug: string }) {
           maxLength={500}
           disabled={pending}
           placeholder={tr.gen_notes_ph}
-          className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60 resize-y disabled:opacity-50"
+          className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-small text-slate-900 outline-none focus:border-emerald-400/60 resize-y disabled:opacity-50"
         />
       </Field>
 
       {err ? (
-        <div className="text-[12.5px] text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 break-words">
+        <div className="text-caption text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 break-words">
           {err}
         </div>
       ) : null}
 
       {pending ? (
-        <div className="text-[12.5px] text-amber-600 flex items-center gap-2">
+        <div className="text-caption text-slate-900 flex items-center gap-2">
           <span className="inline-block w-3.5 h-3.5 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
           {tr.gen_generating}
         </div>
@@ -158,7 +158,7 @@ function GenerateForm({ operatorSlug }: { operatorSlug: string }) {
           type="button"
           onClick={submit}
           disabled={pending || !file}
-          className={`px-5 py-2.5 rounded-md font-semibold text-[14px] ${
+          className={`px-5 py-2.5 rounded-md font-semibold text-small ${
             pending || !file
               ? "bg-slate-500/50 text-slate-900/60 cursor-not-allowed"
               : "bg-emerald-600 text-white hover:bg-emerald-700"
@@ -168,7 +168,7 @@ function GenerateForm({ operatorSlug }: { operatorSlug: string }) {
         </button>
         <Link
           href={`/product/${operatorSlug}`}
-          className="px-4 py-2.5 rounded-md border border-slate-300 text-slate-700 text-[13px] hover:bg-slate-50"
+          className="px-4 py-2.5 rounded-md border border-slate-300 text-slate-700 text-small hover:bg-slate-50"
         >
           {tr.nc_cancel}
         </Link>
@@ -181,7 +181,7 @@ function ManualForm({ operatorSlug }: { operatorSlug: string }) {
   const tr = useTr();
   return (
     <div className="max-w-2xl">
-      <p className="text-[13.5px] text-slate-600 mb-6">{tr.nc_manual_sub}</p>
+      <p className="text-small text-slate-600 mb-6">{tr.nc_manual_sub}</p>
       <form action={createCourse} className="space-y-5">
         <input type="hidden" name="operator_slug" value={operatorSlug} />
 
@@ -191,7 +191,7 @@ function ManualForm({ operatorSlug }: { operatorSlug: string }) {
             required
             maxLength={200}
             placeholder="e.g. Coronet Peak 2026"
-            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60"
+            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-small text-slate-900 outline-none focus:border-emerald-400/60"
           />
         </Field>
 
@@ -200,7 +200,7 @@ function ManualForm({ operatorSlug }: { operatorSlug: string }) {
             name="summary"
             rows={3}
             maxLength={1000}
-            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60 resize-y"
+            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-small text-slate-900 outline-none focus:border-emerald-400/60 resize-y"
           />
         </Field>
 
@@ -211,7 +211,7 @@ function ManualForm({ operatorSlug }: { operatorSlug: string }) {
             min={1}
             max={600}
             placeholder="25"
-            className="w-full max-w-[200px] bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60"
+            className="w-full max-w-[200px] bg-white border border-slate-300 rounded-md px-3 py-2.5 text-small text-slate-900 outline-none focus:border-emerald-400/60"
           />
         </Field>
 
@@ -219,25 +219,25 @@ function ManualForm({ operatorSlug }: { operatorSlug: string }) {
           <select
             name="primary_lang"
             defaultValue="en"
-            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14.5px] text-slate-900 outline-none focus:border-emerald-400/60"
+            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-small text-slate-900 outline-none focus:border-emerald-400/60"
           >
             <option value="en">English</option>
-            <option value="zh-CN">简体中文</option>
-            <option value="ja">日本語</option>
-            <option value="ko">한국어</option>
+            <option value="zh-CN">Chinese (Simplified)</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
           </select>
         </Field>
 
         <div className="flex items-center gap-3 pt-3">
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-md bg-emerald-600 text-white font-semibold text-[14px] hover:bg-emerald-700"
+            className="px-5 py-2.5 rounded-md bg-emerald-600 text-white font-semibold text-small hover:bg-emerald-700"
           >
             {tr.nc_create}
           </button>
           <Link
             href={`/product/${operatorSlug}`}
-            className="px-4 py-2.5 rounded-md border border-slate-300 text-slate-700 text-[13px] hover:bg-slate-50"
+            className="px-4 py-2.5 rounded-md border border-slate-300 text-slate-700 text-small hover:bg-slate-50"
           >
             {tr.nc_cancel}
           </Link>
@@ -259,8 +259,8 @@ function Field({
   return (
     <label className="block">
       <div className="flex items-baseline justify-between mb-1.5">
-        <span className="text-[13px] font-semibold text-slate-700">{label}</span>
-        {hint ? <span className="text-[11.5px] text-slate-500">{hint}</span> : null}
+        <span className="text-small font-semibold text-slate-700">{label}</span>
+        {hint ? <span className="text-caption text-slate-500">{hint}</span> : null}
       </div>
       {children}
     </label>

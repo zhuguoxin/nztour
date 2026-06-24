@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { mediaUrl } from "@/lib/media";
 import { useRouter } from "next/navigation";
 import { useTr } from "@/lib/i18n-provider";
 import { updateSupplierProfile } from "./actions";
 import { MediaPicker } from "../../_components/media-picker";
+import { NZ_RTOS } from "@/lib/rto";
 
 export interface SupplierProfileData {
   slug: string;
@@ -25,7 +27,11 @@ export interface SupplierProfileData {
   links_json: string | null;
   default_lang: string | null;
   timezone: string | null;
+  rto_json: string | null;
   hasCover: boolean;
+  /** Cache-busting token for the cover URL — changes whenever a new cover is
+   *  uploaded, so the browser fetches the fresh image instead of the cached one. */
+  coverKey: string | null;
 }
 
 interface LinkRow {
@@ -34,8 +40,8 @@ interface LinkRow {
 }
 
 const input =
-  "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[13px] text-slate-900 outline-none focus:border-emerald-500";
-const labelCls = "block text-[11.5px] font-medium text-slate-600 mb-1";
+  "w-full bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-small text-slate-900 outline-none focus:border-emerald-500";
+const labelCls = "block text-caption font-medium text-slate-600 mb-1";
 
 const LANGS = ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt"];
 
@@ -51,6 +57,16 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
     },
     null,
   );
+
+  // RTOs the supplier operates in (collected at registration; editable here).
+  const selectedRtos = (() => {
+    try {
+      const a = JSON.parse(s.rto_json ?? "[]");
+      return new Set(Array.isArray(a) ? a.map(String) : []);
+    } catch {
+      return new Set<string>();
+    }
+  })();
 
   // Social/booking links — controlled, serialized into a hidden input on submit.
   const [links, setLinks] = useState<LinkRow[]>(() => {
@@ -68,13 +84,13 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
     <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
       {/* Cover */}
       <div className="mb-6 max-w-xs">
-        <div className="text-[11px] font-mono uppercase tracking-widest text-emerald-700/70 mb-1.5">
+        <div className="text-micro font-mono uppercase tracking-widest text-slate-700 mb-1.5">
           {tr.sp_p_cover}
         </div>
         <MediaPicker
           supplierSlug={s.slug}
           target={{ target: "supplier", supplierSlug: s.slug }}
-          currentUrl={s.hasCover ? `/api/supplier-cover?slug=${encodeURIComponent(s.slug)}` : null}
+          currentUrl={s.coverKey ? mediaUrl(s.coverKey) : null}
           aspect="wide"
           theme="light"
         />
@@ -113,6 +129,24 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
             </Field>
           </Section>
 
+          <Section title={tr.sp_p_sec_rto}>
+            <div className="text-caption text-slate-500 mb-2">{tr.sp_p_rto_hint}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 max-h-72 overflow-y-auto pr-1">
+              {NZ_RTOS.map((rto) => (
+                <label key={rto} className="flex items-center gap-2 text-caption text-slate-700">
+                  <input
+                    type="checkbox"
+                    name="rto"
+                    value={rto}
+                    defaultChecked={selectedRtos.has(rto)}
+                    className="accent-emerald-600"
+                  />
+                  <span>{rto}</span>
+                </label>
+              ))}
+            </div>
+          </Section>
+
           <Section title={tr.sp_p_sec_links}>
             <div className="space-y-2">
               {links.map((ln, i) => (
@@ -136,7 +170,7 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
                   <button
                     type="button"
                     onClick={() => setLinks((p) => p.filter((_, j) => j !== i))}
-                    className="px-1.5 py-1 rounded text-rose-600 hover:bg-rose-50 text-[12px] shrink-0"
+                    className="px-1.5 py-1 rounded text-rose-600 hover:bg-rose-50 text-caption shrink-0"
                     title={tr.sp_p_link_remove}
                   >
                     ✕
@@ -146,7 +180,7 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
               <button
                 type="button"
                 onClick={() => setLinks((p) => [...p, { label: "", url: "" }])}
-                className="text-[12px] text-emerald-700 hover:underline"
+                className="text-caption text-slate-900 hover:underline"
               >
                 + {tr.sp_p_link_add}
               </button>
@@ -211,13 +245,13 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
           <button
             type="submit"
             disabled={pending}
-            className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-[13.5px] hover:bg-emerald-700 disabled:opacity-50"
+            className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-small hover:bg-emerald-700 disabled:opacity-50"
           >
             {pending ? tr.sp_p_saving : tr.sp_p_save}
           </button>
-          {state?.ok ? <span className="text-[12px] text-emerald-700">{tr.sp_p_saved}</span> : null}
+          {state?.ok ? <span className="text-caption text-slate-900">{tr.sp_p_saved}</span> : null}
           {state && !state.ok ? (
-            <span className="text-[12px] text-rose-600">{state.error ?? tr.sp_p_save_failed}</span>
+            <span className="text-caption text-rose-600">{state.error ?? tr.sp_p_save_failed}</span>
           ) : null}
         </div>
       </form>
@@ -228,7 +262,7 @@ export function SupplierProfile({ s }: { s: SupplierProfileData }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2.5">
-      <div className="text-[11px] font-mono uppercase tracking-widest text-emerald-700/70">{title}</div>
+      <div className="text-micro font-mono uppercase tracking-widest text-slate-700">{title}</div>
       {children}
     </section>
   );

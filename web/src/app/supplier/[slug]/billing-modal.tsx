@@ -50,9 +50,9 @@ export function BillingModal({
       </button>
       <Modal open={open} onClose={close} title={tr.sp_hub_billing_card} maxWidth="max-w-md">
         {err ? (
-          <div className="text-[13px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
+          <div className="text-small text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
         ) : data === null ? (
-          <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
+          <div className="text-small text-slate-400 text-center py-10">{tr.mp_loading}</div>
         ) : (
           <BillingForm supplierSlug={supplierSlug} billingEmail={data.billing_email} planTier={data.plan_tier} />
         )}

@@ -15,29 +15,29 @@ export default async function ProductsPage() {
   const [operators, tr] = await Promise.all([listOperatorsWithCourseCounts(), t()]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
 
       {/* Hero */}
-      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-[1400px] mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-3">
+      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-[1300px] mx-auto">
+        <div className="text-micro tracking-widest font-mono text-slate-700 mb-3">
           {tr.pr_label}
         </div>
-        <h1 className="text-[30px] sm:text-[40px] leading-tight font-semibold tracking-tight text-slate-900">
+        <h1 className="text-h1 sm:text-display leading-tight font-semibold tracking-tight text-slate-900">
           {tr.pr_title}
         </h1>
-        <p className="mt-3 text-[15px] sm:text-[17px] text-slate-600 max-w-2xl leading-relaxed">
+        <p className="mt-3 text-body sm:text-title text-slate-600 max-w-2xl leading-relaxed">
           {tr.pr_subtitle}
         </p>
-        <div className="mt-4 text-[13px] text-slate-500">
+        <div className="mt-4 text-small text-slate-500">
           {fmt(tr.pr_count, { n: operators.length })}
         </div>
       </section>
 
       {/* Region filter + category-grouped products */}
-      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1400px] mx-auto">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1300px] mx-auto">
         {operators.length === 0 ? (
-          <div className="text-[15px] text-slate-500">{tr.pr_empty}</div>
+          <div className="text-body text-slate-500">{tr.pr_empty}</div>
         ) : (
           <ProductsBrowser operators={operators} />
         )}

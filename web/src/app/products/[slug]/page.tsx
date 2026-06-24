@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { listOperatorsWithCourseCounts, listPublishedCourses } from "@/lib/db";
+import { listOperatorsWithCourseCounts, listPublishedCourses, db } from "@/lib/db";
 import { t, fmt } from "@/lib/i18n";
+import { fallbackCover } from "@/lib/cover";
+import { mediaUrl } from "@/lib/media";
+import { auth } from "@clerk/nextjs/server";
 import { CourseCard } from "../../_components/course-card";
 import { TopBar } from "../../_components/top-bar";
+import { Delisted } from "../../_components/delisted";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +30,35 @@ export default async function ProductDetailPage({
   ]);
 
   const op = ops.find((o) => o.slug === slug);
-  if (!op) notFound();
+  if (!op) {
+    // Not in the public list. If it exists but its supplier is disabled, a
+    // learner with history here gets a "delisted" notice; otherwise 404.
+    const dl = await db()
+      .prepare(
+        `SELECT o.id FROM operators o
+         LEFT JOIN suppliers s ON s.id = o.supplier_id
+         WHERE o.slug = ? AND s.status = 'suspended'`,
+      )
+      .bind(slug)
+      .first<{ id: string }>();
+    if (dl) {
+      const { userId: uid } = await auth();
+      let hasHistory = false;
+      if (uid) {
+        const h = await db()
+          .prepare(
+            `SELECT 1 AS x FROM enrollments e JOIN courses c ON c.id = e.course_id
+               WHERE e.user_id = ? AND c.operator_id = ?
+             UNION SELECT 1 FROM badges b WHERE b.user_id = ? AND b.operator_id = ? LIMIT 1`,
+          )
+          .bind(uid, dl.id, uid, dl.id)
+          .first<{ x: number }>();
+        hasHistory = !!h;
+      }
+      if (hasHistory) return <Delisted message={tr.delisted_product} backLabel={tr.delisted_back} />;
+    }
+    notFound();
+  }
 
   const courses = all.filter((c) => c.operator_slug === slug);
 
@@ -45,45 +77,46 @@ export default async function ProductDetailPage({
   );
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar breadcrumb={breadcrumb} />
 
       {/* Product header */}
-      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-[1400px] mx-auto">
+      <section className="px-5 sm:px-8 pt-12 sm:pt-16 pb-8 max-w-[1300px] mx-auto">
         <Link
           href="/products"
-          className="inline-block text-[13px] text-emerald-700 hover:text-emerald-800 font-medium mb-6"
+          className="inline-block text-small text-slate-900 hover:text-slate-900 font-medium mb-6"
         >
           {tr.prd_back}
         </Link>
-        {op.cover_r2_key || op.cover_image_url ? (
-          <div className="relative h-44 sm:h-60 rounded-2xl overflow-hidden border border-slate-200 mb-6 bg-slate-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={op.cover_r2_key ? `/api/product-cover?slug=${encodeURIComponent(op.slug)}` : op.cover_image_url!}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
-        ) : null}
+        <div className="relative h-44 sm:h-60 rounded-2xl overflow-hidden border border-slate-200 mb-6 bg-slate-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={
+              op.cover_r2_key
+                ? mediaUrl(op.cover_r2_key)
+                : (op.cover_image_url ?? fallbackCover(op.slug))
+            }
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
         <div className="flex items-start gap-4">
-          <div className="text-[44px] leading-none">{op.emoji ?? "📚"}</div>
           <div className="min-w-0">
-            <h1 className="text-[28px] sm:text-[38px] leading-tight font-semibold tracking-tight text-slate-900">
+            <h1 className="text-h1 sm:text-display leading-tight font-semibold tracking-tight text-slate-900">
               {op.name}
             </h1>
-            <div className="mt-2 text-[14px] text-slate-500">
+            <div className="mt-2 text-small text-slate-500">
               {fmt(tr.card_courses_count_plural, { n: op.course_count })}
             </div>
             {op.intro ? (
-              <p className="mt-3 text-[15px] text-slate-700 leading-relaxed max-w-2xl">{op.intro}</p>
+              <p className="mt-3 text-body text-slate-700 leading-relaxed max-w-2xl">{op.intro}</p>
             ) : null}
             {op.website ? (
               <a
                 href={op.website}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-block mt-2 text-[14px] text-emerald-700 hover:underline"
+                className="inline-block mt-2 text-small text-slate-900 hover:underline"
               >
                 {op.website.replace(/^https?:\/\//, "")}
               </a>
@@ -93,12 +126,12 @@ export default async function ProductDetailPage({
       </section>
 
       {/* Courses */}
-      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1400px] mx-auto">
-        <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900 mb-5 sm:mb-7">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1300px] mx-auto">
+        <h2 className="text-h3 sm:text-h2 font-semibold text-slate-900 mb-5 sm:mb-7">
           {tr.prd_courses_heading}
         </h2>
         {courses.length === 0 ? (
-          <div className="text-[15px] text-slate-500">{tr.prd_no_courses}</div>
+          <div className="text-body text-slate-500">{tr.prd_no_courses}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.map((course) => (

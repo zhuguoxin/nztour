@@ -595,12 +595,12 @@ export default async function PrivacyPolicy() {
           items={
             zh
               ? [
-                  <>在线:<a className="text-emerald-700 hover:underline" href="https://www.privacy.org.nz/your-rights/making-a-complaint/" target="_blank" rel="noreferrer">privacy.org.nz</a>;</>,
+                  <>在线:<a className="text-slate-900 hover:underline" href="https://www.privacy.org.nz/your-rights/making-a-complaint/" target="_blank" rel="noreferrer">privacy.org.nz</a>;</>,
                   <>电话:0800 803 909;</>,
                   <>邮寄:PO Box 10094, The Terrace, Wellington 6143。</>,
                 ]
               : [
-                  <>online: <a className="text-emerald-700 hover:underline" href="https://www.privacy.org.nz/your-rights/making-a-complaint/" target="_blank" rel="noreferrer">privacy.org.nz</a>;</>,
+                  <>online: <a className="text-slate-900 hover:underline" href="https://www.privacy.org.nz/your-rights/making-a-complaint/" target="_blank" rel="noreferrer">privacy.org.nz</a>;</>,
                   <>by telephone: 0800 803 909;</>,
                   <>by post: PO Box 10094, The Terrace, Wellington 6143.</>,
                 ]
@@ -618,11 +618,11 @@ export default async function PrivacyPolicy() {
           items={
             zh
               ? [
-                  <>电子邮件:<a className="text-emerald-700 hover:underline" href="mailto:privacy@libretour.com">privacy@libretour.com</a>;</>,
+                  <>电子邮件:<a className="text-slate-900 hover:underline" href="mailto:privacy@libretour.com">privacy@libretour.com</a>;</>,
                   <>邮寄:Privacy Officer, Libretour Limited, [TBD-registered-address], New Zealand。</>,
                 ]
               : [
-                  <>email: <a className="text-emerald-700 hover:underline" href="mailto:privacy@libretour.com">privacy@libretour.com</a>;</>,
+                  <>email: <a className="text-slate-900 hover:underline" href="mailto:privacy@libretour.com">privacy@libretour.com</a>;</>,
                   <>post: Privacy Officer, Libretour Limited, [TBD-registered-address], New
                     Zealand.</>,
                 ]

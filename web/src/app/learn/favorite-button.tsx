@@ -43,7 +43,7 @@ export function FavoriteButton({
     ? `inline-flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-sm border border-white/15 ${
         on ? "bg-rose-500/90 text-white" : "bg-black/35 text-white/85 hover:bg-black/50"
       } ${pending ? "opacity-60" : ""}`
-    : `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[12px] ${
+    : `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-caption ${
         on
           ? "border-rose-300 bg-rose-50 text-rose-700"
           : "border-slate-300 text-slate-600 hover:bg-slate-50"

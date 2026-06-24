@@ -41,6 +41,7 @@ export const TRANSLATE_LANGS: Array<{ code: string; label: string; nativeLabel: 
   { code: "fr", label: "French", nativeLabel: "Français" },
   { code: "de", label: "German", nativeLabel: "Deutsch" },
   { code: "pt", label: "Portuguese", nativeLabel: "Português" },
+  { code: "mi", label: "Māori (te reo Māori)", nativeLabel: "Te reo Māori" },
 ];
 
 export function langLabel(code: string): string {
@@ -207,8 +208,21 @@ async function callClaude(
     .map((b) => b.text)
     .join("");
   const arr = parseJsonArray("[" + text); // re-attach the prefill
-  if (!arr) throw new Error(`Translator returned non-JSON output: ${text.slice(0, 160)}`);
-  return arr;
+  if (arr) return arr;
+  // Salvage: when there's exactly one fragment, the model sometimes returns the
+  // translation as bare text (or a stray "[Name]") instead of a JSON array.
+  // Rather than fail the whole run, strip wrapping brackets/quotes and use it.
+  if (fragments.length === 1) {
+    const cleaned = text
+      .replace(/```(?:json)?/gi, "")
+      .trim()
+      .replace(/^\[+\s*/, "")
+      .replace(/\s*\]+$/, "")
+      .replace(/^"+|"+$/g, "")
+      .trim();
+    if (cleaned) return [cleaned];
+  }
+  throw new Error(`Translator returned non-JSON output: ${text.slice(0, 160)}`);
 }
 
 /** DeepSeek V3 (deepseek-chat) using its JSON-output mode. We ask for an object

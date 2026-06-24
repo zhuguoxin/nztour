@@ -196,14 +196,15 @@ export async function maybeAwardBadge(
   userId: string,
   courseId: string,
 ): Promise<{ awarded: boolean; verifyCode?: string }> {
+  // Course-level gate: if the course has a final exam (quiz_questions exist),
+  // the badge requires one passed course-level attempt. Otherwise (no exam
+  // authored) fall back to "every module completed".
   const counts = await db()
     .prepare(
       `SELECT
-         (SELECT COUNT(DISTINCT q.module_id) FROM quiz_questions q
-            JOIN modules m ON m.id = q.module_id WHERE m.course_id = ?) AS quiz_modules,
-         (SELECT COUNT(DISTINCT qa.module_id) FROM quiz_attempts qa
-            JOIN modules m ON m.id = qa.module_id
-            WHERE m.course_id = ? AND qa.user_id = ? AND qa.passed = 1) AS passed_modules,
+         (SELECT COUNT(*) FROM quiz_questions WHERE course_id = ?) AS exam_questions,
+         (SELECT COUNT(*) FROM quiz_attempts
+            WHERE course_id = ? AND user_id = ? AND passed = 1) AS passed_attempts,
          (SELECT COUNT(*) FROM modules WHERE course_id = ?) AS total_modules,
          (SELECT COUNT(*) FROM module_progress mp
             JOIN modules m ON m.id = mp.module_id
@@ -211,15 +212,15 @@ export async function maybeAwardBadge(
     )
     .bind(courseId, courseId, userId, courseId, courseId, userId)
     .first<{
-      quiz_modules: number;
-      passed_modules: number;
+      exam_questions: number;
+      passed_attempts: number;
       total_modules: number;
       done_modules: number;
     }>();
   if (!counts) return { awarded: false };
   const earned =
-    counts.quiz_modules > 0
-      ? counts.passed_modules >= counts.quiz_modules
+    counts.exam_questions > 0
+      ? counts.passed_attempts > 0
       : counts.total_modules > 0 && counts.done_modules >= counts.total_modules;
   if (!earned) return { awarded: false };
 

@@ -33,8 +33,8 @@ export function ColourField({
 
   return (
     <label className="block">
-      <div className="text-[12px] font-semibold text-slate-900">{label}</div>
-      <div className="text-[11px] text-slate-500 mb-1.5">{hint}</div>
+      <div className="text-caption font-semibold text-slate-900">{label}</div>
+      <div className="text-micro text-slate-500 mb-1.5">{hint}</div>
       <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-md px-2 py-1.5">
         <input
           type="color"
@@ -50,7 +50,7 @@ export function ColourField({
           placeholder={placeholder}
           maxLength={7}
           spellCheck={false}
-          className="flex-1 bg-transparent border-0 outline-none text-[13px] text-slate-900 font-mono"
+          className="flex-1 bg-transparent border-0 outline-none text-small text-slate-900 font-mono"
         />
       </div>
     </label>

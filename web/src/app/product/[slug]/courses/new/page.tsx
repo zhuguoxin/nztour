@@ -31,10 +31,10 @@ export default async function NewCoursePage({ params }: { params: Promise<{ slug
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
       <TopBar />
       <main className="px-5 sm:px-8 py-10 max-w-3xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70">
+        <div className="text-micro tracking-widest font-mono text-slate-700">
           {tr.nc_label}
         </div>
-        <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-tight text-slate-900 mt-1">
+        <h1 className="text-h1 sm:text-h1 font-semibold tracking-tight text-slate-900 mt-1">
           {tr.nc_title}
         </h1>
 

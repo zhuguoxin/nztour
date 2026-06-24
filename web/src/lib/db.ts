@@ -85,7 +85,11 @@ export interface BlockRow {
   kind: "text" | "image" | "video" | "pdf" | "callout";
   text_md: string | null;
   image_r2_key: string | null;
+  /** Migration 0024 — extra slide R2 keys (JSON array) for a multi-image block. */
+  images_json: string | null;
   video_uid: string | null;
+  /** Migration 0025 — R2 key of an uploaded video file (vs. video_uid YouTube). */
+  video_r2_key: string | null;
   pdf_r2_key: string | null;
   caption: string | null;
   lang: string;
@@ -128,6 +132,9 @@ export interface OperatorCard {
   region: string | null;
   primary_lang: string;
   status: string;
+  /** Owning supplier (company) name — shown above the product name on /products. */
+  supplier_name: string | null;
+  supplier_slug: string | null;
   sample_course_title: string | null;
   sample_course_slug: string | null;
 }
@@ -138,6 +145,8 @@ export async function listOperatorsWithCourseCounts(): Promise<OperatorCard[]> {
       `SELECT
          o.id, o.slug, o.name, o.primary_lang, o.status,
          o.cover_image_url, o.cover_image_credit, o.cover_r2_key, o.intro, o.website, o.category, o.region,
+         s.name AS supplier_name,
+         s.slug AS supplier_slug,
          COUNT(DISTINCT c.id) AS course_count,
          COUNT(DISTINCT m.id) AS module_count,
          COALESCE(SUM(c.est_minutes), 0) AS est_minutes,
@@ -150,13 +159,76 @@ export async function listOperatorsWithCourseCounts(): Promise<OperatorCard[]> {
          (SELECT slug FROM courses WHERE operator_id = o.id AND status='published'
            ORDER BY position, created_at LIMIT 1) AS sample_course_slug
        FROM operators o
+       LEFT JOIN suppliers s ON s.id = o.supplier_id
        LEFT JOIN courses c ON c.operator_id = o.id AND c.status='published'
        LEFT JOIN modules m ON m.course_id = c.id
-       WHERE o.status = 'active'
+       WHERE o.status = 'active' AND (s.id IS NULL OR s.status = 'active')
        GROUP BY o.id
        ORDER BY (course_count > 0) DESC, o.name`,
     )
     .all<OperatorCard>();
+  return results ?? [];
+}
+
+export interface PublicSupplier {
+  id: string;
+  slug: string;
+  name: string;
+  legal_name: string | null;
+  hq_city: string | null;
+  country: string;
+  intro: string | null;
+  website: string | null;
+  logo_r2_key: string | null;
+  status: string;
+}
+
+/** A supplier (company) for the user-facing /suppliers/<slug> detail page. */
+export async function getPublicSupplier(slug: string): Promise<PublicSupplier | null> {
+  const row = await db()
+    .prepare(
+      `SELECT id, slug, name, legal_name, hq_city, country, intro, website, logo_r2_key, status
+       FROM suppliers WHERE slug = ?`,
+    )
+    .bind(slug)
+    .first<PublicSupplier>();
+  return row ?? null;
+}
+
+export interface SupplierCardData {
+  id: string;
+  slug: string;
+  name: string;
+  hq_city: string | null;
+  country: string;
+  product_count: number;
+  course_count: number;
+  sample_operator_slug: string | null;
+  cover_r2_key: string | null;
+  cover_image_url: string | null;
+}
+
+/** Active suppliers (companies) that have at least one active product, for the
+ *  user-facing Explore showcase. Each links to its first product. */
+export async function listActiveSuppliers(): Promise<SupplierCardData[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT s.id, s.slug, s.name, s.hq_city, s.country,
+              (SELECT COUNT(*) FROM operators o WHERE o.supplier_id = s.id AND o.status='active') AS product_count,
+              (SELECT COUNT(*) FROM courses c JOIN operators o ON o.id = c.operator_id
+                 WHERE o.supplier_id = s.id AND c.status='published') AS course_count,
+              (SELECT o.slug FROM operators o WHERE o.supplier_id = s.id AND o.status='active'
+                 ORDER BY o.created_at LIMIT 1) AS sample_operator_slug,
+              (SELECT o.cover_r2_key FROM operators o WHERE o.supplier_id = s.id AND o.status='active'
+                 AND o.cover_r2_key IS NOT NULL ORDER BY o.created_at LIMIT 1) AS cover_r2_key,
+              (SELECT o.cover_image_url FROM operators o WHERE o.supplier_id = s.id AND o.status='active'
+                 AND o.cover_image_url IS NOT NULL ORDER BY o.created_at LIMIT 1) AS cover_image_url
+       FROM suppliers s
+       WHERE s.status='active'
+         AND EXISTS (SELECT 1 FROM operators o WHERE o.supplier_id = s.id AND o.status='active')
+       ORDER BY course_count DESC, s.name`,
+    )
+    .all<SupplierCardData>();
   return results ?? [];
 }
 
@@ -166,7 +238,9 @@ export async function listPublishedCourses(): Promise<CourseWithOperator[]> {
       `SELECT c.*, o.name AS operator_name, o.slug AS operator_slug
        FROM courses c
        JOIN operators o ON o.id = c.operator_id
+       LEFT JOIN suppliers s ON s.id = o.supplier_id
        WHERE c.status = 'published' AND o.status = 'active'
+         AND (s.id IS NULL OR s.status = 'active')
        ORDER BY o.name, c.title`,
     )
     .all<CourseWithOperator>();
@@ -197,7 +271,8 @@ export async function listRecentBadges(limit = 24): Promise<RecentBadge[]> {
        JOIN users u     ON u.id = b.user_id
        JOIN courses c   ON c.id = b.course_id
        JOIN operators o ON o.id = b.operator_id
-       WHERE o.status = 'active'
+       LEFT JOIN suppliers s ON s.id = o.supplier_id
+       WHERE o.status = 'active' AND (s.id IS NULL OR s.status = 'active')
        ORDER BY b.awarded_at DESC
        LIMIT ?`,
     )
@@ -226,16 +301,18 @@ export async function getBadgeStats(): Promise<{
 export async function getCourseBySlug(
   operatorSlug: string,
   courseSlug: string,
-): Promise<{ operator: OperatorRow; course: CourseRow; modules: ModuleRow[] } | null> {
+): Promise<{ operator: OperatorRow; course: CourseRow; modules: ModuleRow[]; supplierStatus: string | null } | null> {
   const row = await db()
     .prepare(
       `SELECT c.*, o.id AS o_id, o.slug AS o_slug, o.name AS o_name, o.display_name AS o_display_name,
               o.country AS o_country, o.primary_lang AS o_primary_lang, o.cover_color AS o_cover_color,
               o.contact_email AS o_contact_email, o.status AS o_status,
               o.theme_bg AS o_theme_bg, o.theme_accent AS o_theme_accent,
-              o.theme_ink AS o_theme_ink, o.theme_logo_r2_key AS o_theme_logo_r2_key
+              o.theme_ink AS o_theme_ink, o.theme_logo_r2_key AS o_theme_logo_r2_key,
+              s.status AS supplier_status
        FROM courses c
        JOIN operators o ON o.id = c.operator_id
+       LEFT JOIN suppliers s ON s.id = o.supplier_id
        WHERE o.slug = ? AND c.slug = ?`,
     )
     .bind(operatorSlug, courseSlug)
@@ -254,6 +331,7 @@ export async function getCourseBySlug(
         o_theme_accent: string | null;
         o_theme_ink: string | null;
         o_theme_logo_r2_key: string | null;
+        supplier_status: string | null;
       }
     >();
   if (!row) return null;
@@ -298,7 +376,7 @@ export async function getCourseBySlug(
     title_i18n: (row as unknown as { title_i18n?: string | null }).title_i18n ?? null,
     summary_i18n: (row as unknown as { summary_i18n?: string | null }).summary_i18n ?? null,
   };
-  return { operator, course, modules: modules ?? [] };
+  return { operator, course, modules: modules ?? [], supplierStatus: row.supplier_status };
 }
 
 /**
@@ -315,7 +393,7 @@ export async function getModuleBlocks(
   const { results } = opts.includeAssistantOnly
     ? await db()
         .prepare(
-          `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
+          `SELECT id, module_id, position, kind, text_md, image_r2_key, images_json, video_uid, video_r2_key, pdf_r2_key,
                   caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
                   audio_generated_at, text_md_i18n, caption_i18n, audio_i18n
            FROM content_blocks WHERE module_id = ? ORDER BY position`,
@@ -324,7 +402,7 @@ export async function getModuleBlocks(
         .all<BlockRow>()
     : await db()
         .prepare(
-          `SELECT id, module_id, position, kind, text_md, image_r2_key, video_uid, pdf_r2_key,
+          `SELECT id, module_id, position, kind, text_md, image_r2_key, images_json, video_uid, video_r2_key, pdf_r2_key,
                   caption, lang, audio_r2_key, audio_voice, audio_lang, audio_duration_s,
                   audio_generated_at, text_md_i18n, caption_i18n, audio_i18n
            FROM content_blocks WHERE module_id = ? AND visibility = 'training' ORDER BY position`,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { mediaUrl } from "@/lib/media";
 import { useTr } from "@/lib/i18n-provider";
 import { listAllMedia, listPlatformMedia, type MediaAsset, type PlatformMediaAsset } from "@/app/_actions/media";
 
@@ -97,49 +98,49 @@ export function PlatformMediaLibrary({ suppliers }: { suppliers: { slug: string;
   }
 
   const field =
-    "bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
+    "bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-caption text-slate-900 outline-none focus:border-emerald-500";
 
   return (
     <div className="space-y-8">
       {err ? (
-        <div className="text-[13px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{err}</div>
+        <div className="text-small text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{err}</div>
       ) : null}
 
       {/* Platform public assets */}
       <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
         <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <div className="font-semibold text-[14px] text-slate-900">{tr.admin_media_platform_title}</div>
-            <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_media_platform_sub}</div>
+            <div className="font-semibold text-small text-slate-900">{tr.admin_media_platform_title}</div>
+            <div className="text-caption text-slate-500 mt-0.5">{tr.admin_media_platform_sub}</div>
           </div>
-          <label className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-[12.5px] font-semibold hover:bg-emerald-700 cursor-pointer shrink-0">
+          <label className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-caption font-semibold hover:bg-emerald-700 cursor-pointer shrink-0">
             {pUploading ? tr.mp_uploading : `+ ${tr.mp_upload}`}
             <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={pUploading} onChange={uploadPlatform} className="hidden" />
           </label>
         </header>
         <div className="p-5">
           {platform === null ? (
-            <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
+            <div className="text-small text-slate-400 text-center py-10">{tr.mp_loading}</div>
           ) : platform.length === 0 ? (
-            <div className="text-[13px] text-slate-400 text-center py-10">{tr.admin_media_platform_empty}</div>
+            <div className="text-small text-slate-400 text-center py-10">{tr.admin_media_platform_empty}</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {platform.map((a) => (
                 <div key={a.id} className="group relative rounded-lg border border-slate-200 overflow-hidden">
                   <div className="aspect-video bg-slate-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/api/platform-media?id=${a.id}`} alt={a.filename ?? ""} loading="lazy" className="w-full h-full object-cover" />
+                    <img src={mediaUrl(a.r2_key)} alt={a.filename ?? ""} loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <button
                     type="button"
                     onClick={() => deletePlatform(a.id)}
                     title={tr.mp_remove}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-md bg-white/90 border border-slate-200 text-rose-600 text-[12px] opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                    className="absolute top-1 right-1 w-6 h-6 rounded-md bg-white/90 border border-slate-200 text-rose-600 text-caption opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
                   >
                     ✕
                   </button>
                   {a.filename ? (
-                    <div className="px-2 py-1 text-[10.5px] text-slate-400 truncate" title={a.filename}>{a.filename}</div>
+                    <div className="px-2 py-1 text-micro text-slate-400 truncate" title={a.filename}>{a.filename}</div>
                   ) : null}
                 </div>
               ))}
@@ -151,17 +152,17 @@ export function PlatformMediaLibrary({ suppliers }: { suppliers: { slug: string;
       {/* All supplier media (aggregated, browse) */}
       <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
         <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
-          <div className="font-semibold text-[14px] text-slate-900">{tr.admin_media_suppliers_title}</div>
+          <div className="font-semibold text-small text-slate-900">{tr.admin_media_suppliers_title}</div>
           <div className="flex items-center gap-2 flex-wrap">
             <form onSubmit={onSearch} className="flex items-center gap-1.5">
               <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr.admin_media_search_ph} className={field + " w-56"} />
-              <button type="submit" className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 text-[12.5px] hover:bg-slate-50">🔍</button>
+              <button type="submit" className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 text-caption hover:bg-slate-50">🔍</button>
             </form>
-            <span className="text-[12px] text-slate-500">{tr.admin_media_upload_to}</span>
+            <span className="text-caption text-slate-500">{tr.admin_media_upload_to}</span>
             <select value={uploadSupplier} onChange={(e) => setUploadSupplier(e.target.value)} className={field}>
               {suppliers.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
-            <label className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-[12.5px] hover:bg-slate-50 cursor-pointer">
+            <label className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-caption hover:bg-slate-50 cursor-pointer">
               {uploading ? tr.mp_uploading : `+ ${tr.mp_upload}`}
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={uploading || !uploadSupplier} onChange={uploadSupplierMedia} className="hidden" />
             </label>
@@ -169,20 +170,20 @@ export function PlatformMediaLibrary({ suppliers }: { suppliers: { slug: string;
         </header>
         <div className="p-5">
           {assets === null ? (
-            <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
+            <div className="text-small text-slate-400 text-center py-10">{tr.mp_loading}</div>
           ) : assets.length === 0 ? (
-            <div className="text-[13px] text-slate-400 text-center py-10">{tr.admin_media_empty}</div>
+            <div className="text-small text-slate-400 text-center py-10">{tr.admin_media_empty}</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {assets.map((a) => (
                 <div key={a.id} className="rounded-lg border border-slate-200 overflow-hidden">
                   <div className="aspect-video bg-slate-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/api/media?id=${a.id}`} alt={a.filename ?? ""} loading="lazy" className="w-full h-full object-cover" />
+                    <img src={mediaUrl(a.r2_key)} alt={a.filename ?? ""} loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="px-2 py-1.5">
-                    <div className="text-[11.5px] text-slate-700 truncate" title={a.supplier_name}>{a.supplier_name}</div>
-                    {a.filename ? <div className="text-[10.5px] text-slate-400 truncate" title={a.filename}>{a.filename}</div> : null}
+                    <div className="text-caption text-slate-700 truncate" title={a.supplier_name}>{a.supplier_name}</div>
+                    {a.filename ? <div className="text-micro text-slate-400 truncate" title={a.filename}>{a.filename}</div> : null}
                   </div>
                 </div>
               ))}

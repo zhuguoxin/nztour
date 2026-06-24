@@ -8,8 +8,60 @@
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
-	--font-sans: var(--font-geist-sans);
+	--font-sans: var(--font-hanken);
 	--font-mono: var(--font-geist-mono);
+
+	/* === Brand palette: remap Tailwind's default `emerald` scale to the
+	   homepage greens (newzealand.com look) so every `*-emerald-*` utility
+	   across the whole app picks up the brand green at the token level — no
+	   per-file edits. The homepage itself uses hardcoded hex and stays the
+	   reference. slate-50 → warm cream for the same editorial warmth. */
+	--color-emerald-50: #ecf6f0;
+	--color-emerald-100: #d4ebdd;
+	--color-emerald-200: #bfe3cc;
+	--color-emerald-300: #7fd8a8;
+	--color-emerald-400: #46b175;
+	--color-emerald-500: #2f9460;
+	--color-emerald-600: #0e3b2c;
+	--color-emerald-700: #0a2c20;
+	--color-emerald-800: #0e3b2c;
+	--color-emerald-900: #0a2c20;
+	--color-emerald-950: #06201a;
+
+	--color-slate-50: #f6f3ec;
+}
+
+/* ============================================================================
+ * TYPE SCALE — the single source of truth for every font size on the site.
+ *
+ * Tailwind v4 turns each `--text-<name>` into a `text-<name>` utility (with all
+ * responsive/variant forms, e.g. `sm:text-h1`). Change a value HERE and every
+ * card, heading, and paragraph that uses the matching `text-<name>` class
+ * follows — no per-file edits, nothing missed.
+ *
+ * Sizes are ~2px larger than the old ad-hoc `text-[Npx]` values they replaced.
+ * The homepage keeps its own clamp()-based display sizes and is exempt.
+ *
+ *   text-micro     labels · mono tags · legal fine print
+ *   text-caption   annotations · meta · secondary captions
+ *   text-small     secondary body · UI · buttons
+ *   text-body      body copy
+ *   text-title     card / course titles
+ *   text-h3        subsection headings
+ *   text-h2        section headings
+ *   text-h1        page titles
+ *   text-display   page hero titles
+ * ========================================================================== */
+@theme {
+	--text-micro: 12px;     --text-micro--line-height: 1.4;
+	--text-caption: 13px;   --text-caption--line-height: 1.5;
+	--text-small: 15px;     --text-small--line-height: 1.55;
+	--text-body: 17px;      --text-body--line-height: 1.65;
+	--text-title: 19px;     --text-title--line-height: 1.35;
+	--text-h3: 22px;        --text-h3--line-height: 1.25;
+	--text-h2: 27px;        --text-h2--line-height: 1.2;
+	--text-h1: 33px;        --text-h1--line-height: 1.15;
+	--text-display: 46px;   --text-display--line-height: 1.05;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +74,7 @@
 body {
 	background: var(--background);
 	color: var(--foreground);
-	font-family: Arial, Helvetica, sans-serif;
+	font-family: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ============================================================================
@@ -63,3 +115,31 @@ body {
 .op-theme-scope .bg-emerald-400 { background-color: var(--op-accent); }
 /* Label text accents → accent token */
 .op-theme-scope .text-emerald-300 { color: var(--op-accent); }
+
+/* Bold text inside themed surfaces → ink token. The reader applies bold via an
+   arbitrary `[&_strong]:text-white` utility that compiles to a selector the
+   `.text-white` remap above can't reach, so bold stayed literal white and
+   vanished on a light operator theme. Catch every <strong> in scope. */
+.op-theme-scope strong { color: var(--op-ink); }
+
+/* --- AskAI Q&A sidebar: brand greens the base remaps miss ---
+   Opacity-variant emerald utilities (bg-emerald-400/15 …) and hardcoded dark
+   surfaces compile to class names the rules above don't match, so the sidebar
+   stayed Libretour-green even under a light operator theme. Map them to tokens. */
+.op-theme-scope .bg-\[\#0d4538\] { background-color: var(--op-panel); }
+.op-theme-scope .bg-\[\#062b22\]\/40 { background-color: color-mix(in srgb, var(--op-panel) 40%, transparent); }
+.op-theme-scope .bg-emerald-300 { background-color: var(--op-accent); }
+.op-theme-scope .bg-emerald-400\/10,
+.op-theme-scope .bg-emerald-400\/15,
+.op-theme-scope .bg-emerald-400\/20 { background-color: color-mix(in srgb, var(--op-accent) 15%, transparent); }
+.op-theme-scope .bg-emerald-700\/40 { background-color: color-mix(in srgb, var(--op-accent) 22%, transparent); }
+.op-theme-scope .border-emerald-400\/20,
+.op-theme-scope .border-emerald-400\/30 { border-color: color-mix(in srgb, var(--op-accent) 35%, transparent); }
+.op-theme-scope .text-emerald-200 { color: var(--op-accent); }
+
+/* Homepage hero: slow Ken-Burns push on each cross-fading slide. */
+.hero-kenburns { animation: hero-kenburns 18s ease-in-out infinite alternate; }
+@keyframes hero-kenburns {
+  from { transform: scale(1.05); }
+  to   { transform: scale(1.13); }
+}

@@ -17,11 +17,11 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 export const TTS_LANGS = [
   { id: "auto", label: "Auto-detect from text", short: "auto" },
   { id: "en", label: "English", short: "en" },
-  { id: "zh", label: "中文 / Chinese", short: "zh" },
-  { id: "es", label: "Español / Spanish", short: "es" },
-  { id: "fr", label: "Français / French", short: "fr" },
-  { id: "ja", label: "日本語 / Japanese", short: "ja" },
-  { id: "ko", label: "한국어 / Korean", short: "ko" },
+  { id: "zh", label: "Chinese", short: "zh" },
+  { id: "es", label: "Spanish", short: "es" },
+  { id: "fr", label: "French", short: "fr" },
+  { id: "ja", label: "Japanese", short: "ja" },
+  { id: "ko", label: "Korean", short: "ko" },
 ] as const;
 
 export type TTSLang = (typeof TTS_LANGS)[number]["id"];

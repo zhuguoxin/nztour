@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { mediaUrl } from "@/lib/media";
 import { TopBar } from "../_components/top-bar";
 import { getCurrentRole, requireAdmin } from "@/lib/roles";
 import { db } from "@/lib/db";
@@ -7,6 +8,8 @@ import {
   revokeSupplierMembership,
   approveSupplier,
   rejectSupplier,
+  enableSupplier,
+  disableSupplier,
 } from "./actions";
 import { PageBreadcrumb } from "../_components/page-breadcrumb";
 import { t, fmt } from "@/lib/i18n";
@@ -15,9 +18,9 @@ export const dynamic = "force-dynamic";
 
 // Width-less base for inline rows where flex/explicit widths control sizing.
 const fieldBase =
-  "bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500";
+  "bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-caption text-slate-900 outline-none focus:border-emerald-500";
 const grantBtn =
-  "px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0 whitespace-nowrap";
+  "px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-caption hover:bg-emerald-700 shrink-0 whitespace-nowrap";
 
 interface SupplierRow {
   id: string;
@@ -25,6 +28,7 @@ interface SupplierRow {
   name: string;
   plan_tier: string;
   cover_r2_key: string | null;
+  status: string;
   product_count: number;
 }
 interface UserRow {
@@ -66,7 +70,7 @@ export default async function AdminPage({
   const query = (q ?? "").trim();
   const [role, tr] = await Promise.all([getCurrentRole(), t()]);
 
-  const supBase = `SELECT s.id, s.slug, s.name, s.plan_tier, s.cover_r2_key,
+  const supBase = `SELECT s.id, s.slug, s.name, s.plan_tier, s.cover_r2_key, s.status,
                 (SELECT COUNT(*) FROM operators o WHERE o.supplier_id = s.id) AS product_count
          FROM suppliers s`;
   const supStmt = query
@@ -115,7 +119,7 @@ export default async function AdminPage({
   const userById = new Map(users.map((u) => [u.id, u]));
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
 
       <main className="px-5 sm:px-8 py-8 max-w-6xl mx-auto">
@@ -125,13 +129,13 @@ export default async function AdminPage({
               className="mb-1.5"
               items={[{ href: "/", label: tr.nav_home }, { label: tr.admin_breadcrumb }]}
             />
-            <div className="text-[11px] tracking-widest font-mono text-lime-700/70">{tr.admin_chrome_label}</div>
-            <h1 className="text-[26px] sm:text-[30px] font-semibold text-slate-900 mt-1">{tr.admin_title}</h1>
-            <p className="text-[13.5px] text-slate-600 mt-1.5">{tr.admin_blurb}</p>
+            <div className="text-micro tracking-widest font-mono text-lime-700/70">{tr.admin_chrome_label}</div>
+            <h1 className="text-h2 sm:text-h1 font-semibold text-slate-900 mt-1">{tr.admin_title}</h1>
+            <p className="text-small text-slate-600 mt-1.5">{tr.admin_blurb}</p>
           </div>
           <Link
             href="/admin/media"
-            className="px-3 py-2 rounded-md border border-slate-300 text-slate-700 text-[13px] hover:bg-slate-50 shrink-0"
+            className="px-3 py-2 rounded-md border border-slate-300 text-slate-700 text-small hover:bg-slate-50 shrink-0"
           >
             🖼 {tr.admin_media_library}
           </Link>
@@ -149,10 +153,10 @@ export default async function AdminPage({
         {pending.length > 0 ? (
           <section className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/40 overflow-hidden">
             <header className="px-5 py-4 border-b border-amber-200">
-              <div className="font-semibold text-[14px] text-slate-900">
-                {tr.admin_pending_title} <span className="text-amber-700">({pending.length})</span>
+              <div className="font-semibold text-small text-slate-900">
+                {tr.admin_pending_title} <span className="text-slate-900">({pending.length})</span>
               </div>
-              <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_pending_sub}</div>
+              <div className="text-caption text-slate-500 mt-0.5">{tr.admin_pending_sub}</div>
             </header>
             <div>
               {pending.map((p) => {
@@ -169,8 +173,8 @@ export default async function AdminPage({
                     className="px-5 py-4 border-t border-amber-200/70 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
                   >
                     <div className="min-w-0">
-                      <div className="text-[14px] font-medium text-slate-900">{p.name}</div>
-                      <div className="text-[12px] text-slate-600 mt-0.5">
+                      <div className="text-small font-medium text-slate-900">{p.name}</div>
+                      <div className="text-caption text-slate-600 mt-0.5">
                         {p.poc_name ? `${p.poc_name} · ` : ""}
                         {p.owner_email ?? p.contact_email ?? "—"}
                       </div>
@@ -179,14 +183,14 @@ export default async function AdminPage({
                           {rtos.map((r) => (
                             <span
                               key={r}
-                              className="px-2 py-0.5 rounded-full bg-white border border-amber-200 text-amber-800 text-[11px]"
+                              className="px-2 py-0.5 rounded-full bg-white border border-amber-200 text-slate-900 text-micro"
                             >
                               {r}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-[11.5px] text-slate-400 mt-1">{tr.admin_pending_no_rto}</div>
+                        <div className="text-caption text-slate-400 mt-1">{tr.admin_pending_no_rto}</div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -194,7 +198,7 @@ export default async function AdminPage({
                         <input type="hidden" name="supplier_id" value={p.id} />
                         <button
                           type="submit"
-                          className="px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700"
+                          className="px-3.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-caption hover:bg-emerald-700"
                         >
                           {tr.admin_pending_approve}
                         </button>
@@ -203,7 +207,7 @@ export default async function AdminPage({
                         <input type="hidden" name="supplier_id" value={p.id} />
                         <button
                           type="submit"
-                          className="px-3.5 py-1.5 rounded-md border border-slate-300 text-slate-600 text-[12.5px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700"
+                          className="px-3.5 py-1.5 rounded-md border border-slate-300 text-slate-600 text-caption hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700"
                         >
                           {tr.admin_pending_reject}
                         </button>
@@ -220,8 +224,8 @@ export default async function AdminPage({
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">
           <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <div className="font-semibold text-[14px] text-slate-900">{tr.admin_suppliers_title}</div>
-              <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_suppliers_sub}</div>
+              <div className="font-semibold text-small text-slate-900">{tr.admin_suppliers_title}</div>
+              <div className="text-caption text-slate-500 mt-0.5">{tr.admin_suppliers_sub}</div>
             </div>
             <div className="flex items-center gap-2">
               <form method="get" className="flex items-center gap-1.5">
@@ -230,18 +234,18 @@ export default async function AdminPage({
                   name="q"
                   defaultValue={query}
                   placeholder={tr.admin_search_ph}
-                  className="w-44 bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500"
+                  className="w-44 bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-caption text-slate-900 outline-none focus:border-emerald-500"
                 />
                 <button
                   type="submit"
-                  className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 text-[12.5px] hover:bg-slate-50"
+                  className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 text-caption hover:bg-slate-50"
                 >
                   🔍
                 </button>
               </form>
               <Link
                 href="/admin/suppliers/new"
-                className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0"
+                className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-caption hover:bg-emerald-700 shrink-0"
               >
                 + {tr.admin_new_supplier}
               </Link>
@@ -249,7 +253,7 @@ export default async function AdminPage({
           </header>
           <div className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
             {suppliers.length === 0 ? (
-              <div className="col-span-full px-2 py-8 text-center text-[13px] text-slate-500">{tr.admin_suppliers_empty}</div>
+              <div className="col-span-full px-2 py-8 text-center text-small text-slate-500">{tr.admin_suppliers_empty}</div>
             ) : (
               suppliers.map((s) => {
                 const mgrs = memsBySupplier.get(s.id) ?? [];
@@ -257,11 +261,11 @@ export default async function AdminPage({
                   <div key={s.id} className="rounded-xl border border-slate-200 p-4">
                     <div className="flex items-center gap-3">
                       {/* Supplier cover (read-only; set on the supplier's own profile) */}
-                      <div className="w-16 h-11 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-300 text-[16px]">
+                      <div className="w-16 h-11 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-300 text-body">
                         {s.cover_r2_key ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={`/api/supplier-cover?slug=${encodeURIComponent(s.slug)}`}
+                            src={mediaUrl(s.cover_r2_key)}
                             alt=""
                             className="w-full h-full object-cover"
                           />
@@ -269,12 +273,43 @@ export default async function AdminPage({
                           "🏢"
                         )}
                       </div>
-                      <div className="min-w-0 text-[13.5px] text-slate-900">
+                      <div className="min-w-0 flex-1 text-small text-slate-900">
                         <Link href={`/supplier/${s.slug}`} className="font-medium hover:underline">{s.name}</Link>
-                        <span className="text-slate-500 text-[12px] ml-1.5">
+                        {s.status === "suspended" ? (
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-rose-100 border border-rose-200 text-rose-700 text-micro font-medium">
+                            {tr.admin_sup_disabled}
+                          </span>
+                        ) : s.status === "pending" ? (
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-slate-900 text-micro font-medium">
+                            {tr.admin_sup_pending}
+                          </span>
+                        ) : null}
+                        <span className="text-slate-500 text-caption ml-1.5">
                           · {s.plan_tier} · {fmt(tr.admin_sup_products, { n: s.product_count })}
                         </span>
                       </div>
+                      {/* Enable / disable toggle */}
+                      {s.status === "suspended" ? (
+                        <form action={enableSupplier} className="shrink-0">
+                          <input type="hidden" name="supplier_id" value={s.id} />
+                          <button
+                            type="submit"
+                            className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-caption font-semibold hover:bg-emerald-700"
+                          >
+                            {tr.admin_sup_enable}
+                          </button>
+                        </form>
+                      ) : (
+                        <form action={disableSupplier} className="shrink-0">
+                          <input type="hidden" name="supplier_id" value={s.id} />
+                          <button
+                            type="submit"
+                            className="px-3 py-1.5 rounded-md border border-rose-200 text-rose-600 text-caption font-medium hover:bg-rose-50"
+                          >
+                            {tr.admin_sup_disable}
+                          </button>
+                        </form>
+                      )}
                     </div>
                     {mgrs.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -286,7 +321,7 @@ export default async function AdminPage({
                               <input type="hidden" name="supplier_id" value={s.id} />
                               <button
                                 type="submit"
-                                className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
+                                className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-slate-900 text-micro hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
                               >
                                 {u?.email ?? m.user_id} · {m.role} <span className="opacity-60">✕</span>
                               </button>
@@ -322,19 +357,19 @@ export default async function AdminPage({
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white overflow-hidden">
           <header className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3">
             <div>
-              <div className="font-semibold text-[14px] text-slate-900">{tr.admin_users_title}</div>
-              <div className="text-[12px] text-slate-500 mt-0.5">{tr.admin_users_sub}</div>
+              <div className="font-semibold text-small text-slate-900">{tr.admin_users_title}</div>
+              <div className="text-caption text-slate-500 mt-0.5">{tr.admin_users_sub}</div>
             </div>
             <Link
               href="/admin/users/new"
-              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12.5px] hover:bg-emerald-700 shrink-0"
+              className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-caption hover:bg-emerald-700 shrink-0"
             >
               + {tr.admin_new_user}
             </Link>
           </header>
           <div>
             {users.length === 0 ? (
-              <div className="px-5 py-8 text-center text-[13px] text-slate-500">{tr.admin_users_empty}</div>
+              <div className="px-5 py-8 text-center text-small text-slate-500">{tr.admin_users_empty}</div>
             ) : (
               users.map((u) => {
                 const mems = memsByUser.get(u.id) ?? [];
@@ -344,12 +379,12 @@ export default async function AdminPage({
                     className="px-5 py-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3 lg:items-center"
                   >
                     <div className="min-w-0">
-                      <div className="text-[13.5px] text-slate-900 truncate">
+                      <div className="text-small text-slate-900 truncate">
                         {u.name ?? u.email}{" "}
-                        {u.name ? <span className="text-slate-500 text-[12px]">({u.email})</span> : null}
-                        {u.agency_name ? <span className="text-slate-400 text-[12px]"> · {u.agency_name}</span> : null}
+                        {u.name ? <span className="text-slate-500 text-caption">({u.email})</span> : null}
+                        {u.agency_name ? <span className="text-slate-400 text-caption"> · {u.agency_name}</span> : null}
                       </div>
-                      <div className="text-[11.5px] text-slate-400 font-mono mt-0.5 truncate">{u.id}</div>
+                      <div className="text-caption text-slate-600 font-mono mt-0.5 truncate">{u.id}</div>
                       {mems.length > 0 ? (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {mems.map((m) => (
@@ -358,7 +393,7 @@ export default async function AdminPage({
                               <input type="hidden" name="supplier_id" value={m.supplier_id} />
                               <button
                                 type="submit"
-                                className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
+                                className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-slate-900 text-micro hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition"
                               >
                                 {m.supplier_name} · {m.role} <span className="opacity-60">✕</span>
                               </button>
@@ -397,8 +432,8 @@ export default async function AdminPage({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="text-[11px] tracking-widest font-mono text-slate-500">{label.toUpperCase()}</div>
-      <div className="text-[22px] font-semibold text-slate-900 mt-1 tabular-nums">{value}</div>
+      <div className="text-micro tracking-widest font-mono text-slate-700">{label.toUpperCase()}</div>
+      <div className="text-h2 font-semibold text-slate-900 mt-1 tabular-nums">{value}</div>
     </div>
   );
 }
@@ -408,12 +443,12 @@ async function Forbidden() {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased flex items-center justify-center">
       <div className="text-center max-w-md px-6">
-        <div className="text-[11px] tracking-widest font-mono text-rose-700 mb-2">403</div>
-        <h1 className="text-[24px] font-semibold text-slate-900">{tr.admin_403_title}</h1>
-        <p className="mt-3 text-[14px] text-slate-600">{tr.admin_403_body}</p>
+        <div className="text-micro tracking-widest font-mono text-rose-700 mb-2">403</div>
+        <h1 className="text-h2 font-semibold text-slate-900">{tr.admin_403_title}</h1>
+        <p className="mt-3 text-small text-slate-600">{tr.admin_403_body}</p>
         <Link
           href="/"
-          className="mt-6 inline-block px-4 py-2 rounded-md border border-slate-300 text-[14px] text-slate-700 hover:bg-slate-50"
+          className="mt-6 inline-block px-4 py-2 rounded-md border border-slate-300 text-small text-slate-700 hover:bg-slate-50"
         >
           {tr.op_d_403_home}
         </Link>

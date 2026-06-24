@@ -23,6 +23,8 @@ interface __BaseEnv_CloudflareEnv {
 	RESEND_API_KEY: string;
 	TAVILY_API_KEY: string;
 	CF_STREAM_API_TOKEN: string;
+	R2_S3_ACCESS_KEY_ID: string;
+	R2_S3_SECRET_ACCESS_KEY: string;
 	REINDEX_TOKEN: string;
 	ADMIN_EMAILS: string;
 	WORKER_SELF_REFERENCE: Service<typeof import("./.open-next/worker").default>;

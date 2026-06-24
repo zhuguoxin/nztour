@@ -68,9 +68,9 @@ export function VoicesModal({
       </button>
       <Modal open={open} onClose={close} title={tr.sp_p_nav_voices} maxWidth="max-w-2xl">
         {err ? (
-          <div className="text-[13px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
+          <div className="text-small text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
         ) : voices === null ? (
-          <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
+          <div className="text-small text-slate-400 text-center py-10">{tr.mp_loading}</div>
         ) : (
           <VoicesPanel key={ver} supplierSlug={supplierSlug} voices={voices} hasXIKey={hasXIKey} onChanged={load} />
         )}

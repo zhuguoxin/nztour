@@ -48,7 +48,10 @@ export async function GET(req: Request) {
   return new Response(obj.body, {
     headers: {
       "content-type": obj.httpMetadata?.contentType || EXT_TYPES[ext] || "image/jpeg",
-      "cache-control": "public, max-age=300, must-revalidate",
+      // Short cache: covers change in-place (stable slug URL), so keep it brief
+      // so a freshly uploaded cover shows up quickly on pages that don't
+      // cache-bust the URL. The editor preview adds &v=<token> for instant swap.
+      "cache-control": "public, max-age=30, must-revalidate",
     },
   });
 }

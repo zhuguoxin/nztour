@@ -119,9 +119,9 @@ export default async function CookiesPolicy() {
             : "The cookies set by Libretour from its own domains (libretour.com, www.libretour.com) are as follows:"}
         </p>
         <div className="overflow-x-auto -mx-2 my-2">
-          <table className="text-[12.5px] w-full text-left border-collapse">
+          <table className="text-caption w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px]">
+              <tr className="border-b border-slate-200 text-slate-700 uppercase tracking-wider text-micro">
                 <th className="py-2 pr-3 font-mono font-normal">{zh ? "名称" : "Name"}</th>
                 <th className="py-2 pr-3 font-mono font-normal">{zh ? "类别" : "Category"}</th>
                 <th className="py-2 pr-3 font-mono font-normal">{zh ? "用途" : "Purpose"}</th>
@@ -210,22 +210,22 @@ export default async function CookiesPolicy() {
         <LegalList
           items={[
             <>
-              <a className="text-emerald-700 hover:underline" href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noreferrer">
+              <a className="text-slate-900 hover:underline" href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noreferrer">
                 Google Chrome
               </a>;
             </>,
             <>
-              <a className="text-emerald-700 hover:underline" href="https://support.mozilla.org/en-US/kb/cookies-information-websites-store-on-your-computer" target="_blank" rel="noreferrer">
+              <a className="text-slate-900 hover:underline" href="https://support.mozilla.org/en-US/kb/cookies-information-websites-store-on-your-computer" target="_blank" rel="noreferrer">
                 Mozilla Firefox
               </a>;
             </>,
             <>
-              <a className="text-emerald-700 hover:underline" href="https://support.apple.com/guide/safari/manage-cookies-sfri11471/mac" target="_blank" rel="noreferrer">
+              <a className="text-slate-900 hover:underline" href="https://support.apple.com/guide/safari/manage-cookies-sfri11471/mac" target="_blank" rel="noreferrer">
                 Apple Safari
               </a>;
             </>,
             <>
-              <a className="text-emerald-700 hover:underline" href="https://support.microsoft.com/en-us/windows/manage-cookies-in-microsoft-edge-view-allow-block-delete-and-use-168dab11-0753-043d-7c16-ede5947fc64d" target="_blank" rel="noreferrer">
+              <a className="text-slate-900 hover:underline" href="https://support.microsoft.com/en-us/windows/manage-cookies-in-microsoft-edge-view-allow-block-delete-and-use-168dab11-0753-043d-7c16-ede5947fc64d" target="_blank" rel="noreferrer">
                 Microsoft Edge
               </a>.
             </>,

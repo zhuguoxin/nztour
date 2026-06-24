@@ -45,7 +45,7 @@ export function CategorizeButton({
   return (
     <div className="flex items-center gap-2">
       {msg ? (
-        <span className="text-[11px] text-emerald-300 font-mono max-w-[300px] truncate" title={msg}>
+        <span className="text-micro text-slate-600 font-mono max-w-[300px] truncate" title={msg}>
           {msg}
         </span>
       ) : null}
@@ -53,7 +53,7 @@ export function CategorizeButton({
         type="button"
         onClick={run}
         disabled={pending || disabled}
-        className="px-2.5 py-1 rounded bg-amber-400 text-[#04241e] font-semibold text-[12px] hover:bg-amber-300 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="px-2.5 py-1 rounded bg-amber-400 text-[#04241e] font-semibold text-caption hover:bg-amber-300 disabled:opacity-40 disabled:cursor-not-allowed"
         title={disabled ? "Nothing left to categorize" : "Run Claude on uncategorized questions"}
       >
         {pending ? "Categorizing…" : "✨ Refresh themes"}

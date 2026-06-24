@@ -35,13 +35,13 @@ export default async function SupplierGlossaryPage({
   const tr = await t();
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
       <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto">
-        <Link href={`/supplier/${slug}`} className="text-[13px] text-emerald-700 hover:underline">
+        <Link href={`/supplier/${slug}`} className="text-small text-slate-900 hover:underline">
           {tr.sp_back_panel}
         </Link>
-        <h1 className="text-[24px] sm:text-[28px] font-semibold tracking-tight text-slate-900 mt-2 mb-5">
+        <h1 className="text-h2 sm:text-h1 font-semibold tracking-tight text-slate-900 mt-2 mb-5">
           {tr.sp_p_nav_glossary}
         </h1>
         <GlossaryPanel

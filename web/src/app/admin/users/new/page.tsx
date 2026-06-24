@@ -8,8 +8,8 @@ import { createUser } from "../../actions";
 export const dynamic = "force-dynamic";
 
 const field =
-  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[13.5px] text-slate-900 outline-none focus:border-emerald-500";
-const lbl = "block text-[12px] font-medium text-slate-600 mb-1";
+  "w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-small text-slate-900 outline-none focus:border-emerald-500";
+const lbl = "block text-caption font-medium text-slate-600 mb-1";
 
 export default async function NewUserPage() {
   try {
@@ -24,11 +24,11 @@ export default async function NewUserPage() {
   const tr = await t();
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
       <main className="px-5 sm:px-8 py-8 max-w-xl mx-auto">
-        <Link href="/admin" className="text-[13px] text-emerald-700 hover:underline">{tr.admin_back}</Link>
-        <h1 className="text-[24px] sm:text-[28px] font-semibold text-slate-900 mt-2 mb-5">
+        <Link href="/admin" className="text-small text-slate-900 hover:underline">{tr.admin_back}</Link>
+        <h1 className="text-h2 sm:text-h1 font-semibold text-slate-900 mt-2 mb-5">
           {tr.admin_new_user}
         </h1>
 
@@ -63,13 +63,13 @@ export default async function NewUserPage() {
                 <option value="viewer">{tr.admin_role_viewer}</option>
               </select>
             </div>
-            <span className="block text-[11.5px] text-slate-400">{tr.admin_user_invite_note}</span>
+            <span className="block text-caption text-slate-400">{tr.admin_user_invite_note}</span>
           </div>
 
           <div className="pt-1">
             <button
               type="submit"
-              className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-[13.5px] hover:bg-emerald-700"
+              className="px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold text-small hover:bg-emerald-700"
             >
               {tr.admin_create}
             </button>
@@ -85,9 +85,9 @@ async function Forbidden() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center">
-        <div className="text-[11px] font-mono text-rose-700 mb-2">403</div>
-        <h1 className="text-[22px] font-semibold text-slate-900">{tr.admin_403_title}</h1>
-        <Link href="/" className="mt-4 inline-block text-[14px] text-emerald-700 hover:underline">
+        <div className="text-micro font-mono text-rose-700 mb-2">403</div>
+        <h1 className="text-h2 font-semibold text-slate-900">{tr.admin_403_title}</h1>
+        <Link href="/" className="mt-4 inline-block text-small text-slate-900 hover:underline">
           {tr.op_d_403_home}
         </Link>
       </div>

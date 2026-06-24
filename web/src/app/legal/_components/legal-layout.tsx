@@ -50,7 +50,7 @@ export async function LegalLayout({
   const locale = await getLocale();
   const zh = locale === "zh-CN";
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0">
@@ -67,7 +67,7 @@ export async function LegalLayout({
         <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_220px] gap-8 lg:gap-12">
           {/* Left nav */}
           <aside className="lg:sticky lg:top-20 lg:self-start order-1">
-            <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
+            <div className="text-micro tracking-widest font-mono text-slate-700 mb-2">
               {zh ? "法律" : "LEGAL"}
             </div>
             <nav className="space-y-0.5">
@@ -77,9 +77,9 @@ export async function LegalLayout({
                   <Link
                     key={n.slug}
                     href={`/legal/${n.slug}`}
-                    className={`block px-2 py-1.5 rounded text-[13.5px] ${
+                    className={`block px-2 py-1.5 rounded text-small ${
                       active
-                        ? "bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-medium"
+                        ? "bg-emerald-50 text-slate-900 border-l-2 border-emerald-600 font-medium"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
@@ -93,13 +93,13 @@ export async function LegalLayout({
           {/* Document body */}
           <article className="order-3 lg:order-2 prose-legal min-w-0">
             <header className="mb-8 pb-5 border-b border-slate-200">
-              <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-1.5">
+              <div className="text-micro tracking-widest font-mono text-slate-700 mb-1.5">
                 {meta.activeSlug.toUpperCase().replace("-", " ")}
               </div>
-              <h1 className="text-[30px] sm:text-[34px] font-semibold tracking-tight text-slate-900">
+              <h1 className="text-h1 sm:text-h1 font-semibold tracking-tight text-slate-900">
                 {meta.title}
               </h1>
-              <div className="mt-3 flex items-center gap-3 text-[12.5px] text-slate-500 flex-wrap">
+              <div className="mt-3 flex items-center gap-3 text-caption text-slate-500 flex-wrap">
                 <span>
                   <span className="text-slate-400">{zh ? "生效日期" : "Effective"}</span>{" "}
                   <span className="font-mono">{meta.effectiveDate}</span>
@@ -110,9 +110,9 @@ export async function LegalLayout({
                   <span className="font-mono">{meta.lastUpdated}</span>
                 </span>
                 <span className="text-slate-300">·</span>
-                <span className="font-mono text-slate-400">{meta.version}</span>
+                <span className="font-mono text-slate-600">{meta.version}</span>
               </div>
-              <div className="mt-4 px-3 py-2 rounded border border-amber-200 bg-amber-50 text-[12.5px] text-amber-900">
+              <div className="mt-4 px-3 py-2 rounded border border-amber-200 bg-amber-50 text-caption text-slate-900">
                 <strong>{zh ? "供法律审查的草稿。" : "Draft for legal review."}</strong>{" "}
                 {zh
                   ? "本文件由 Libretour Limited 作为初始发布版本起草，尚未经外部律师审阅。本文件系本着诚信原则提供，应理解为公司当前的立场。我们将在完成独立法律审查后发布经签署确认的版本。"
@@ -131,10 +131,10 @@ export async function LegalLayout({
 
             {children}
 
-            <footer className="mt-12 pt-6 border-t border-slate-200 text-[12.5px] text-slate-500 space-y-2">
+            <footer className="mt-12 pt-6 border-t border-slate-200 text-caption text-slate-500 space-y-2">
               <p>
                 {zh ? "对本文件有疑问?请通过 " : "Questions about this document? Contact us at "}
-                <a className="text-emerald-700 hover:underline" href="mailto:legal@libretour.com">
+                <a className="text-slate-900 hover:underline" href="mailto:legal@libretour.com">
                   legal@libretour.com
                 </a>
                 {zh ? " 与我们联系。" : "."}
@@ -149,7 +149,7 @@ export async function LegalLayout({
 
           {/* Right TOC */}
           <aside className="hidden lg:block order-2 lg:order-3 lg:sticky lg:top-20 lg:self-start">
-            <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
+            <div className="text-micro tracking-widest font-mono text-slate-700 mb-2">
               {zh ? "本页内容" : "ON THIS PAGE"}
             </div>
             <nav className="space-y-1">
@@ -157,7 +157,7 @@ export async function LegalLayout({
                 <a
                   key={t.id}
                   href={`#${t.id}`}
-                  className="block text-[12.5px] text-slate-500 hover:text-slate-900 py-0.5 leading-snug"
+                  className="block text-caption text-slate-500 hover:text-slate-900 py-0.5 leading-snug"
                 >
                   {t.label}
                 </a>
@@ -188,11 +188,11 @@ export function LegalSection({
 }) {
   return (
     <section id={id} className="mt-8 scroll-mt-20">
-      <h2 className="text-[19px] sm:text-[21px] font-semibold tracking-tight text-slate-900 mb-3">
-        <span className="font-mono text-emerald-700 mr-2 text-[16px]">{number}</span>
+      <h2 className="text-h3 sm:text-h3 font-semibold tracking-tight text-slate-900 mb-3">
+        <span className="font-mono text-slate-900 mr-2 text-body">{number}</span>
         {title}
       </h2>
-      <div className="space-y-3 text-[14.5px] text-slate-700 leading-[1.7]">
+      <div className="space-y-3 text-small text-slate-700 leading-[1.7]">
         {children}
       </div>
     </section>
@@ -202,7 +202,7 @@ export function LegalSection({
 /** Numbered sub-list (a), (b), (c)... — common in legal copy. */
 export function LegalList({ items }: { items: React.ReactNode[] }) {
   return (
-    <ol className="ml-5 space-y-2 list-[lower-alpha] marker:text-emerald-700 marker:font-mono">
+    <ol className="ml-5 space-y-2 list-[lower-alpha] marker:text-slate-900 marker:font-mono">
       {items.map((it, i) => (
         <li key={i} className="pl-1">{it}</li>
       ))}

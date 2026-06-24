@@ -38,9 +38,9 @@ export function ActivityChart({
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 mb-8">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="font-semibold text-[14px] text-slate-900">{labels.title}</div>
-        <div className="flex items-center gap-4 text-[11px]">
-          <span className="flex items-center gap-1.5 text-emerald-700">
+        <div className="font-semibold text-small text-slate-900">{labels.title}</div>
+        <div className="flex items-center gap-4 text-micro">
+          <span className="flex items-center gap-1.5 text-slate-900">
             <span className="inline-block w-3 h-[3px] rounded bg-emerald-600" />
             {labels.completions}
           </span>
@@ -52,7 +52,7 @@ export function ActivityChart({
       </div>
 
       {totalActivity === 0 ? (
-        <div className="h-[120px] flex items-center justify-center text-[13px] text-slate-400">
+        <div className="h-[120px] flex items-center justify-center text-small text-slate-400">
           {labels.empty}
         </div>
       ) : (

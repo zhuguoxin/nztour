@@ -1,12 +1,12 @@
 "use client";
 
 import { useTransition } from "react";
-import { deleteCourseAttachment } from "../../actions";
+import { deleteSupportingDoc } from "./courses/actions";
 import { useTr } from "@/lib/i18n-provider";
 import { fmt } from "@/lib/i18n-shared";
 import type { Dict } from "@/lib/i18n";
 
-export interface AttachmentRow {
+export interface SupportingDocRow {
   id: string;
   filename: string;
   mime_type: string;
@@ -16,28 +16,28 @@ export interface AttachmentRow {
 }
 
 /**
- * Course-level supplementary materials uploader.
+ * Product-level supporting docs uploader.
  *
  * These files (PDF / TXT / Markdown / DOCX) are RAG-only — fed to the AI
- * assistant for Q&A but never rendered in /learn. Use for rate sheets,
- * internal SOPs, supplier docs the agent shouldn't be forced to read
- * linearly.
+ * assistant for Q&A but never rendered in /learn. They are scoped to the
+ * whole product (operator), so one shared doc set feeds RAG across every
+ * course under this product. Use for rate sheets, internal SOPs, supplier
+ * docs the agent shouldn't be forced to read linearly.
  *
  * Upload posts to /api/upload/attachment which:
- *   1. Writes the file to R2 under attachments/<course_id>/<id>.<ext>
- *   2. Inserts course_attachments row with rag_status='pending'
+ *   1. Writes the file to R2 under attachments/<operator_id>/<id>.<ext>
+ *   2. Inserts course_attachments row (operator_id set, course_id NULL)
+ *      with rag_status='pending'
  *   3. Best-effort enqueues for the parse worker
  *
  * The rag_status badge reflects ingestion progress (pending → ready/failed).
  */
-export function AttachmentsPanel({
+export function SupportingDocsPanel({
   operatorSlug,
-  courseSlug,
-  attachments,
+  docs,
 }: {
   operatorSlug: string;
-  courseSlug: string;
-  attachments: AttachmentRow[];
+  docs: SupportingDocRow[];
 }) {
   const [pending, startTransition] = useTransition();
   const tr = useTr();
@@ -48,7 +48,6 @@ export function AttachmentsPanel({
     const fd = new FormData();
     fd.append("file", file);
     fd.append("operator_slug", operatorSlug);
-    fd.append("course_slug", courseSlug);
     startTransition(async () => {
       const r = await fetch("/api/upload/attachment", { method: "POST", body: fd });
       if (r.ok) {
@@ -64,31 +63,31 @@ export function AttachmentsPanel({
   return (
     <section className="rounded-2xl border border-slate-200 bg-white">
       <header className="px-5 py-4 border-b border-slate-200">
-        <div className="font-semibold text-[14px] text-slate-900">
+        <div className="font-semibold text-small text-slate-900">
           {tr.at_title}
-          <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-600 text-[10px] uppercase font-mono">
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-slate-900 text-micro uppercase font-mono">
             {tr.at_ai_only}
           </span>
         </div>
-        <div className="text-[12px] text-slate-500 mt-0.5">
-          {tr.at_subtitle}
+        <div className="text-caption text-slate-500 mt-0.5">
+          {tr.at_subtitle_product}
         </div>
       </header>
 
       <div className="divide-y divide-slate-100">
-        {attachments.length === 0 ? (
-          <div className="px-5 py-6 text-center text-[13px] text-slate-500">
+        {docs.length === 0 ? (
+          <div className="px-5 py-6 text-center text-small text-slate-500">
             {tr.at_empty}
           </div>
         ) : (
-          attachments.map((a) => (
+          docs.map((a) => (
             <div key={a.id} className="px-5 py-3 flex items-center gap-3">
-              <span className="text-slate-500 text-[18px] w-6 text-center" aria-hidden>
+              <span className="text-slate-500 text-title w-6 text-center" aria-hidden>
                 {iconFor(a.mime_type)}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-[13.5px] text-slate-900 truncate">{a.filename}</div>
-                <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                <div className="text-small text-slate-900 truncate">{a.filename}</div>
+                <div className="text-micro text-slate-500 flex items-center gap-2">
                   <span>{fmtBytes(a.size_bytes)}</span>
                   <span className="text-[#395a4a]">·</span>
                   <RagBadge status={a.rag_status} />
@@ -96,13 +95,12 @@ export function AttachmentsPanel({
                   <span>{fmt(tr.at_uploaded_rel, { rel: fmtRelative(a.created_at, tr) })}</span>
                 </div>
               </div>
-              <form action={deleteCourseAttachment} className="inline-flex">
+              <form action={deleteSupportingDoc} className="inline-flex">
                 <input type="hidden" name="operator_slug" value={operatorSlug} />
-                <input type="hidden" name="course_slug" value={courseSlug} />
                 <input type="hidden" name="attachment_id" value={a.id} />
                 <button
                   type="submit"
-                  className="px-2 py-1 rounded text-rose-600/80 hover:bg-rose-400/10 text-[11px]"
+                  className="px-2 py-1 rounded text-rose-600/80 hover:bg-rose-400/10 text-micro"
                   title={tr.at_delete}
                 >
                   ✕
@@ -114,11 +112,11 @@ export function AttachmentsPanel({
       </div>
 
       <div className="px-5 py-4 border-t border-slate-100">
-        <label className="flex items-center gap-3 text-[12px] text-slate-700 cursor-pointer">
-          <span className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-[12px] hover:bg-emerald-700">
+        <label className="flex items-center gap-3 text-caption text-slate-700 cursor-pointer">
+          <span className="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold text-caption hover:bg-emerald-700">
             {pending ? tr.at_uploading : tr.at_add_file}
           </span>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-micro text-slate-500">
             {tr.at_add_hint}
           </span>
           <input
@@ -138,12 +136,12 @@ function RagBadge({ status }: { status: string }) {
   const tr = useTr();
   const cfg =
     status === "ready"
-      ? { cls: "border-emerald-400/30 text-emerald-700 bg-emerald-600/[.06]", label: tr.at_rag_ready }
+      ? { cls: "border-emerald-400/30 text-slate-900 bg-emerald-600/[.06]", label: tr.at_rag_ready }
       : status === "failed"
         ? { cls: "border-rose-200 text-rose-600 bg-rose-400/[.06]", label: tr.at_rag_failed }
-        : { cls: "border-amber-400/30 text-amber-600 bg-amber-400/[.06]", label: tr.at_rag_pending };
+        : { cls: "border-amber-400/30 text-slate-900 bg-amber-400/[.06]", label: tr.at_rag_pending };
   return (
-    <span className={`px-1.5 py-0.5 rounded border text-[10px] font-mono uppercase ${cfg.cls}`}>
+    <span className={`px-1.5 py-0.5 rounded border text-micro font-mono uppercase ${cfg.cls}`}>
       {cfg.label}
     </span>
   );

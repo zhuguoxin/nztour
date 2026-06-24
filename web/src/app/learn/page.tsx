@@ -4,6 +4,8 @@ import { db, type CourseWithOperator } from "@/lib/db";
 import { TopBar } from "../_components/top-bar";
 import { bootstrapAdminFromEmailList } from "@/lib/roles";
 import { requireOnboarded } from "@/lib/onboarding";
+import { fallbackCover } from "@/lib/cover";
+import { mediaUrl } from "@/lib/media";
 import { t, fmt, type Dict } from "@/lib/i18n";
 import { FavoriteButton } from "./favorite-button";
 
@@ -110,8 +112,10 @@ export default async function LearnHome({
                 (SELECT COUNT(*) FROM user_favorites uf WHERE uf.user_id = ? AND uf.course_id = c.id) AS is_favorite
          FROM courses c
          JOIN operators o ON o.id = c.operator_id
+         LEFT JOIN suppliers s ON s.id = o.supplier_id
          LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
          WHERE c.status = 'published' AND o.status = 'active'
+           AND (s.id IS NULL OR s.status = 'active' OR e.course_id IS NOT NULL)
          ORDER BY (e.started_at IS NULL) ASC, e.started_at DESC, o.name, c.title`,
       )
       .bind(userId, userId, userId)
@@ -176,7 +180,9 @@ export default async function LearnHome({
                 o.name AS operator_name, o.slug AS operator_slug
          FROM courses c
          JOIN operators o ON o.id = c.operator_id
+         LEFT JOIN suppliers s ON s.id = o.supplier_id
          WHERE c.status='published' AND o.status='active'
+           AND (s.id IS NULL OR s.status='active')
          ORDER BY o.name, c.title`,
       )
       .all<CourseWithOperator>();
@@ -218,7 +224,7 @@ export default async function LearnHome({
   const operatorCount = new Set(cards.map((c) => c.operator_slug)).size;
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2">
@@ -233,13 +239,13 @@ export default async function LearnHome({
 
       <main className="px-5 sm:px-8 py-10 sm:py-12 max-w-6xl mx-auto">
         <div className="mb-7 sm:mb-9">
-          <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-1">
+          <div className="text-micro tracking-widest font-mono text-slate-700 mb-1">
             {tr.learn_label}
           </div>
-          <h1 className="text-[28px] sm:text-[34px] font-semibold tracking-tight text-slate-900">
+          <h1 className="text-h1 sm:text-h1 font-semibold tracking-tight text-slate-900">
             {fmt(tr.learn_welcome, { name: firstName })}
           </h1>
-          <p className="text-[14px] sm:text-[15px] text-slate-600 mt-1.5">
+          <p className="text-small sm:text-body text-slate-600 mt-1.5">
             {fmt(tr.learn_summary, { courses: cards.length, operators: operatorCount })}
           </p>
         </div>
@@ -255,7 +261,7 @@ export default async function LearnHome({
                 <Link
                   key={t.id}
                   href={`/learn?${params.toString()}`}
-                  className={`px-3 py-2 text-[13.5px] border-b-2 -mb-px ${
+                  className={`px-3 py-2 text-small border-b-2 -mb-px ${
                     active
                       ? "border-emerald-600 text-slate-900 font-semibold"
                       : "border-transparent text-slate-500 hover:text-slate-800"
@@ -263,8 +269,8 @@ export default async function LearnHome({
                 >
                   {tr[TAB_LABEL_KEYS[t.id]]}
                   <span
-                    className={`ml-1.5 text-[11px] font-mono ${
-                      active ? "text-emerald-700" : "text-slate-400"
+                    className={`ml-1.5 text-micro font-mono ${
+                      active ? "text-slate-900" : "text-slate-400"
                     }`}
                   >
                     {counts[t.id]}
@@ -280,7 +286,7 @@ export default async function LearnHome({
               name="q"
               defaultValue={q}
               placeholder={tr.lr_search_placeholder}
-              className="w-64 max-w-full px-3 py-1.5 rounded-md border border-slate-300 text-[13px] outline-none focus:border-emerald-500"
+              className="w-64 max-w-full px-3 py-1.5 rounded-md border border-slate-300 text-small outline-none focus:border-emerald-500"
             />
           </form>
         </div>
@@ -309,39 +315,36 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
     <div className="rounded-2xl overflow-hidden bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-[0_8px_32px_rgba(15,23,42,0.08)] transition relative">
       <Link href={`/learn/${c.operator_slug}/${c.slug}`} className="block">
         <div
-          className="h-32 relative overflow-hidden"
+          className="aspect-[16/9] relative overflow-hidden"
           style={{ background: c.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)" }}
         >
-          {c.cover_r2_key ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`/api/course-cover?id=${c.id}`}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : null}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={c.cover_r2_key ? mediaUrl(c.cover_r2_key) : fallbackCover(c.slug)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
           <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 z-10">
-            <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] font-medium text-emerald-200 border border-white/15">
+            <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-micro font-medium text-white/90 border border-white/15">
               {t.card_live}
             </span>
             {c.has_update ? (
-              <span className="px-2.5 py-1 rounded-full bg-amber-400/90 text-[#04241e] text-[11px] font-semibold border border-amber-300">
+              <span className="px-2.5 py-1 rounded-full bg-amber-400/90 text-[#04241e] text-micro font-semibold border border-amber-300">
                 {t.lr_card_updated}
               </span>
             ) : null}
           </div>
-          <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-between z-10">
-            <div className="text-[36px] leading-none drop-shadow">{c.cover_r2_key ? "" : c.emoji ?? "📚"}</div>
-            <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-[11px] text-white/85 border border-white/15">
+          <div className="absolute bottom-3.5 left-4 right-4 flex items-end justify-end z-10">
+            <span className="px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-micro text-white/85 border border-white/15">
               {c.operator_name}
             </span>
           </div>
         </div>
         <div className="p-5">
-          <div className="font-semibold text-[17px] text-slate-900 leading-snug line-clamp-2">
+          <div className="font-semibold text-title text-slate-900 leading-snug line-clamp-2">
             {c.title}
           </div>
-          <p className="text-[13px] text-slate-600 mt-1.5 line-clamp-2">{c.summary}</p>
+          <p className="text-small text-slate-600 mt-1.5 line-clamp-2">{c.summary}</p>
           {c.module_count > 0 && c.completed_modules > 0 ? (
             <div className="mt-3">
               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -350,19 +353,19 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+              <div className="text-micro text-slate-500 mt-1 flex items-center justify-between">
                 <span>
                   {fmt(t.lr_card_modules_progress, { done: c.completed_modules, total: c.module_count })}
                 </span>
-                <span className="text-emerald-700 font-mono">{pct}%</span>
+                <span className="text-slate-900 font-mono">{pct}%</span>
               </div>
             </div>
           ) : null}
-          <div className="flex items-center gap-2.5 mt-3.5 text-[13px] text-slate-500">
+          <div className="flex items-center gap-2.5 mt-3.5 text-small text-slate-500">
             {c.est_minutes ? <span>⏱ {fmt(t.card_minutes, { n: c.est_minutes })}</span> : null}
             <span className="text-slate-300">·</span>
             <span>{c.primary_lang.toUpperCase()}</span>
-            <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium">
+            <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-slate-900 text-micro font-medium">
               💬 AI
             </span>
           </div>
@@ -378,7 +381,7 @@ function CourseCard({ c, t }: { c: CourseCardData; t: { card_live: string; card_
 function BadgesGrid({ badges, tr }: { badges: BadgeCard[]; tr: Dict }) {
   if (badges.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500 text-[14px]">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500 text-small">
         {tr.lr_badges_empty}
       </div>
     );
@@ -396,18 +399,18 @@ function BadgesGrid({ badges, tr }: { badges: BadgeCard[]; tr: Dict }) {
             className="h-24 flex items-end p-3"
             style={{ background: b.cover_color ?? "linear-gradient(135deg,#1e293b 0%,#334155 100%)" }}
           >
-            <div className="text-[40px] leading-none drop-shadow">{b.emoji ?? "🏅"}</div>
+            <div className="text-display leading-none drop-shadow">{b.emoji ?? "🏅"}</div>
           </div>
           <div className="p-4">
-            <div className="text-[15px] font-semibold text-slate-900 leading-snug line-clamp-2">
+            <div className="text-body font-semibold text-slate-900 leading-snug line-clamp-2">
               {b.course_title}
             </div>
-            <div className="text-[12px] text-slate-500 mt-1.5 flex items-center gap-2">
+            <div className="text-caption text-slate-500 mt-1.5 flex items-center gap-2">
               <span>{b.operator_name}</span>
               <span className="text-slate-300">·</span>
               <span>{new Date(b.awarded_at * 1000).toISOString().slice(0, 10)}</span>
             </div>
-            <div className="mt-2 font-mono text-[11px] text-lime-700">{b.verify_code}</div>
+            <div className="mt-2 font-mono text-micro text-lime-700">{b.verify_code}</div>
           </div>
         </Link>
       ))}
@@ -426,7 +429,7 @@ function EmptyState({ tab, q, tr }: { tab: Tab; q: string; tr: Dict }) {
           ? tr.lr_empty_favorites
           : tr.lr_empty_all;
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500 text-[14px]">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500 text-small">
       {msg}
     </div>
   );

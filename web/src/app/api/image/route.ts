@@ -25,18 +25,33 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const blockId = url.searchParams.get("id");
   if (!blockId) return new Response("missing id", { status: 400 });
+  // ?n=<index> → serve an extra slide from images_json (multi-image block).
+  const nParam = url.searchParams.get("n");
 
   const row = await db()
-    .prepare(`SELECT image_r2_key FROM content_blocks WHERE id = ?`)
+    .prepare(`SELECT image_r2_key, images_json FROM content_blocks WHERE id = ?`)
     .bind(blockId)
-    .first<{ image_r2_key: string | null }>();
-  if (!row?.image_r2_key) return new Response("not found", { status: 404 });
+    .first<{ image_r2_key: string | null; images_json: string | null }>();
+
+  let r2Key: string | null = row?.image_r2_key ?? null;
+  if (nParam !== null) {
+    const n = parseInt(nParam, 10);
+    let list: string[] = [];
+    try {
+      const v = JSON.parse(row?.images_json ?? "[]");
+      if (Array.isArray(v)) list = v.filter((s): s is string => typeof s === "string");
+    } catch {
+      /* ignore */
+    }
+    r2Key = Number.isInteger(n) && n >= 0 && n < list.length ? list[n] : null;
+  }
+  if (!r2Key) return new Response("not found", { status: 404 });
 
   const { env } = getCloudflareContext();
-  const obj = await env.ASSETS_BUCKET.get(row.image_r2_key);
+  const obj = await env.ASSETS_BUCKET.get(r2Key);
   if (!obj) return new Response("not found", { status: 404 });
 
-  const ext = row.image_r2_key.split(".").pop()?.toLowerCase() ?? "";
+  const ext = r2Key.split(".").pop()?.toLowerCase() ?? "";
   const contentType =
     obj.httpMetadata?.contentType || EXT_TYPES[ext] || "application/octet-stream";
 

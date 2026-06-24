@@ -62,9 +62,9 @@ export function GlossaryModal({
       </button>
       <Modal open={open} onClose={close} title={tr.sp_p_nav_glossary} maxWidth="max-w-3xl">
         {err ? (
-          <div className="text-[13px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
+          <div className="text-small text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-3 text-center">{err}</div>
         ) : entries === null ? (
-          <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
+          <div className="text-small text-slate-400 text-center py-10">{tr.mp_loading}</div>
         ) : (
           <GlossaryPanel
             key={ver}

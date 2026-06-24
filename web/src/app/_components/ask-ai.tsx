@@ -157,12 +157,12 @@ export function AskAI({
     return (
       <div className="flex flex-col h-full bg-[#062b22]/40">
         <div className="px-5 py-4 border-b border-white/[.06] flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-md bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-white/85">
             <Sparkle />
           </div>
           <div className="flex-1">
-            <div className="text-[14px] font-semibold text-white">{sidebarTitle}</div>
-            <div className="text-[11px] text-[#86b69a]">{sidebarSubtitle}</div>
+            <div className="text-small font-semibold text-white">{sidebarTitle}</div>
+            <div className="text-micro text-[#86b69a]">{sidebarSubtitle}</div>
           </div>
         </div>
 
@@ -184,13 +184,13 @@ export function AskAI({
             />
           ) : null}
           {error ? (
-            <div className="text-[12px] text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-md px-3 py-2">
+            <div className="text-caption text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-md px-3 py-2">
               {error}
             </div>
           ) : null}
           <div ref={bottomRef} />
           {history.length === 0 && !current && !pending ? (
-            <div className="text-[13px] text-[#86b69a] text-center pt-8">{emptyState}</div>
+            <div className="text-small text-[#86b69a] text-center pt-8">{emptyState}</div>
           ) : null}
         </div>
 
@@ -209,7 +209,7 @@ export function AskAI({
                   key={ex}
                   onClick={() => ask(ex)}
                   disabled={pending}
-                  className="px-2 py-1 rounded-full bg-white/[.04] border border-white/[.08] text-[#c4e9d3] text-[11px] hover:bg-white/[.08] disabled:opacity-50"
+                  className="px-2 py-1 rounded-full bg-white/[.04] border border-white/[.08] text-[#c4e9d3] text-micro hover:bg-white/[.08] disabled:opacity-50"
                 >
                   {ex}
                 </button>
@@ -226,11 +226,11 @@ export function AskAI({
     <div className="max-w-2xl mx-auto">
       <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.06)] p-3 sm:p-4">
         <div className="flex items-start gap-3 sm:gap-4">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-lg bg-[#1f7a4e] border border-[#1f7a4e] text-white flex items-center justify-center">
             <Sparkle />
           </div>
           <div className="flex-1 text-left min-w-0">
-            <div className="text-[12px] sm:text-[13px] text-slate-500 mb-1">{tr.hero_ask_label}</div>
+            <div className="text-caption sm:text-small text-slate-500 mb-1">{tr.hero_ask_label}</div>
             <Composer
               value={input}
               onChange={setInput}
@@ -243,7 +243,7 @@ export function AskAI({
           <button
             onClick={() => ask(input)}
             disabled={pending || !input.trim()}
-            className="self-stretch px-3 sm:px-5 rounded-md font-semibold text-[13px] sm:text-[14px] bg-[#04241e] text-white hover:bg-[#0a3a2f] disabled:cursor-not-allowed"
+            className="self-stretch px-3 sm:px-5 rounded-md font-semibold text-small sm:text-small bg-[#04241e] text-white hover:bg-[#0a3a2f] disabled:cursor-not-allowed"
           >
             {pending ? "…" : askLabel}
           </button>
@@ -255,7 +255,7 @@ export function AskAI({
                 key={ex}
                 onClick={() => ask(ex)}
                 disabled={pending}
-                className="px-3 py-1.5 rounded-full bg-[#04241e]/[.06] border border-[#04241e]/20 text-[#04241e] text-[12px] sm:text-[13px] hover:bg-[#04241e]/[.12]"
+                className="px-3 py-1.5 rounded-full bg-[#04241e]/[.06] border border-[#04241e]/20 text-[#04241e] text-caption sm:text-small hover:bg-[#04241e]/[.12]"
               >
                 {ex}
               </button>
@@ -263,7 +263,7 @@ export function AskAI({
           </div>
         ) : null}
         {error ? (
-          <div className="mt-3 text-[12px] text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+          <div className="mt-3 text-caption text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
             {error}
           </div>
         ) : null}
@@ -302,12 +302,12 @@ function ConversationTurn({
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <div className="bg-emerald-700/40 border border-emerald-400/20 rounded-lg rounded-tr-sm px-3 py-2 max-w-[85%] text-[13px] text-white">
+        <div className="bg-emerald-700/40 border border-emerald-400/20 rounded-lg rounded-tr-sm px-3 py-2 max-w-[85%] text-small text-white">
           {item.question}
         </div>
       </div>
       {item.answer || streaming ? (
-        <div className="bg-[#0d4538] border border-white/[.06] rounded-lg rounded-tl-sm px-3.5 py-2.5 max-w-[92%] text-[13.5px] text-[#e6f5ec] leading-relaxed whitespace-pre-wrap">
+        <div className="bg-[#0d4538] border border-white/[.06] rounded-lg rounded-tl-sm px-3.5 py-2.5 max-w-[92%] text-small text-[#e6f5ec] leading-relaxed whitespace-pre-wrap">
           {renderAnswerWithCitations(item.answer, item.citations)}
           {streaming && !item.answer ? <span className="opacity-60">{thinkingText}</span> : null}
           {streaming && item.answer ? <span className="inline-block w-1.5 h-3 bg-emerald-300 align-middle ml-0.5 animate-pulse" /> : null}
@@ -317,8 +317,8 @@ function ConversationTurn({
         <div className="flex flex-col gap-1.5 max-w-[92%]">
           {item.source_kind === "web" ? (
             <div
-              className={`text-[12px] inline-flex items-center gap-1 ${
-                lightTheme ? "text-slate-800 font-medium" : "text-amber-300/90"
+              className={`text-caption inline-flex items-center gap-1 ${
+                lightTheme ? "text-slate-800 font-medium" : "text-white/80"
               }`}
             >
               <span>🌐</span>
@@ -333,19 +333,19 @@ function ConversationTurn({
                   href={c.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-300/10 border border-amber-300/30 text-amber-200 text-[11px] hover:bg-amber-300/20 max-w-full"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-300/10 border border-amber-300/30 text-white/80 text-micro hover:bg-amber-300/20 max-w-full"
                   title={c.snippet}
                 >
                   <span className="font-mono">[{i + 1}]</span>
                   <span>🌐</span>
                   <span className="truncate max-w-[200px]">{c.title}</span>
-                  <span className="text-amber-300/60">↗</span>
+                  <span className="text-white/50">↗</span>
                 </a>
               ) : (
                 <a
                   key={c.id}
                   href={`/learn/${c.operator_slug}/${c.course_slug}?m=${c.module_slug}`}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-400/10 border border-emerald-400/30 text-emerald-200 text-[11px] hover:bg-emerald-400/20"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-400/10 border border-emerald-400/30 text-white/80 text-micro hover:bg-emerald-400/20"
                   title={c.snippet}
                 >
                   <span className="font-mono">[{i + 1}]</span>
@@ -357,8 +357,8 @@ function ConversationTurn({
         </div>
       ) : item.source_kind === "no_answer" ? (
         <div
-          className={`text-[12px] ${
-            lightTheme ? "text-slate-800 font-medium" : "text-amber-300/80"
+          className={`text-caption ${
+            lightTheme ? "text-slate-800 font-medium" : "text-white/75"
           }`}
         >
           {noAnswerWarning}
@@ -396,7 +396,7 @@ function Composer({
         }}
         disabled={pending}
         placeholder={placeholder}
-        className="w-full bg-transparent text-[14px] sm:text-[16px] text-slate-900 outline-none placeholder:text-slate-400"
+        className="w-full bg-transparent text-small sm:text-body text-slate-900 outline-none placeholder:text-slate-400"
       />
     );
   }
@@ -413,12 +413,12 @@ function Composer({
         }}
         disabled={pending}
         placeholder={placeholder}
-        className="flex-1 bg-transparent text-[13.5px] text-white outline-none placeholder:text-[#5d9279]"
+        className="flex-1 bg-transparent text-small text-white outline-none placeholder:text-[#5d9279]"
       />
       <button
         onClick={onSubmit}
         disabled={pending || !value.trim()}
-        className="px-2 py-0.5 rounded-md text-[11px] font-mono text-[#04241e] bg-emerald-400 disabled:opacity-50"
+        className="px-2 py-0.5 rounded-md text-micro font-mono text-[#04241e] bg-emerald-400 disabled:opacity-50"
       >
         ↵
       </button>
@@ -431,8 +431,8 @@ function Sparkle() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path
         d="M12 3l1.8 4.7L18 9.5l-4.2 1.8L12 16l-1.8-4.7L6 9.5l4.2-1.8L12 3z"
-        fill="#34d399"
-        stroke="#10b981"
+        fill="currentColor"
+        stroke="currentColor"
         strokeWidth="0.5"
         strokeLinejoin="round"
       />
@@ -459,7 +459,7 @@ function renderAnswerWithCitations(text: string, citations: CitationView[]): Rea
           href={c.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block align-super text-[10px] font-mono px-1 rounded bg-amber-300/20 text-amber-200 hover:bg-amber-300/40"
+          className="inline-block align-super text-micro font-mono px-1 rounded bg-amber-300/20 text-white/80 hover:bg-amber-300/40"
           title={c.snippet}
         >
           {n}
@@ -470,7 +470,7 @@ function renderAnswerWithCitations(text: string, citations: CitationView[]): Rea
         <a
           key={`c-${m.index}`}
           href={`/learn/${c.operator_slug}/${c.course_slug}?m=${c.module_slug}`}
-          className="inline-block align-super text-[10px] font-mono px-1 rounded bg-emerald-400/20 text-emerald-200 hover:bg-emerald-400/40"
+          className="inline-block align-super text-micro font-mono px-1 rounded bg-emerald-400/20 text-white/80 hover:bg-emerald-400/40"
           title={c.snippet}
         >
           {n}
@@ -478,7 +478,7 @@ function renderAnswerWithCitations(text: string, citations: CitationView[]): Rea
       );
     } else {
       parts.push(
-        <span key={`c-${m.index}`} className="align-super text-[10px] opacity-50">[{n}]</span>,
+        <span key={`c-${m.index}`} className="align-super text-micro opacity-50">[{n}]</span>,
       );
     }
     lastIdx = re.lastIndex;

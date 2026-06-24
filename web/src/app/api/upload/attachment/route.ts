@@ -1,18 +1,18 @@
 /**
- * POST /api/upload/attachment — upload a supplementary material to a course.
+ * POST /api/upload/attachment — upload a supporting doc to a PRODUCT.
  *
- * Attachments are RAG-only: they're never rendered in /learn but their
+ * Supporting docs are RAG-only: they're never rendered in /learn but their
  * content feeds the AI assistant. Use cases: rate sheets, FAQs, internal
  * SOPs, supplier docs — anything the AI should know but the learner
- * doesn't need to read linearly.
+ * doesn't need to read linearly. They are scoped to the whole product
+ * (operator) so one shared doc set feeds RAG across all of its courses.
  *
  * Body (multipart):
  *   file           — PDF / TXT / Markdown / DOCX ≤ 16 MB
- *   operator_slug  — for role gating
- *   course_slug    — target course
+ *   operator_slug  — target product (also used for role gating)
  *
  * Storage layout in R2:
- *   attachments/<course_id>/<attachment_id>.<ext>
+ *   attachments/<operator_id>/<attachment_id>.<ext>
  *
  * The row is written with rag_status='pending'. A separate ingestion
  * worker (PARSE_QUEUE consumer) will chunk + embed + write to Vectorize.
@@ -44,9 +44,8 @@ export async function POST(req: Request) {
     return new Response("invalid multipart body", { status: 400 });
   }
   const operatorSlug = String(form.get("operator_slug") ?? "");
-  const courseSlug = String(form.get("course_slug") ?? "");
   const file = form.get("file");
-  if (!operatorSlug || !courseSlug || !(file instanceof Blob)) {
+  if (!operatorSlug || !(file instanceof Blob)) {
     return new Response("missing required fields", { status: 400 });
   }
   if (file.size > MAX_BYTES) {
@@ -65,27 +64,24 @@ export async function POST(req: Request) {
     return new Response(msg, { status: msg === "unauthorised" ? 401 : 403 });
   }
 
-  const course = await db()
-    .prepare(`SELECT id FROM courses WHERE operator_id = ? AND slug = ?`)
-    .bind(access.operatorId, courseSlug)
-    .first<{ id: string }>();
-  if (!course) return new Response("course not found", { status: 404 });
-
+  const operatorId = access.operatorId;
   const id = shortId("att");
-  const key = `attachments/${course.id}/${id}.${ext}`;
+  const key = `attachments/${operatorId}/${id}.${ext}`;
 
   const { env } = getCloudflareContext();
   await env.ASSETS_BUCKET.put(key, file.stream(), {
     httpMetadata: { contentType: mime },
   });
 
+  // Product-scoped: operator_id set, course_id NULL (shared across all the
+  // product's courses).
   await db()
     .prepare(
       `INSERT INTO course_attachments
-         (id, course_id, filename, mime_type, size_bytes, r2_key, uploaded_by, rag_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+         (id, operator_id, course_id, filename, mime_type, size_bytes, r2_key, uploaded_by, rag_status)
+       VALUES (?, ?, NULL, ?, ?, ?, ?, ?, 'pending')`,
     )
-    .bind(id, course.id, filename.slice(0, 200), mime, file.size, key, access.userId)
+    .bind(id, operatorId, filename.slice(0, 200), mime, file.size, key, access.userId)
     .run();
 
   // Best-effort enqueue for the RAG parser. If PARSE_QUEUE consumer isn't
@@ -95,7 +91,7 @@ export async function POST(req: Request) {
     await env.PARSE_QUEUE.send({
       kind: "attachment",
       attachment_id: id,
-      course_id: course.id,
+      operator_id: operatorId,
       r2_key: key,
       mime,
     });
@@ -103,6 +99,6 @@ export async function POST(req: Request) {
     // Swallow — consumer may not be deployed yet; row state is recoverable.
   }
 
-  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}`);
   return Response.json({ ok: true, id });
 }

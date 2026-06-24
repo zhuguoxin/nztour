@@ -15,16 +15,16 @@ interface ContactCardProps {
 function ContactCard({ label, email, description }: ContactCardProps) {
   return (
     <div className="rounded-xl border border-slate-200 p-5 hover:border-emerald-300 transition">
-      <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-1">
+      <div className="text-micro tracking-widest font-mono text-slate-700 mb-1">
         {label}
       </div>
       <a
         href={`mailto:${email}`}
-        className="text-[16px] font-semibold text-slate-900 hover:text-emerald-700 break-all"
+        className="text-body font-semibold text-slate-900 hover:text-slate-900 break-all"
       >
         {email}
       </a>
-      <p className="text-[13.5px] text-slate-600 mt-2 leading-relaxed">{description}</p>
+      <p className="text-small text-slate-600 mt-2 leading-relaxed">{description}</p>
     </div>
   );
 }
@@ -33,7 +33,7 @@ export default async function ContactPage() {
   const locale = await getLocale();
   const zh = locale === "zh-CN";
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar
         breadcrumb={
           <span className="flex items-center gap-2 min-w-0">
@@ -45,13 +45,13 @@ export default async function ContactPage() {
       />
 
       <main className="px-5 sm:px-8 py-12 sm:py-16 max-w-3xl mx-auto">
-        <div className="text-[11px] tracking-widest font-mono text-emerald-700/70 mb-2">
+        <div className="text-micro tracking-widest font-mono text-slate-700 mb-2">
           {zh ? "联系" : "CONTACT"}
         </div>
-        <h1 className="text-[32px] sm:text-[40px] font-semibold tracking-tight text-slate-900">
+        <h1 className="text-h1 sm:text-display font-semibold tracking-tight text-slate-900">
           {zh ? "与我们联系" : "Talk to us"}
         </h1>
-        <p className="text-[16px] text-slate-600 mt-4 leading-relaxed">
+        <p className="text-body text-slate-600 mt-4 leading-relaxed">
           {zh
             ? "我们力争在一个工作日内回复每一条咨询。请根据你的来意,选择下方最合适的联系渠道。"
             : "We aim to acknowledge every enquiry within one Working Day. Please use the route below that best matches your reason for contacting us."}
@@ -115,8 +115,8 @@ export default async function ContactPage() {
         </div>
 
         <section className="mt-12 pt-8 border-t border-slate-200">
-          <h2 className="text-[18px] font-semibold text-slate-900 mb-2">{zh ? "注册办公地址" : "Registered office"}</h2>
-          <p className="text-[14px] text-slate-600 leading-relaxed">
+          <h2 className="text-title font-semibold text-slate-900 mb-2">{zh ? "注册办公地址" : "Registered office"}</h2>
+          <p className="text-small text-slate-600 leading-relaxed">
             Libretour Limited
             <br />
             NZBN [TBD-NZBN]

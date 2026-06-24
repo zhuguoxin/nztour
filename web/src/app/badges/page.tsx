@@ -13,7 +13,7 @@ export default async function BadgesPage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
 
       {/* Hero */}
@@ -28,20 +28,20 @@ export default async function BadgesPage() {
         />
         <div className="relative px-5 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center max-w-4xl mx-auto">
           <div className="inline-flex items-center justify-center gap-2 mb-6 sm:mb-7">
-            <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] sm:text-[13px] font-medium font-mono tracking-widest">
+            <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-slate-900 text-caption sm:text-small font-medium font-mono tracking-widest">
               {tr.bd_label}
             </span>
           </div>
-          <h1 className="text-[36px] sm:text-[48px] md:text-[60px] leading-[1.1] sm:leading-[1.05] font-semibold tracking-tight text-slate-900">
+          <h1 className="text-display sm:text-display md:text-[60px] leading-[1.1] sm:leading-[1.05] font-semibold tracking-tight text-slate-900">
             {tr.bd_title}
           </h1>
-          <p className="mt-5 sm:mt-6 text-[15px] sm:text-[17px] md:text-[19px] text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 sm:mt-6 text-body sm:text-title md:text-h3 text-slate-600 max-w-2xl mx-auto leading-relaxed">
             {tr.bd_subtitle}
           </p>
           <div className="mt-9 sm:mt-11">
             <Link
               href="/explore"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-[15px] sm:text-[16px] font-medium transition-colors"
+              className="inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-body sm:text-body font-medium transition-colors"
             >
               {tr.bd_cta}
             </Link>
@@ -50,7 +50,7 @@ export default async function BadgesPage() {
       </section>
 
       {/* Stats strip */}
-      <section className="px-5 sm:px-8 pb-12 sm:pb-16 max-w-[1400px] mx-auto">
+      <section className="px-5 sm:px-8 pb-12 sm:pb-16 max-w-[1300px] mx-auto">
         <div className="grid grid-cols-3 gap-3 sm:gap-5">
           <Kpi value={stats.total} label={tr.bd_stat_awarded} />
           <Kpi value={stats.learners} label={tr.bd_stat_learners} />
@@ -59,8 +59,8 @@ export default async function BadgesPage() {
       </section>
 
       {/* How to earn */}
-      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1400px] mx-auto">
-        <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900 text-center mb-8 sm:mb-10">
+      <section className="px-5 sm:px-8 pb-16 sm:pb-20 max-w-[1300px] mx-auto">
+        <h2 className="text-h3 sm:text-h2 font-semibold text-slate-900 text-center mb-8 sm:mb-10">
           {tr.bd_how_heading}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
@@ -71,13 +71,13 @@ export default async function BadgesPage() {
       </section>
 
       {/* Badge wall */}
-      <section className="px-5 sm:px-8 pb-20 sm:pb-24 max-w-[1400px] mx-auto">
-        <h2 className="text-[20px] sm:text-[24px] font-semibold text-slate-900 mb-5 sm:mb-7">
+      <section className="px-5 sm:px-8 pb-20 sm:pb-24 max-w-[1300px] mx-auto">
+        <h2 className="text-h3 sm:text-h2 font-semibold text-slate-900 mb-5 sm:mb-7">
           {tr.bd_wall_heading}
         </h2>
 
         {badges.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-[15px] text-slate-500">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-body text-slate-500">
             {tr.bd_wall_empty}
           </div>
         ) : (
@@ -92,31 +92,31 @@ export default async function BadgesPage() {
                   className="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-[22px] leading-none shrink-0" aria-hidden>
+                    <span className="text-h2 leading-none shrink-0" aria-hidden>
                       🏅
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] text-slate-500">
+                      <p className="text-small text-slate-500">
                         <span className="text-slate-700 font-medium">
                           {b.learner_name ?? tr.bd_anon_learner}
                         </span>{" "}
                         {tr.bd_earned}
                       </p>
-                      <p className="mt-1 text-[15px] font-semibold text-slate-900 leading-snug">
+                      <p className="mt-1 text-body font-semibold text-slate-900 leading-snug">
                         {b.course_title}
                       </p>
-                      <p className="mt-0.5 text-[12.5px] text-slate-400">
+                      <p className="mt-0.5 text-caption text-slate-400">
                         {b.operator_name}
                       </p>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-mono text-slate-400">
+                    <span className="text-micro font-mono text-slate-600">
                       {date}
                     </span>
                     <Link
                       href={`/verify/${b.verify_code}`}
-                      className="text-[13px] font-medium text-emerald-700 hover:text-emerald-800 whitespace-nowrap"
+                      className="text-small font-medium text-slate-900 hover:text-slate-900 whitespace-nowrap"
                     >
                       {tr.bd_verify}
                     </Link>
@@ -138,10 +138,10 @@ export default async function BadgesPage() {
 function Kpi({ value, label }: { value: number; label: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 text-center">
-      <div className="text-[28px] sm:text-[40px] font-semibold tracking-tight text-slate-900">
+      <div className="text-h1 sm:text-display font-semibold tracking-tight text-slate-900">
         {value}
       </div>
-      <div className="mt-1 text-[12px] sm:text-[14px] text-slate-500">
+      <div className="mt-1 text-caption sm:text-small text-slate-500">
         {label}
       </div>
     </div>
@@ -159,13 +159,13 @@ function Step({
 }) {
   return (
     <div className="text-center md:text-left">
-      <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[16px] font-semibold mb-4">
+      <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-slate-900 text-body font-semibold mb-4">
         {n}
       </div>
-      <h3 className="text-[16px] sm:text-[17px] font-semibold text-slate-900">
+      <h3 className="text-body sm:text-title font-semibold text-slate-900">
         {title}
       </h3>
-      <p className="mt-1.5 text-[14px] text-slate-600 leading-relaxed">
+      <p className="mt-1.5 text-small text-slate-600 leading-relaxed">
         {body}
       </p>
     </div>

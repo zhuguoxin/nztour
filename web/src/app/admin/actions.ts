@@ -250,3 +250,33 @@ export async function rejectSupplier(form: FormData) {
     .run();
   revalidatePath("/admin");
 }
+
+/** Disable a supplier: status → suspended. Its products/courses drop out of
+ *  every public listing and its pages 404 (learners with history get a
+ *  "delisted" notice instead). Re-enable with enableSupplier. */
+export async function disableSupplier(form: FormData) {
+  await requireAdmin();
+  const id = String(form.get("supplier_id") ?? "");
+  if (!id) throw new Error("missing supplier_id");
+  await db()
+    .prepare(`UPDATE suppliers SET status = 'suspended' WHERE id = ?`)
+    .bind(id)
+    .run();
+  revalidatePath("/admin");
+  revalidatePath("/products");
+  revalidatePath("/explore");
+}
+
+/** Re-enable a disabled supplier: status → active. */
+export async function enableSupplier(form: FormData) {
+  await requireAdmin();
+  const id = String(form.get("supplier_id") ?? "");
+  if (!id) throw new Error("missing supplier_id");
+  await db()
+    .prepare(`UPDATE suppliers SET status = 'active' WHERE id = ?`)
+    .bind(id)
+    .run();
+  revalidatePath("/admin");
+  revalidatePath("/products");
+  revalidatePath("/explore");
+}

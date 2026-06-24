@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { mediaUrl } from "@/lib/media";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTr } from "@/lib/i18n-provider";
@@ -67,7 +68,7 @@ export function MediaPicker({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center text-[12px] ${dark ? "text-[#86b69a]" : "text-slate-400"}`}>
+          <div className={`w-full h-full flex items-center justify-center text-caption ${dark ? "text-[#86b69a]" : "text-slate-400"}`}>
             {tr.mp_choose}
           </div>
         )}
@@ -77,7 +78,7 @@ export function MediaPicker({
           type="button"
           onClick={() => setOpen(true)}
           disabled={pending}
-          className={`px-2.5 py-1 rounded-md text-[12px] border disabled:opacity-50 ${
+          className={`px-2.5 py-1 rounded-md text-caption border disabled:opacity-50 ${
             dark
               ? "bg-white/[.06] border-white/[.12] text-[#d8f0e1] hover:bg-white/[.10]"
               : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
@@ -90,7 +91,7 @@ export function MediaPicker({
             type="button"
             onClick={() => persist(null, null)}
             disabled={pending}
-            className={`text-[12px] disabled:opacity-50 ${dark ? "text-rose-300 hover:underline" : "text-rose-600 hover:underline"}`}
+            className={`text-caption disabled:opacity-50 ${dark ? "text-rose-300 hover:underline" : "text-rose-600 hover:underline"}`}
           >
             {tr.mp_remove}
           </button>
@@ -191,7 +192,7 @@ function PickerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-slate-200 flex-wrap">
-          <div className="inline-flex rounded-lg border border-slate-200 p-0.5 text-[12.5px]">
+          <div className="inline-flex rounded-lg border border-slate-200 p-0.5 text-caption">
             <button
               type="button"
               onClick={() => setTab("supplier")}
@@ -209,7 +210,7 @@ function PickerModal({
           </div>
           <div className="flex items-center gap-2">
             {tab === "supplier" ? (
-              <label className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-[13px] font-semibold hover:bg-emerald-700 cursor-pointer">
+              <label className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-small font-semibold hover:bg-emerald-700 cursor-pointer">
                 {uploading ? tr.mp_uploading : `+ ${tr.mp_upload}`}
                 <input
                   type="file"
@@ -223,7 +224,7 @@ function PickerModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-600 text-[13px] hover:bg-slate-100"
+              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-600 text-small hover:bg-slate-100"
             >
               {tr.mp_close}
             </button>
@@ -232,14 +233,14 @@ function PickerModal({
 
         <div className="p-5 overflow-y-auto">
           {err ? (
-            <div className="text-[13px] text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-3">
+            <div className="text-small text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-3">
               {err}
             </div>
           ) : null}
           {current === null ? (
-            <div className="text-[13px] text-slate-400 text-center py-10">{tr.mp_loading}</div>
+            <div className="text-small text-slate-400 text-center py-10">{tr.mp_loading}</div>
           ) : current.length === 0 ? (
-            <div className="text-[13px] text-slate-400 text-center py-10">
+            <div className="text-small text-slate-400 text-center py-10">
               {tab === "platform" ? tr.mp_platform_empty : tr.mp_empty}
             </div>
           ) : (
@@ -248,12 +249,12 @@ function PickerModal({
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => onPick({ r2_key: a.r2_key, url: `${serveBase}?id=${a.id}` })}
+                  onClick={() => onPick({ r2_key: a.r2_key, url: mediaUrl(a.r2_key) })}
                   className="group relative aspect-video rounded-lg overflow-hidden border border-slate-200 hover:border-emerald-500 hover:ring-2 hover:ring-emerald-500/30"
                   title={a.filename ?? ""}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${serveBase}?id=${a.id}`} alt={a.filename ?? ""} className="w-full h-full object-cover" />
+                  <img src={mediaUrl(a.r2_key)} alt={a.filename ?? ""} className="w-full h-full object-cover" />
                   <span className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/10 transition" />
                 </button>
               ))}

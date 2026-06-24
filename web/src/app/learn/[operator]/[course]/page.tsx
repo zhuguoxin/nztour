@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import { mediaUrl } from "@/lib/media";
 import Link from "next/link";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getCourseBySlug, getModuleBlocks, parseAiExamples, type ModuleRow } from "@/lib/db";
+import { getCourseBySlug, getModuleBlocks, type ModuleRow } from "@/lib/db";
 import { resolveTheme, themeCssVars } from "@/lib/theme";
 import {
   ensureUser,
@@ -9,6 +10,8 @@ import {
   getModuleProgress,
 } from "@/lib/progress";
 import { ModuleReader } from "./module-reader";
+import { QuizPanel } from "./quiz-panel";
+import { Delisted } from "../../../_components/delisted";
 import { completeModuleAction } from "./actions";
 import { TopBar } from "../../../_components/top-bar";
 import { AskAI } from "../../../_components/ask-ai";
@@ -38,6 +41,27 @@ export default async function CoursePage({ params, searchParams }: Props) {
   const data = await getCourseBySlug(operatorSlug, courseSlug);
   if (!data) notFound();
   const { operator, course, modules } = data;
+
+  // Disabled supplier: the course is delisted. A learner who has history here
+  // (enrollment or badge) gets a friendly "delisted" notice so their /learn and
+  // badge links don't dead-end; everyone else gets a plain 404.
+  if (data.supplierStatus === "suspended") {
+    const { userId: uid } = await auth();
+    let hasHistory = false;
+    if (uid) {
+      const h = await (await import("@/lib/db")).db()
+        .prepare(
+          `SELECT 1 AS x FROM enrollments WHERE user_id = ? AND course_id = ?
+           UNION SELECT 1 FROM badges WHERE user_id = ? AND course_id = ? LIMIT 1`,
+        )
+        .bind(uid, course.id, uid, course.id)
+        .first<{ x: number }>();
+      hasHistory = !!h;
+    }
+    if (!hasHistory) notFound();
+    const tr0 = await t();
+    return <Delisted message={tr0.delisted_course} backLabel={tr0.delisted_back} />;
+  }
 
   // Draft-gate: only operator/supplier/admin members can preview a draft.
   // We let the call to requireOperatorMembership throw for unauthorised users
@@ -94,18 +118,31 @@ export default async function CoursePage({ params, searchParams }: Props) {
   const progressPct = Math.round((completedCount / modules.length) * 100);
   const tr = await t();
 
-  // End-of-chapter quiz: pull up to QUIZ_N random questions from the active
-  // module's pool. Empty pool → ModuleReader falls back to dwell+click flow.
+  // Course-level final exam: a single question pool for the whole course,
+  // sat once after all chapters via a synthetic "Final exam" nav entry.
+  // Pull up to QUIZ_N random questions from the course pool.
+  const EXAM_SLUG = "__exam__";
   const QUIZ_N = 3;
-  const { results: quizPool = [] } = await (await import("@/lib/db")).db()
+  const { results: examPool = [] } = await (await import("@/lib/db")).db()
     .prepare(
-      `SELECT id, prompt, choices_json FROM quiz_questions WHERE module_id = ?`,
+      `SELECT id, prompt, choices_json FROM quiz_questions WHERE course_id = ?`,
     )
-    .bind(active.id)
+    .bind(course.id)
     .all<{ id: string; prompt: string; choices_json: string }>();
+  const hasExam = examPool.length > 0;
+  const examActive = moduleSlug === EXAM_SLUG && hasExam;
+  // Already passed? Drives the "passed" chip on the exam entry + reader.
+  const examPassed = hasExam
+    ? !!(await (await import("@/lib/db")).db()
+        .prepare(
+          `SELECT 1 AS p FROM quiz_attempts WHERE course_id = ? AND user_id = ? AND passed = 1 LIMIT 1`,
+        )
+        .bind(course.id, userId)
+        .first<{ p: number }>())
+    : false;
   // Fisher-Yates shuffle deterministic per request (no Math.random concerns
   // here — server-side, fine).
-  const shuffled = quizPool.slice();
+  const shuffled = examPool.slice();
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -225,7 +262,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
 
   return (
     <div
-      className="min-h-screen font-sans antialiased text-[16px]"
+      className="min-h-screen font-sans antialiased text-body"
       style={themeCssVars(theme)}
     >
       <TopBar
@@ -259,7 +296,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
       <div className="op-theme-scope">
 
       {isPreview ? (
-        <div className="bg-amber-400/20 border-b border-amber-400/40 text-amber-100 text-[12.5px] font-mono px-4 py-1.5 flex items-center justify-center gap-2">
+        <div className="bg-amber-400/20 border-b border-amber-400/40 text-[#e6f5ec] text-caption font-mono px-4 py-1.5 flex items-center justify-center gap-2">
           {fmt(tr.lr_preview_banner, { status: course.status })}
         </div>
       ) : null}
@@ -269,7 +306,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
           langs={availableLangs}
           chosen={chosenLang}
           basePath={`/learn/${operatorSlug}/${courseSlug}`}
-          activeSlug={activeLocal.slug}
+          activeSlug={examActive ? EXAM_SLUG : activeLocal.slug}
           preserveQuery={{ preview: isPreview ? "1" : undefined }}
           label={tr.lr_language}
         />
@@ -278,7 +315,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
       {/* Mobile-only: floating "Ask AI" pill that scrolls the sidebar into view. */}
       <a
         href="#course-ai"
-        className="lg:hidden fixed right-4 bottom-4 z-20 px-3.5 py-2.5 rounded-full bg-emerald-400 text-[#04241e] font-semibold text-[13px] shadow-[0_8px_24px_rgba(0,0,0,.4)] flex items-center gap-1.5"
+        className="lg:hidden fixed right-4 bottom-4 z-20 px-3.5 py-2.5 rounded-full bg-[#0e3b2c] text-[#ffffff] font-semibold text-small shadow-[0_8px_24px_rgba(0,0,0,.4)] flex items-center gap-1.5"
       >
         <span>💬</span>
         <span>{tr.mobile_ask_ai}</span>
@@ -294,15 +331,15 @@ export default async function CoursePage({ params, searchParams }: Props) {
             <div className="mb-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`/api/operator-logo?slug=${encodeURIComponent(operatorSlug)}`}
+                src={mediaUrl(theme.logoR2Key)}
                 alt={operator.name}
                 className="max-h-9 max-w-[180px] object-contain"
               />
             </div>
           ) : null}
-          <div className="text-[11px] font-mono text-emerald-300/70 mb-2">{tr.course_label}</div>
-          <div className="text-[15px] font-semibold mb-1 text-white">{courseTitleLocal}</div>
-          <div className="text-[13px] text-[#a7d4b6] mb-4">{operator.name}</div>
+          <div className="text-micro font-mono text-white mb-2">{tr.course_label}</div>
+          <div className="text-body font-semibold mb-1 text-white">{courseTitleLocal}</div>
+          <div className="text-small text-[#a7d4b6] mb-4">{operator.name}</div>
 
           <div className="h-1.5 bg-black/30 rounded-full overflow-hidden mb-2">
             <div
@@ -313,7 +350,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
               }}
             />
           </div>
-          <div className="flex items-center justify-between text-[13px] text-[#a7d4b6] mb-5">
+          <div className="flex items-center justify-between text-small text-[#a7d4b6] mb-5">
             <span>
               {completedCount} / {modules.length}
             </span>
@@ -322,7 +359,7 @@ export default async function CoursePage({ params, searchParams }: Props) {
             </span>
           </div>
 
-          <div className="text-[11px] font-mono text-emerald-300/70 mb-2">{tr.modules_label}</div>
+          <div className="text-micro font-mono text-white mb-2">{tr.modules_label}</div>
           <ModuleList
             modules={localizedModules}
             active={activeLocal}
@@ -335,43 +372,62 @@ export default async function CoursePage({ params, searchParams }: Props) {
             lockedLabel={tr.lr_module_locked}
             minLabel={tr.lr_module_min}
             lockedTooltip={tr.lr_module_locked_tooltip}
+            examEntry={
+              hasExam
+                ? {
+                    slug: EXAM_SLUG,
+                    label: tr.lr_exam_title,
+                    sublabel: examPassed ? tr.lr_quiz_passed_chip : tr.lr_exam_sub,
+                    active: examActive,
+                    passed: examPassed,
+                  }
+                : null
+            }
           />
         </aside>
 
-        {/* Reader */}
-        <ModuleReader
-          module={activeLocal}
-          blocks={localizedBlocks}
-          courseSlug={courseSlug}
-          operatorSlug={operatorSlug}
-          modules={localizedModules}
-          courseId={course.id}
-          quizQuestions={quizQuestions}
-          narrationSrc={narrationSrc}
-          isCompleted={!!progressMap.get(active.id)?.completed_at}
-          onComplete={onComplete}
-          tr={{
-            module_position: tr.module_position,
-            completed_chip: tr.completed_chip,
-            no_blocks: tr.no_blocks,
-            badge_earned: tr.badge_earned,
-            verify_code_prefix: tr.verify_code_prefix,
-            back_to_courses: tr.back_to_courses,
-            start_module: tr.start_module,
-            stay_to_complete_a: tr.stay_to_complete_a,
-            stay_to_complete_b: tr.stay_to_complete_b,
-            already_completed: tr.already_completed,
-            ready_to_complete: tr.ready_to_complete,
-            saving: tr.saving,
-            done: tr.done,
-            mark_complete: tr.mark_complete,
-            mark_complete_and_continue: tr.mark_complete_and_continue,
-            continue_to: tr.continue_to,
-            video_caption_default: tr.video_caption_default,
-            video_not_uploaded: tr.video_not_uploaded,
-            video_setup_hint: tr.video_setup_hint,
-          }}
-        />
+        {/* Reader — module content, or the course final exam */}
+        {examActive ? (
+          <ExamReader
+            courseId={course.id}
+            questions={quizQuestions}
+            passed={examPassed}
+            title={tr.lr_exam_title}
+            intro={tr.lr_exam_intro}
+          />
+        ) : (
+          <ModuleReader
+            module={activeLocal}
+            blocks={localizedBlocks}
+            courseSlug={courseSlug}
+            operatorSlug={operatorSlug}
+            modules={localizedModules}
+            narrationSrc={narrationSrc}
+            isCompleted={!!progressMap.get(active.id)?.completed_at}
+            onComplete={onComplete}
+            tr={{
+              module_position: tr.module_position,
+              completed_chip: tr.completed_chip,
+              no_blocks: tr.no_blocks,
+              badge_earned: tr.badge_earned,
+              verify_code_prefix: tr.verify_code_prefix,
+              back_to_courses: tr.back_to_courses,
+              start_module: tr.start_module,
+              stay_to_complete_a: tr.stay_to_complete_a,
+              stay_to_complete_b: tr.stay_to_complete_b,
+              already_completed: tr.already_completed,
+              ready_to_complete: tr.ready_to_complete,
+              saving: tr.saving,
+              done: tr.done,
+              mark_complete: tr.mark_complete,
+              mark_complete_and_continue: tr.mark_complete_and_continue,
+              continue_to: tr.continue_to,
+              video_caption_default: tr.video_caption_default,
+              video_not_uploaded: tr.video_not_uploaded,
+              video_setup_hint: tr.video_setup_hint,
+            }}
+          />
+        )}
 
         {/* AI sidebar — scoped to this course */}
         <aside
@@ -389,17 +445,40 @@ export default async function CoursePage({ params, searchParams }: Props) {
               noAnswerWarning={tr.ai_no_answer}
               askLabel={tr.ai_ask_button_inline}
               placeholder={fmt(tr.ai_sidebar_placeholder, { title: course.title })}
-              examples={
-                parseAiExamples(course.ai_examples_json).slice(0, 4).length > 0
-                  ? parseAiExamples(course.ai_examples_json).slice(0, 4)
-                  : [tr.hero_example_1, tr.hero_example_3, tr.hero_example_2]
-              }
+              examples={[]}
             />
           </div>
           <FeedbackWidget courseId={course.id} moduleId={active.id} />
         </aside>
       </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Course final exam, rendered in the reader column when the synthetic
+ * "Final exam" nav entry is active. Wraps the client QuizPanel in the
+ * reader's dark surface.
+ */
+function ExamReader({
+  courseId,
+  questions,
+  passed,
+  title,
+  intro,
+}: {
+  courseId: string;
+  questions: { id: string; prompt: string; choices: string[] }[];
+  passed: boolean;
+  title: string;
+  intro: string;
+}) {
+  return (
+    <div className="px-5 sm:px-8 py-6 lg:min-h-[calc(100vh-65px)]">
+      <h1 className="text-h2 sm:text-h2 font-semibold text-white mb-1">{title}</h1>
+      <p className="text-small text-[#a7d4b6] mb-5 max-w-2xl">{intro}</p>
+      <QuizPanel courseId={courseId} questions={questions} isCompleted={passed} />
     </div>
   );
 }
@@ -416,6 +495,7 @@ function ModuleList({
   lockedLabel,
   minLabel,
   lockedTooltip,
+  examEntry,
 }: {
   modules: ModuleRow[];
   active: ModuleRow;
@@ -428,6 +508,7 @@ function ModuleList({
   lockedLabel: string;
   minLabel: string;
   lockedTooltip: string;
+  examEntry: { slug: string; label: string; sublabel: string; active: boolean; passed: boolean } | null;
 }) {
   return (
     <div className="space-y-1">
@@ -456,12 +537,11 @@ function ModuleList({
           <>
             <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot}`} />
             <div className="flex-1 min-w-0">
-              <div className={`text-[14px] ${isActive ? "font-medium text-white" : "text-[#d8f0e1]"}`}>
+              <div className={`text-small ${isActive ? "font-medium text-white" : "text-[#d8f0e1]"}`}>
                 {m.title}
               </div>
-              <div className="text-[11px] text-[#86b69a]">
-                {m.est_minutes ? fmt(minLabel, { n: m.est_minutes }) : ""}
-                {labelExtras}
+              <div className="text-micro text-[#86b69a]">
+                {labelExtras.replace(/^ · /, "")}
               </div>
             </div>
           </>
@@ -487,6 +567,33 @@ function ModuleList({
           </Link>
         );
       })}
+
+      {examEntry ? (
+        <Link
+          href={`${basePath}?${new URLSearchParams({
+            m: examEntry.slug,
+            ...(langQuery ? { lang: langQuery } : {}),
+            ...(isPreview ? { preview: "1" } : {}),
+          }).toString()}`}
+          className={`flex items-start gap-3 px-3 py-2.5 rounded-lg mt-1 ${
+            examEntry.active
+              ? "bg-emerald-400/10 border border-emerald-400/30"
+              : "border border-emerald-400/20 hover:bg-emerald-400/[.06]"
+          }`}
+        >
+          <div
+            className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+              examEntry.passed ? "bg-emerald-300" : "bg-emerald-400"
+            }`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className={`text-small ${examEntry.active ? "font-medium text-white" : "text-white"}`}>
+              📝 {examEntry.label}
+            </div>
+            <div className="text-micro text-[#86b69a]">{examEntry.sublabel}</div>
+          </div>
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -513,7 +620,7 @@ function LangPicker({
 }) {
   return (
     <div className="border-b border-white/[.06] px-4 py-2 flex items-center gap-2 overflow-x-auto">
-      <span className="text-[11px] font-mono text-emerald-300/70 uppercase shrink-0">{label}</span>
+      <span className="text-micro font-mono text-white uppercase shrink-0">{label}</span>
       {langs.map((code) => {
         const params = new URLSearchParams({ m: activeSlug, lang: code });
         for (const [k, v] of Object.entries(preserveQuery)) {
@@ -524,10 +631,10 @@ function LangPicker({
           <Link
             key={code}
             href={`${basePath}?${params.toString()}`}
-            className={`px-2.5 py-1 rounded-md text-[12px] font-medium border transition shrink-0 ${
+            className={`px-2.5 py-1 rounded-md text-caption font-medium border transition shrink-0 ${
               isOn
-                ? "bg-emerald-400 text-[#04241e] border-emerald-400"
-                : "border-white/[.10] text-[#d8f0e1] hover:bg-white/[.06]"
+                ? "bg-[#0e3b2c] text-[#ffffff] border-[#0e3b2c]"
+                : "border-white/[.10] text-white hover:bg-white/[.06]"
             }`}
           >
             {nativeLabel(code)}
@@ -539,16 +646,18 @@ function LangPicker({
 }
 
 function nativeLabel(code: string): string {
+  // English names only — some users can't tell Korean from Japanese by script,
+  // so we avoid native labels and use unambiguous English language names.
   const map: Record<string, string> = {
     en: "English",
-    "zh-CN": "简体中文",
-    "zh-TW": "繁體中文",
-    ja: "日本語",
-    ko: "한국어",
-    es: "Español",
-    fr: "Français",
-    de: "Deutsch",
-    pt: "Português",
+    "zh-CN": "Chinese (Simplified)",
+    "zh-TW": "Chinese (Traditional)",
+    ja: "Japanese",
+    ko: "Korean",
+    es: "Spanish",
+    fr: "French",
+    de: "German",
+    pt: "Portuguese",
   };
   return map[code] ?? code;
 }
@@ -558,15 +667,15 @@ async function EmptyCourse({ operator, title }: { operator: string; title: strin
   return (
     <div className="min-h-screen bg-[#04241e] text-[#f0fdf4] font-sans antialiased flex items-center justify-center">
       <div className="text-center max-w-md px-6">
-        <div className="text-[11px] font-mono text-emerald-300/70 mb-3 tracking-widest">{tr.lr_draft_label}</div>
-        <h1 className="text-[26px] font-semibold text-white">{title}</h1>
+        <div className="text-micro font-mono text-white mb-3 tracking-widest">{tr.lr_draft_label}</div>
+        <h1 className="text-h2 font-semibold text-white">{title}</h1>
         <p className="text-[#a7d4b6] mt-1.5">{operator}</p>
-        <p className="mt-6 text-[14px] text-[#a7d4b6] leading-relaxed">
+        <p className="mt-6 text-small text-[#a7d4b6] leading-relaxed">
           {tr.lr_draft_blurb}
         </p>
         <Link
           href="/learn"
-          className="mt-7 inline-block px-4 py-2 rounded-md border border-white/[.10] text-[14px] text-[#d8f0e1] hover:bg-white/[.06]"
+          className="mt-7 inline-block px-4 py-2 rounded-md border border-white/[.10] text-small text-[#d8f0e1] hover:bg-white/[.06]"
         >
           {tr.lr_back_to_courses_arrow}
         </Link>

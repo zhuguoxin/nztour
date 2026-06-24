@@ -39,6 +39,9 @@ export async function POST(req: Request) {
   const courseSlug = String(form.get("course_slug") ?? "");
   const moduleId = String(form.get("module_id") ?? "");
   const blockId = String(form.get("block_id") ?? "");
+  // append=1 → add an extra slide (stored in images_json) instead of replacing
+  // the block's primary image. Lets an image block become a multi-image slider.
+  const append = String(form.get("append") ?? "") === "1";
   const file = form.get("file");
   if (!operatorSlug || !blockId || !moduleId || !courseSlug) {
     return new Response("missing required fields", { status: 400 });
@@ -65,19 +68,41 @@ export async function POST(req: Request) {
   // course_id for the R2 key layout.
   const row = await db()
     .prepare(
-      `SELECT cb.id, cb.image_r2_key, m.course_id
+      `SELECT cb.id, cb.image_r2_key, cb.images_json, m.course_id
        FROM content_blocks cb
        JOIN modules m ON m.id = cb.module_id
        WHERE cb.id = ? AND cb.module_id = ?`,
     )
     .bind(blockId, moduleId)
-    .first<{ id: string; image_r2_key: string | null; course_id: string }>();
+    .first<{ id: string; image_r2_key: string | null; images_json: string | null; course_id: string }>();
   if (!row) return new Response("block not found", { status: 404 });
 
   const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : type === "image/gif" ? "gif" : "jpg";
-  const key = `images/${row.course_id}/${blockId}.${ext}`;
-
   const { env } = getCloudflareContext();
+
+  if (append) {
+    // Extra slide — unique key, push onto images_json. Leaves the primary alone.
+    const rand = Math.random().toString(36).slice(2, 8);
+    const key = `images/${row.course_id}/${blockId}-${rand}.${ext}`;
+    await env.ASSETS_BUCKET.put(key, file.stream(), { httpMetadata: { contentType: type } });
+    let list: string[] = [];
+    try {
+      const v = JSON.parse(row.images_json ?? "[]");
+      if (Array.isArray(v)) list = v.filter((s): s is string => typeof s === "string");
+    } catch {
+      /* reset on corrupt */
+    }
+    list.push(key);
+    await db()
+      .prepare(`UPDATE content_blocks SET images_json = ? WHERE id = ?`)
+      .bind(JSON.stringify(list), blockId)
+      .run();
+    revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+    revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+    return Response.json({ ok: true, key, images: list });
+  }
+
+  const key = `images/${row.course_id}/${blockId}.${ext}`;
   // Best-effort delete old object (if extension differs).
   if (row.image_r2_key && row.image_r2_key !== key) {
     await env.ASSETS_BUCKET.delete(row.image_r2_key).catch(() => {});

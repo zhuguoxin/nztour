@@ -44,50 +44,26 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
           : null;
   return (
     <header className="sticky top-0 z-10 border-b border-white/[.06] bg-[#04241e]/95 backdrop-blur-md py-3">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
-      {/* === Mobile row 1: Logo + Lang + Sign in + Get certified === */}
+      <div className="max-w-[1300px] mx-auto px-4 sm:px-8">
+      {/* === Mobile row 1: Logo + Lang + primary action + identity ===
+          Kept deliberately light — console / admin links live in row 3 so this
+          row never overflows on a narrow phone. */}
       <div className="flex items-center justify-between gap-2 md:hidden">
         <Logo compact />
         <div className="flex items-center gap-1.5 shrink-0">
           <LocaleSwitcher current={locale} compact label={tr.language_label} />
           <Show when="signed-out">
-            <span className="[&>button]:px-2 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-[13px]">
+            <span className="[&>button]:px-2 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-small">
               <SignInButton mode="modal">{tr.sign_in}</SignInButton>
             </span>
-            <span className="[&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-[13px]">
+            <span className="[&>button]:px-2.5 [&>button]:py-1.5 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-small">
               <SignUpButton mode="modal">{tr.get_certified}</SignUpButton>
             </span>
           </Show>
           <Show when="signed-in">
-            {supplierHref ? (
-              <Link
-                href={supplierHref}
-                className="px-2 py-1.5 rounded-md border border-teal-300/30 text-teal-200 hover:bg-teal-300/10 text-[12px]"
-                title={tr.nav_supplier_console}
-              >
-                {tr.nav_supplier_short}
-              </Link>
-            ) : null}
-            {operatorHref ? (
-              <Link
-                href={operatorHref}
-                className="px-2 py-1.5 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[12px]"
-                title={tr.nav_operator_console}
-              >
-                {tr.nav_operator_short}
-              </Link>
-            ) : null}
-            {role.isAdmin ? (
-              <Link
-                href="/admin"
-                className="px-2 py-1.5 rounded-md border border-lime-300/30 text-lime-300 hover:bg-lime-300/10 text-[12px]"
-              >
-                {tr.nav_admin}
-              </Link>
-            ) : null}
             <Link
               href="/learn"
-              className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[13px]"
+              className="px-2.5 py-1.5 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-small"
             >
               {tr.nav_learning_short}
             </Link>
@@ -96,12 +72,12 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
         </div>
       </div>
 
-      {/* === Mobile row 2: nav (or breadcrumb when on a deep page) === */}
+      {/* === Mobile row 2: primary nav (or breadcrumb when on a deep page) === */}
       <div className="mt-2.5 md:hidden -mx-1">
         {breadcrumb ? (
-          <div className="px-1 text-[13px] text-[#a7d4b6] truncate">{breadcrumb}</div>
+          <div className="px-1 text-small text-[#a7d4b6] truncate">{breadcrumb}</div>
         ) : (
-          <nav className="flex items-center justify-between gap-1 text-[14px] text-[#a7d4b6]">
+          <nav className="flex items-center justify-between gap-1 text-small text-[#a7d4b6]">
             <Link href="/explore" className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_explore}</Link>
             <Link href="/products" className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_operators}</Link>
             <Link href="/badges" className="flex-1 text-center px-1 py-1.5 hover:text-white">{tr.nav_badges}</Link>
@@ -110,13 +86,44 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
         )}
       </div>
 
+      {/* === Mobile row 3: console / admin chips — only for users who have them.
+          Horizontally scrollable so any combination stays on one tidy line. === */}
+      {!breadcrumb && (supplierHref || operatorHref || role.isAdmin) ? (
+        <div className="mt-2 md:hidden flex items-center gap-1.5 overflow-x-auto -mx-1 px-1">
+          {supplierHref ? (
+            <Link
+              href={supplierHref}
+              className="shrink-0 px-2.5 py-1 rounded-md border border-teal-300/30 text-teal-200 hover:bg-teal-300/10 text-caption"
+            >
+              {tr.nav_supplier_console}
+            </Link>
+          ) : null}
+          {operatorHref ? (
+            <Link
+              href={operatorHref}
+              className="shrink-0 px-2.5 py-1 rounded-md border border-emerald-400/30 text-white/90 hover:bg-emerald-400/10 text-caption"
+            >
+              {tr.nav_operator_console}
+            </Link>
+          ) : null}
+          {role.isAdmin ? (
+            <Link
+              href="/admin"
+              className="shrink-0 px-2.5 py-1 rounded-md border border-white/25 text-white/90 hover:bg-white/10 text-caption"
+            >
+              {tr.nav_admin}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* === Desktop single row === */}
       <div className="hidden md:flex items-center justify-between gap-6">
         <Logo />
         {breadcrumb ? (
-          <div className="flex-1 min-w-0 text-[14px] text-[#a7d4b6] truncate">{breadcrumb}</div>
+          <div className="flex-1 min-w-0 text-small text-[#a7d4b6] truncate">{breadcrumb}</div>
         ) : (
-          <nav className="flex items-center gap-1 text-[15px] text-[#a7d4b6]">
+          <nav className="flex items-center gap-1 text-body text-[#a7d4b6]">
             <Link href="/explore" className="px-3.5 py-2 hover:text-white">{tr.nav_explore}</Link>
             <Link href="/products" className="px-3.5 py-2 hover:text-white">{tr.nav_operators}</Link>
             <Link href="/badges" className="px-3.5 py-2 hover:text-white">{tr.nav_badges}</Link>
@@ -126,10 +133,10 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
         <div className="flex items-center gap-2 shrink-0">
           <LocaleSwitcher current={locale} label={tr.language_label} />
           <Show when="signed-out">
-            <span className="[&>button]:px-3.5 [&>button]:py-2 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-[14px]">
+            <span className="[&>button]:px-3.5 [&>button]:py-2 [&>button]:rounded-md [&>button]:text-[#d8f0e1] [&>button]:hover:bg-white/[.06] [&>button]:text-small">
               <SignInButton mode="modal">{tr.sign_in}</SignInButton>
             </span>
-            <span className="[&>button]:px-4 [&>button]:py-2 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-[14px]">
+            <span className="[&>button]:px-4 [&>button]:py-2 [&>button]:rounded-md [&>button]:bg-emerald-400 [&>button]:text-[#04241e] [&>button]:font-semibold [&>button]:hover:bg-emerald-300 [&>button]:text-small">
               <SignUpButton mode="modal">{tr.get_certified}</SignUpButton>
             </span>
           </Show>
@@ -137,7 +144,7 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             {supplierHref ? (
               <Link
                 href={supplierHref}
-                className="px-3 py-2 rounded-md border border-teal-300/30 text-teal-200 hover:bg-teal-300/10 text-[13px]"
+                className="px-3 py-2 rounded-md border border-teal-300/30 text-teal-200 hover:bg-teal-300/10 text-small"
               >
                 {tr.nav_supplier_console}
               </Link>
@@ -145,7 +152,7 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             {operatorHref ? (
               <Link
                 href={operatorHref}
-                className="px-3 py-2 rounded-md border border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10 text-[13px]"
+                className="px-3 py-2 rounded-md border border-emerald-400/30 text-white/90 hover:bg-emerald-400/10 text-small"
               >
                 {tr.nav_operator_console}
               </Link>
@@ -153,14 +160,14 @@ export async function TopBar({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
             {role.isAdmin ? (
               <Link
                 href="/admin"
-                className="px-3 py-2 rounded-md border border-lime-300/30 text-lime-300 hover:bg-lime-300/10 text-[13px]"
+                className="px-3 py-2 rounded-md border border-white/25 text-white/90 hover:bg-white/10 text-small"
               >
                 {tr.nav_admin}
               </Link>
             ) : null}
             <Link
               href="/learn"
-              className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-[14px]"
+              className="px-4 py-2 rounded-md bg-emerald-400 text-[#04241e] font-semibold hover:bg-emerald-300 text-small"
             >
               {tr.nav_learning_button}
             </Link>

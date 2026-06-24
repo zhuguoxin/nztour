@@ -47,17 +47,17 @@ export default async function ProductSettingsPage({
   const members = membersRes.ok ? membersRes.members ?? [] : [];
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-[16px]">
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased text-body">
       <TopBar />
       <main className="px-5 sm:px-8 py-8 max-w-4xl mx-auto">
-        <Link href={`/product/${slug}`} className="text-[13px] text-emerald-700 hover:underline">
+        <Link href={`/product/${slug}`} className="text-small text-slate-900 hover:underline">
           {tr.pp_back_dashboard}
         </Link>
         <div className="flex items-baseline justify-between gap-3 mt-2 mb-5 flex-wrap">
-          <h1 className="text-[24px] sm:text-[28px] font-semibold tracking-tight text-slate-900">
+          <h1 className="text-h2 sm:text-h1 font-semibold tracking-tight text-slate-900">
             {tr.pp_heading}
           </h1>
-          <Link href={`/product/${slug}#branding`} className="text-[12.5px] text-slate-600 hover:text-slate-900 hover:underline">
+          <Link href={`/product/${slug}#branding`} className="text-caption text-slate-600 hover:text-slate-900 hover:underline">
             {tr.pp_visuals_hint}
           </Link>
         </div>

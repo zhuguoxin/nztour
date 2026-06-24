@@ -7,6 +7,7 @@ import { requireOperatorMembership } from "@/lib/roles";
 import { synthesizeAndStore, isValidLang } from "@/lib/tts";
 import { translateBatch, translateOne, readI18nMap, writeI18nMap, isSupportedLang } from "@/lib/translate";
 import { glossaryForTranslation } from "@/lib/glossary";
+import { estimateReadingMinutes } from "@/lib/reading-time";
 
 function slugify(s: string): string {
   return s
@@ -74,22 +75,109 @@ async function saveCourseInternal(form: FormData, forceStatus?: "draft" | "publi
   const summary = String(form.get("summary") ?? "").trim().slice(0, 1000) || null;
   const formStatus = String(form.get("status") ?? "draft");
   const status = forceStatus ?? (["draft", "published"].includes(formStatus) ? formStatus : "draft");
-  const est = parseInt(String(form.get("est_minutes") ?? "0"), 10) || null;
   if (!title) throw new Error("title required");
 
   // Emoji is no longer an editable cover option; leave any stored value alone.
   await db()
     .prepare(
       `UPDATE courses
-         SET title = ?, summary = ?, status = ?, est_minutes = ?, updated_at = unixepoch()
+         SET title = ?, summary = ?, status = ?, updated_at = unixepoch()
        WHERE id = ?`,
     )
-    .bind(title, summary, status, est, course.id)
+    .bind(title, summary, status, course.id)
     .run();
+
+  // One "Save changes" persists the whole editor page: the module title and
+  // every block edit are submitted on the same form via inputs associated with
+  // form="course-form" (named mod:<id>:title and blk:<id>:<field>).
+  await applyEditorPayload(form, course.id);
+
+  // Recompute the reading-time estimate from the just-saved content so the
+  // "~N min" on cards / learner pages stays accurate (no manual entry).
+  await refreshCourseEstMinutes(course.id);
 
   revalidatePath(`/product/${operatorSlug}`);
   revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
   revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+/** Persist per-module + per-block edits carried on the course form. Inputs are
+ *  named `mod:<id>:title` and `blk:<id>:<field>` (text_md | caption | video_uid
+ *  | narrate), plus a hidden `blk:<id>:_present` per block so an unchecked
+ *  narrate box (absent key) is correctly stored as 0. No-op when absent. */
+async function applyEditorPayload(form: FormData, courseId: string) {
+  const moduleTitles: { id: string; title: string }[] = [];
+  type BlockEdit = {
+    present: boolean;
+    text_md: string | null;
+    caption: string | null;
+    video_uid: string | null;
+    narrate: number;
+  };
+  const blocks = new Map<string, BlockEdit>();
+  const ensure = (id: string): BlockEdit => {
+    let b = blocks.get(id);
+    if (!b) {
+      b = { present: false, text_md: null, caption: null, video_uid: null, narrate: 0 };
+      blocks.set(id, b);
+    }
+    return b;
+  };
+  for (const [key, raw] of form.entries()) {
+    const val = typeof raw === "string" ? raw : "";
+    if (key.startsWith("mod:")) {
+      const [, id, field] = key.split(":");
+      if (field === "title") moduleTitles.push({ id, title: val.trim().slice(0, 200) });
+    } else if (key.startsWith("blk:")) {
+      const [, id, field] = key.split(":");
+      const b = ensure(id);
+      if (field === "_present") b.present = true;
+      else if (field === "text_md") b.text_md = val.trim() || null;
+      else if (field === "caption") b.caption = val.trim().slice(0, 500) || null;
+      else if (field === "video_uid") b.video_uid = val.trim() || null;
+      else if (field === "narrate") b.narrate = 1;
+    }
+  }
+
+  const stmts = [];
+  for (const m of moduleTitles) {
+    if (!m.title) continue;
+    stmts.push(
+      db().prepare(`UPDATE modules SET title = ? WHERE id = ? AND course_id = ?`).bind(m.title, m.id, courseId),
+    );
+  }
+  for (const [id, b] of blocks) {
+    if (!b.present) continue;
+    stmts.push(
+      db()
+        .prepare(
+          `UPDATE content_blocks SET text_md = ?, caption = ?, video_uid = ?, narrate = ?
+           WHERE id = ? AND module_id IN (SELECT id FROM modules WHERE course_id = ?)`,
+        )
+        .bind(b.text_md, b.caption, b.video_uid, b.narrate, id, courseId),
+    );
+  }
+  if (stmts.length) await db().batch(stmts);
+}
+
+/** Recompute courses.est_minutes from the course's current text content
+ *  (block body + captions). Keeps the learner-facing "~N min" auto-estimated. */
+async function refreshCourseEstMinutes(courseId: string) {
+  const { results } = await db()
+    .prepare(
+      `SELECT cb.text_md, cb.caption
+         FROM content_blocks cb
+         JOIN modules m ON m.id = cb.module_id
+        WHERE m.course_id = ?`,
+    )
+    .bind(courseId)
+    .all<{ text_md: string | null; caption: string | null }>();
+  const texts = (results ?? []).flatMap((r) => [r.text_md, r.caption]);
+  const est = estimateReadingMinutes(texts) || null;
+  await db()
+    .prepare(`UPDATE courses SET est_minutes = ? WHERE id = ?`)
+    .bind(est, courseId)
+    .run();
 }
 
 /** Save changes, keeping the current status. */
@@ -608,14 +696,13 @@ export async function clearBlockAudio(form: FormData) {
 }
 
 // =========================================================================
-//  QUIZ AUTHORING (per-module question pool)
+//  QUIZ AUTHORING (course-level final-exam question pool)
 // =========================================================================
 
 export async function createQuizQuestion(form: FormData) {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
-  const moduleId = String(form.get("module_id") ?? "");
-  await authModule(operatorSlug, courseSlug, moduleId);
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
   const prompt = String(form.get("prompt") ?? "").trim().slice(0, 500);
   const choices = JSON.parse(String(form.get("choices_json") ?? "[]"));
   const correct = parseInt(String(form.get("correct_idx") ?? "0"), 10);
@@ -629,16 +716,16 @@ export async function createQuizQuestion(form: FormData) {
   }
   const id = shortId("q");
   const next = await db()
-    .prepare(`SELECT COALESCE(MAX(position), -1) + 1 AS n FROM quiz_questions WHERE module_id = ?`)
-    .bind(moduleId)
+    .prepare(`SELECT COALESCE(MAX(position), -1) + 1 AS n FROM quiz_questions WHERE course_id = ?`)
+    .bind(courseId)
     .first<{ n: number }>();
   await db()
     .prepare(
       `INSERT INTO quiz_questions
-         (id, module_id, prompt, choices_json, correct_idx, explanation, position)
+         (id, course_id, prompt, choices_json, correct_idx, explanation, position)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
-    .bind(id, moduleId, prompt, JSON.stringify(choices), correct, explanation, next?.n ?? 0)
+    .bind(id, courseId, prompt, JSON.stringify(choices), correct, explanation, next?.n ?? 0)
     .run();
   revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
@@ -646,12 +733,11 @@ export async function createQuizQuestion(form: FormData) {
 export async function deleteQuizQuestion(form: FormData) {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
-  const moduleId = String(form.get("module_id") ?? "");
   const id = String(form.get("question_id") ?? "");
-  await authModule(operatorSlug, courseSlug, moduleId);
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
   await db()
-    .prepare(`DELETE FROM quiz_questions WHERE id = ? AND module_id = ?`)
-    .bind(id, moduleId)
+    .prepare(`DELETE FROM quiz_questions WHERE id = ? AND course_id = ?`)
+    .bind(id, courseId)
     .run();
   revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
 }
@@ -740,15 +826,17 @@ async function generateModuleAudioCore(input: {
     requestedLang === "auto" || !requestedLang ? mod.course_primary_lang : requestedLang;
 
   // The narration script auto-tracks the module's text — concatenate the
-  // module's text/callout blocks at generation time (no manual import). For a
-  // non-primary language, translate that primary text (with the glossary).
+  // text/callout blocks flagged for narration (narrate = 1). For a non-primary
+  // language we read EXACTLY the same per-block translation the learner sees
+  // (text_md_i18n), so narration and on-screen text never diverge. Any block
+  // not yet translated is translated here in one batch (same model/glossary).
   const { results: textBlocks = [] } = await db()
     .prepare(
-      `SELECT text_md FROM content_blocks
-       WHERE module_id = ? AND kind IN ('text','callout') ORDER BY position, id`,
+      `SELECT text_md, text_md_i18n FROM content_blocks
+       WHERE module_id = ? AND kind IN ('text','callout') AND narrate = 1 ORDER BY position, id`,
     )
     .bind(moduleId)
-    .all<{ text_md: string | null }>();
+    .all<{ text_md: string | null; text_md_i18n: string | null }>();
   const primaryScript = textBlocks
     .map((b) => (b.text_md ?? "").trim())
     .filter(Boolean)
@@ -758,13 +846,28 @@ async function generateModuleAudioCore(input: {
   let script = primaryScript;
   if (targetLang !== mod.course_primary_lang) {
     const glossary = await glossaryForTranslation(mod.operator_id, targetLang);
-    const out = await translateBatch(
-      mod.course_primary_lang,
-      targetLang,
-      [{ id: "0", text: primaryScript }],
-      glossary,
-    );
-    script = out[0]?.translation?.trim() || primaryScript;
+    const perBlock: string[] = textBlocks.map((b) => {
+      try {
+        const m = JSON.parse(b.text_md_i18n ?? "{}");
+        const t = m?.[targetLang];
+        return typeof t === "string" ? t.trim() : "";
+      } catch {
+        return "";
+      }
+    });
+    const missing = textBlocks
+      .map((b, i) => ({ i, text: (b.text_md ?? "").trim() }))
+      .filter((x) => x.text && !perBlock[x.i]);
+    if (missing.length) {
+      const out = await translateBatch(
+        mod.course_primary_lang,
+        targetLang,
+        missing.map((x) => ({ id: String(x.i), text: x.text })),
+        glossary,
+      );
+      for (const r of out) perBlock[Number(r.id)] = (r.translation ?? "").trim();
+    }
+    script = perBlock.filter(Boolean).join("\n\n") || primaryScript;
   }
 
   const voice = await db()
@@ -987,38 +1090,50 @@ export async function regenerateModule(input: {
   }
 }
 
-export async function generateModuleQuiz(form: FormData) {
+export async function generateCourseQuiz(form: FormData) {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
-  const moduleId = String(form.get("module_id") ?? "");
   const count = Math.max(1, Math.min(10, parseInt(String(form.get("count") ?? "5"), 10) || 5));
-  await authModule(operatorSlug, courseSlug, moduleId);
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
 
-  // Pull the module + all training-visibility text blocks as the source.
-  const mod = await db()
-    .prepare(`SELECT title, summary FROM modules WHERE id = ?`)
-    .bind(moduleId)
-    .first<{ title: string; summary: string | null }>();
-  if (!mod) throw new Error("module not found");
+  // Pull the whole course — every module + its training-visibility text
+  // blocks — as the source for a course-level final exam.
+  const course = await db()
+    .prepare(`SELECT title FROM courses WHERE id = ?`)
+    .bind(courseId)
+    .first<{ title: string }>();
+  const { results: mods = [] } = await db()
+    .prepare(`SELECT id, title, summary FROM modules WHERE course_id = ? ORDER BY position, id`)
+    .bind(courseId)
+    .all<{ id: string; title: string; summary: string | null }>();
+  if (mods.length === 0) throw new Error("Course has no modules to generate a quiz from.");
 
+  const ph = mods.map(() => "?").join(",");
   const { results: blocks = [] } = await db()
     .prepare(
-      `SELECT kind, text_md, caption FROM content_blocks
-       WHERE module_id = ? AND visibility = 'training' AND text_md IS NOT NULL
-       ORDER BY position`,
+      `SELECT module_id, text_md, caption FROM content_blocks
+       WHERE module_id IN (${ph}) AND visibility = 'training' AND text_md IS NOT NULL
+       ORDER BY module_id, position`,
     )
-    .bind(moduleId)
-    .all<{ kind: string; text_md: string | null; caption: string | null }>();
+    .bind(...mods.map((m) => m.id))
+    .all<{ module_id: string; text_md: string | null; caption: string | null }>();
+  const blocksByMod: Record<string, string[]> = {};
+  for (const b of blocks) {
+    (blocksByMod[b.module_id] ??= []).push(b.text_md ?? "", b.caption ?? "");
+  }
   const source = [
-    `# ${mod.title}`,
-    mod.summary ?? "",
-    ...blocks.flatMap((b) => [b.text_md ?? "", b.caption ?? ""]),
+    `# ${course?.title ?? courseSlug}`,
+    ...mods.flatMap((m) => [
+      `## ${m.title}`,
+      m.summary ?? "",
+      ...(blocksByMod[m.id] ?? []),
+    ]),
   ]
     .filter(Boolean)
     .join("\n\n")
-    .slice(0, 8000);
+    .slice(0, 16000);
   if (source.length < 100) {
-    throw new Error("Module has too little text content to generate a quiz from.");
+    throw new Error("Course has too little text content to generate a quiz from.");
   }
 
   const { getCloudflareContext } = await import("@opennextjs/cloudflare");
@@ -1030,7 +1145,7 @@ export async function generateModuleQuiz(form: FormData) {
   const resp = await client.messages.create({
     model: "claude-sonnet-4-5-20250929",
     max_tokens: 4096,
-    system: `You write end-of-chapter quiz questions for B2B travel-trade training content.
+    system: `You write final-exam quiz questions for a whole B2B travel-trade training course (covering all of its chapters).
 
 Rules:
 - Each question tests a SPECIFIC, factual detail from the source (price tier, time window, lift name, what to recommend for X customer type, etc.). No generic "what is the main idea" filler.
@@ -1069,8 +1184,8 @@ ${source}`,
   if (!Array.isArray(parsed)) throw new Error("expected JSON array");
 
   const baseRow = await db()
-    .prepare(`SELECT COALESCE(MAX(position), -1) AS n FROM quiz_questions WHERE module_id = ?`)
-    .bind(moduleId)
+    .prepare(`SELECT COALESCE(MAX(position), -1) AS n FROM quiz_questions WHERE course_id = ?`)
+    .bind(courseId)
     .first<{ n: number }>();
   let pos = (baseRow?.n ?? -1) + 1;
   const stmts = parsed
@@ -1089,12 +1204,12 @@ ${source}`,
       db()
         .prepare(
           `INSERT INTO quiz_questions
-             (id, module_id, prompt, choices_json, correct_idx, explanation, position)
+             (id, course_id, prompt, choices_json, correct_idx, explanation, position)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           shortId("q"),
-          moduleId,
+          courseId,
           q.prompt.slice(0, 500),
           JSON.stringify(q.choices.map((c) => String(c).slice(0, 200))),
           q.correct_idx,
@@ -1292,10 +1407,15 @@ export async function generateCourseLanguage(input: {
   courseSlug: string;
   lang: string;
   voiceId: string;
+  /** When false, skip modules that already have narration in this language. */
+  overwrite?: boolean;
+  /** Called once per module processed (narrated or skipped) for progress. */
+  onProgress?: () => Promise<void> | void;
 }): Promise<{ ok: boolean; error?: string; modules?: number }> {
   try {
     const { operatorSlug, courseSlug, voiceId } = input;
     const lang = input.lang;
+    const overwrite = input.overwrite !== false;
     if (!isSupportedLang(lang)) throw new Error("unsupported language");
     if (!voiceId) throw new Error("no voice selected");
     const { courseId } = await authCourse(operatorSlug, courseSlug);
@@ -1317,24 +1437,40 @@ export async function generateCourseLanguage(input: {
       await translateCourseCore(fd);
     }
 
-    // 2) Narration — one voice for every module that actually has text.
+    // 2) Narration — one voice for every module that actually has text. When
+    //    overwrite=false, skip modules that already have narration in this lang.
     const { results: mods = [] } = await db()
-      .prepare(`SELECT id FROM modules WHERE course_id = ? ORDER BY position, id`)
+      .prepare(`SELECT id, narration_audio_i18n FROM modules WHERE course_id = ? ORDER BY position, id`)
       .bind(courseId)
-      .all<{ id: string }>();
+      .all<{ id: string; narration_audio_i18n: string | null }>();
     let done = 0;
     for (const m of mods) {
-      const has = await db()
-        .prepare(
-          `SELECT 1 FROM content_blocks
-           WHERE module_id = ? AND kind IN ('text','callout')
-             AND trim(coalesce(text_md,'')) <> '' LIMIT 1`,
-        )
-        .bind(m.id)
-        .first<{ "1": number }>();
-      if (!has) continue;
-      await generateModuleAudioCore({ operatorSlug, courseSlug, moduleId: m.id, lang, voiceId });
-      done++;
+      // try/finally so progress is bumped once per module even when we `continue`
+      try {
+        let skip = false;
+        if (!overwrite) {
+          try {
+            const map = JSON.parse(m.narration_audio_i18n ?? "{}");
+            if (map?.[lang]?.r2_key) skip = true; // already narrated in this lang
+          } catch {
+            /* treat as missing */
+          }
+        }
+        if (skip) continue;
+        const has = await db()
+          .prepare(
+            `SELECT 1 FROM content_blocks
+             WHERE module_id = ? AND kind IN ('text','callout')
+               AND trim(coalesce(text_md,'')) <> '' LIMIT 1`,
+          )
+          .bind(m.id)
+          .first<{ "1": number }>();
+        if (!has) continue;
+        await generateModuleAudioCore({ operatorSlug, courseSlug, moduleId: m.id, lang, voiceId });
+        done++;
+      } finally {
+        await input.onProgress?.();
+      }
     }
 
     // 3) Enable the language for learners (translateCourseCore already does this
@@ -1359,6 +1495,122 @@ export async function generateCourseLanguage(input: {
   } catch (e) {
     return { ok: false, error: (e instanceof Error ? e.message : "failed").slice(0, 500) };
   }
+}
+
+/** Server-side: pick the best active voice applicable to a language
+ *  (cloned > ElevenLabs > MiniMax > melotts), else melotts auto. */
+async function pickVoiceForLang(operatorSlug: string, lang: string): Promise<string> {
+  const base = lang.split("-")[0];
+  const { results = [] } = await db()
+    .prepare(
+      `SELECT v.id, v.provider, v.kind, v.langs FROM voice_profiles v
+       LEFT JOIN operators o ON o.supplier_id = v.supplier_id
+       WHERE v.status='active' AND (v.supplier_id IS NULL OR o.slug = ?)`,
+    )
+    .bind(operatorSlug)
+    .all<{ id: string; provider: string; kind: string; langs: string | null }>();
+  const applicable = results.filter((v) => {
+    if (!v.langs) return true; // universal (cloned)
+    try {
+      const a = JSON.parse(v.langs);
+      return Array.isArray(a) && a.some((c: string) => c === lang || c.split("-")[0] === base);
+    } catch {
+      return false;
+    }
+  });
+  return (
+    applicable.find((v) => v.kind === "cloned")?.id ||
+    applicable.find((v) => v.provider === "elevenlabs")?.id ||
+    applicable.find((v) => v.provider === "minimax")?.id ||
+    applicable.find((v) => v.provider === "workers_ai_melotts")?.id ||
+    "voice_melotts_auto"
+  );
+}
+
+/** Preview: generate ONLY the primary-language narration for one module — a
+ *  quick debug listen while editing. Reuses the module's existing primary voice
+ *  if any, else picks a sensible default. */
+export async function previewModuleNarration(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  moduleId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { operatorSlug, courseSlug, moduleId } = input;
+    await authModule(operatorSlug, courseSlug, moduleId);
+    const mod = await db()
+      .prepare(
+        `SELECT m.narration_audio_i18n, c.primary_lang
+         FROM modules m JOIN courses c ON c.id = m.course_id WHERE m.id = ?`,
+      )
+      .bind(moduleId)
+      .first<{ narration_audio_i18n: string | null; primary_lang: string }>();
+    if (!mod) throw new Error("not_found");
+    const lang = mod.primary_lang;
+    let voiceId = "";
+    try {
+      const map = JSON.parse(mod.narration_audio_i18n ?? "{}");
+      voiceId = map?.[lang]?.voice_id || "";
+    } catch {
+      /* none */
+    }
+    if (!voiceId) voiceId = await pickVoiceForLang(operatorSlug, lang);
+    await generateModuleAudioCore({ operatorSlug, courseSlug, moduleId, lang, voiceId });
+    revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+    revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e instanceof Error ? e.message : "failed").slice(0, 500) };
+  }
+}
+
+/** Background publish: translate + narrate every selected language × module
+ *  (skipping existing when overwrite=false), then set the course live. Called
+ *  from /api/publish-course inside ctx.waitUntil. */
+export async function publishCourseCore(input: {
+  operatorSlug: string;
+  courseSlug: string;
+  langs: { lang: string; voiceId: string }[];
+  overwrite: boolean;
+}): Promise<void> {
+  const { operatorSlug, courseSlug, langs, overwrite } = input;
+  const { courseId } = await authCourse(operatorSlug, courseSlug);
+
+  // Progress counters: total work units = languages × modules. Reset up front so
+  // the editor's poll shows a fresh 0% bar; bumped once per module below.
+  const modCount = await db()
+    .prepare(`SELECT COUNT(*) AS n FROM modules WHERE course_id = ?`)
+    .bind(courseId)
+    .first<{ n: number }>();
+  const total = langs.length * (modCount?.n ?? 0);
+  await db()
+    .prepare(`UPDATE courses SET publish_total = ?, publish_done = 0 WHERE id = ?`)
+    .bind(total, courseId)
+    .run();
+  const bump = async () => {
+    await db()
+      .prepare(`UPDATE courses SET publish_done = publish_done + 1 WHERE id = ?`)
+      .bind(courseId)
+      .run();
+  };
+
+  for (const { lang, voiceId } of langs) {
+    try {
+      await generateCourseLanguage({ operatorSlug, courseSlug, lang, voiceId, overwrite, onProgress: bump });
+    } catch {
+      /* skip a failing language, keep going */
+    }
+  }
+  const langCodes = Array.from(new Set(langs.map((l) => l.lang)));
+  await db()
+    .prepare(
+      `UPDATE courses SET status='published', available_langs = ?, publish_at = unixepoch(), publish_done = publish_total, updated_at = unixepoch() WHERE id = ?`,
+    )
+    .bind(JSON.stringify(langCodes), courseId)
+    .run();
+  revalidatePath(`/product/${operatorSlug}`);
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
 }
 
 /** Strip one key from an audio_i18n JSON object ({lang: {…}}). */
@@ -1542,18 +1794,81 @@ export async function removeCourseLanguage(form: FormData): Promise<void> {
 }
 
 // =========================================================================
-//  COURSE ATTACHMENTS (RAG-only supplementary materials)
+//  SUPPORTING DOCS (RAG-only, product/operator-scoped supplementary material)
 // =========================================================================
 
-export async function deleteCourseAttachment(form: FormData) {
+/** Remove an uploaded video file from a block (clears video_r2_key + deletes
+ *  the R2 object). The block's YouTube link (video_uid) is untouched. */
+export async function removeBlockVideo(form: FormData) {
   const operatorSlug = String(form.get("operator_slug") ?? "");
   const courseSlug = String(form.get("course_slug") ?? "");
-  const attachmentId = String(form.get("attachment_id") ?? "");
-  const { courseId } = await authCourse(operatorSlug, courseSlug);
+  const moduleId = String(form.get("module_id") ?? "");
+  const blockId = String(form.get("block_id") ?? "");
+  const { courseId } = await authModule(operatorSlug, courseSlug, moduleId);
 
   const row = await db()
-    .prepare(`SELECT r2_key FROM course_attachments WHERE id = ? AND course_id = ?`)
-    .bind(attachmentId, courseId)
+    .prepare(`SELECT video_r2_key FROM content_blocks WHERE id = ? AND module_id = ?`)
+    .bind(blockId, moduleId)
+    .first<{ video_r2_key: string | null }>();
+  if (!row?.video_r2_key) return;
+  if (row.video_r2_key.startsWith(`videos/${courseId}/`)) {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    await env.ASSETS_BUCKET.delete(row.video_r2_key).catch(() => {});
+  }
+  await db()
+    .prepare(`UPDATE content_blocks SET video_r2_key = NULL WHERE id = ?`)
+    .bind(blockId)
+    .run();
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+/** Remove one extra slide (by R2 key) from an image block's images_json and
+ *  delete the object. The block's primary image (image_r2_key) is untouched. */
+export async function removeBlockSlide(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const courseSlug = String(form.get("course_slug") ?? "");
+  const moduleId = String(form.get("module_id") ?? "");
+  const blockId = String(form.get("block_id") ?? "");
+  const key = String(form.get("key") ?? "");
+  const { courseId } = await authModule(operatorSlug, courseSlug, moduleId);
+
+  const row = await db()
+    .prepare(`SELECT images_json FROM content_blocks WHERE id = ? AND module_id = ?`)
+    .bind(blockId, moduleId)
+    .first<{ images_json: string | null }>();
+  if (!row) return;
+  let list: string[] = [];
+  try {
+    const v = JSON.parse(row.images_json ?? "[]");
+    if (Array.isArray(v)) list = v.filter((s): s is string => typeof s === "string");
+  } catch {
+    /* ignore */
+  }
+  // Only delete a key that actually belongs to this course's image space.
+  if (key && key.startsWith(`images/${courseId}/`)) {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    await env.ASSETS_BUCKET.delete(key).catch(() => {});
+  }
+  list = list.filter((k) => k !== key);
+  await db()
+    .prepare(`UPDATE content_blocks SET images_json = ? WHERE id = ?`)
+    .bind(list.length ? JSON.stringify(list) : null, blockId)
+    .run();
+  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/learn/${operatorSlug}/${courseSlug}`);
+}
+
+export async function deleteSupportingDoc(form: FormData) {
+  const operatorSlug = String(form.get("operator_slug") ?? "");
+  const attachmentId = String(form.get("attachment_id") ?? "");
+  const access = await requireOperatorMembership(operatorSlug);
+
+  const row = await db()
+    .prepare(`SELECT r2_key FROM course_attachments WHERE id = ? AND operator_id = ?`)
+    .bind(attachmentId, access.operatorId)
     .first<{ r2_key: string }>();
   if (!row) return;
 
@@ -1561,11 +1876,11 @@ export async function deleteCourseAttachment(form: FormData) {
   const { env } = getCloudflareContext();
   await env.ASSETS_BUCKET.delete(row.r2_key).catch(() => {});
   await db()
-    .prepare(`DELETE FROM course_attachments WHERE id = ? AND course_id = ?`)
-    .bind(attachmentId, courseId)
+    .prepare(`DELETE FROM course_attachments WHERE id = ? AND operator_id = ?`)
+    .bind(attachmentId, access.operatorId)
     .run();
 
-  revalidatePath(`/product/${operatorSlug}/courses/${courseSlug}/edit`);
+  revalidatePath(`/product/${operatorSlug}`);
 }
 
 export async function deleteBlock(form: FormData) {

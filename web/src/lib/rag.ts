@@ -58,6 +58,13 @@ export async function retrieve(
     matches = matches.filter((m) => m.metadata?.operator_id === scope.operator_id);
   }
   if (scope.course_id) {
+    // Product-level supporting docs are stored with course_id = NULL (shared
+    // across the product's courses). When the attachment-ingestion worker
+    // (PARSE_QUEUE consumer) lands, those chunks should pass this course
+    // filter too — `course_id === scope.course_id || course_id == null` — and
+    // the hydration JOINs below must become LEFT JOINs to tolerate NULL
+    // course_id/module_id. No such chunks exist yet (consumer undeployed),
+    // so we keep the strict match for now.
     matches = matches.filter((m) => m.metadata?.course_id === scope.course_id);
   }
   matches = matches.slice(0, topK);

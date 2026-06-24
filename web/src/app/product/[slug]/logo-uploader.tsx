@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { mediaUrl } from "@/lib/media";
 import { useTr } from "@/lib/i18n-provider";
 
 /**
@@ -16,10 +17,12 @@ export function LogoUploader({
   operatorSlug,
   hasLogo,
   themeBg,
+  logoR2Key,
 }: {
   operatorSlug: string;
   hasLogo: boolean;
   themeBg: string;
+  logoR2Key: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const tr = useTr();
@@ -59,16 +62,16 @@ export function LogoUploader({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/operator-logo?slug=${encodeURIComponent(operatorSlug)}`}
+            src={logoR2Key ? mediaUrl(logoR2Key) : ""}
             alt={tr.br_logo_alt}
             className="max-h-7 max-w-[140px] object-contain"
           />
         </span>
       ) : (
-        <span className="text-[12px] text-slate-500">{tr.br_logo_none}</span>
+        <span className="text-caption text-slate-500">{tr.br_logo_none}</span>
       )}
       <label className="cursor-pointer">
-        <span className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-300 text-slate-700 text-[12px] hover:bg-slate-200">
+        <span className="px-3 py-1.5 rounded-md bg-slate-100 border border-slate-300 text-slate-700 text-caption hover:bg-slate-200">
           {pending ? tr.br_logo_uploading : hasLogo ? tr.br_logo_replace : tr.br_logo_upload}
         </span>
         <input
@@ -84,12 +87,12 @@ export function LogoUploader({
           type="button"
           onClick={removeLogo}
           disabled={pending}
-          className="text-[11px] text-rose-600/80 hover:underline"
+          className="text-micro text-rose-600/80 hover:underline"
         >
           {tr.br_logo_remove}
         </button>
       ) : null}
-      <span className="text-[10.5px] text-slate-400">{tr.br_logo_hint}</span>
+      <span className="text-micro text-slate-400">{tr.br_logo_hint}</span>
     </div>
   );
 }
